@@ -29,3 +29,4 @@ class PropertyFieldTest(unittest.TestCase):
 
         self.assertEqual(target_object.foo, 20)
 
+    # TODO: test alternate names

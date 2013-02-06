@@ -6,7 +6,7 @@ from savory_pie import resources, fields
 class UserResource(resources.ModelResource):
     fields = [
         fields.PropertyField(property='name', type=str),
-        fields.PropertyField(property='age', type=20)
+        fields.PropertyField(property='age', type=int)
     ]
 
 class ModelResourceTest(unittest.TestCase):
