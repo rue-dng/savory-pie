@@ -26,4 +26,4 @@ class PropertyField(object):
         return self.type(str)
 
     def prepare(self, queryset):
-        pass
+        return queryset

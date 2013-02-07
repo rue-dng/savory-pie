@@ -10,7 +10,7 @@ class QuerySet(object):
         self.elements = elements
 
     def __iter__(self):
-        return self.elements
+        return iter(self.elements)
 
     def filter(self, **kwargs):
         return QuerySet()

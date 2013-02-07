@@ -25,7 +25,9 @@ class QuerySetResource(object):
         print 'prepare', queryset
         try:
             prepare = getattr(self.resource_class, 'prepare')
-            return prepare(queryset)
+            queryset = prepare(queryset)
+            print 'post prepare', queryset
+            return queryset
         except KeyError:
             return queryset
 

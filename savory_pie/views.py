@@ -14,6 +14,8 @@ def service_dispatcher(root_resource):
         else:
             return _process_unsupported_method(resource, request)
 
+    return view
+
 def _resolve_resource(resource, path_fragments):
     return resource
 
