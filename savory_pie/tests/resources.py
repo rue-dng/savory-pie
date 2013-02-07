@@ -13,7 +13,10 @@ class QuerySet(object):
         return iter(self.elements)
 
     def filter(self, **kwargs):
-        return QuerySet()
+        if kwargs:
+            return QuerySet()
+        else:
+            return QuerySet(*self.elements)
 
 
 class Manager(Mock):
@@ -82,10 +85,13 @@ class UserQuerySetResource(resources.QuerySetResource):
 
 class QuerySetResourceTest(unittest.TestCase):
     def test_get(self):
-        User.objects.all = Mock(return_value=QuerySet(
-            User(user='Alice', age=31),
+        resource = UserQuerySetResource(QuerySet(
+            User(name='Alice', age=31),
             User(name='Bob', age=20)
         ))
+        data = resource.get()
 
-        resource = UserQuerySetResource()
-        resource.get()
+        self.assertEqual(data['objects'], [
+            {'name': 'Alice', 'age': 31},
+            {'name': 'Bob', 'age': 20}
+        ])
