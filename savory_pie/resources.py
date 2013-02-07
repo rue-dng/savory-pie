@@ -69,5 +69,5 @@ class ModelResource(object):
 
         self.model.save()
 
-    def delete(self, dict):
+    def delete(self):
         self.model.delete()
