@@ -22,8 +22,7 @@ class QuerySetResource(object):
 
     def prepare(self, queryset):
         try:
-            prepare = getattr(self.resource_class, 'prepare')
-            return prepare(queryset)
+            return self.resource_class.prepare(queryset)
         except KeyError:
             return queryset
 

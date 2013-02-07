@@ -30,29 +30,25 @@ def _serialize_to_response(dict):
 
 def _process_get(resource, request):
     try:
-        get = getattr(resource, 'get')
-        return _serialize_to_response(get(**request.GET))
+        return _serialize_to_response(resource.get(**request.GET))
     except KeyError:
         return _process_unsupported_method(resource, request)
 
 def _process_post(resource, request):
     try:
-        post = getattr(resource, 'post')
-        post(_deserialize_request(request))
+        resource.post(_deserialize_request(request))
     except KeyError:
         return _process_unsupported_method(resource, request)
 
 def _process_put(resource, request):
     try:
-        put = getattr(resource, 'put')
-        new_resource = put(_deserialize_request(request))
+        new_resource = resource.put(_deserialize_request(request))
     except KeyError:
         return _process_unsupported_method(resource, request)
 
 def _process_delete(resource, request):
     try:
-        delete = getattr(resource, 'delete')
-        delete()
+        resource.delete()
     except KeyError:
         return _process_unsupported_method(resource, request)
 
