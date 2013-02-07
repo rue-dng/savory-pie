@@ -12,6 +12,7 @@ class QuerySetResource(object):
         self.queryset = queryset or self.model_class.objects.all()
 
     def filter_queryset(self, **kwargs):
+        print 'filter_queryset', self.queryset
         return self.queryset.filter(**kwargs)
 
     def to_resource(self, model):
@@ -21,18 +22,20 @@ class QuerySetResource(object):
         return self.resource_class(self.model_class())
 
     def prepare(self, queryset):
+        print 'prepare', queryset
         try:
             prepare = getattr(self.resource_class, 'prepare')
-            prepare(queryset)
+            return prepare(queryset)
         except KeyError:
-            pass
+            return queryset
 
     def get(self, **kwargs):
         queryset = self.prepare(self.filter_queryset(**kwargs))
+        print 'get', queryset
 
         objects = []
         for model in queryset:
-            sub_dict = self.to_resource(model).get()
+            objects.append(self.to_resource(model).get())
 
         return {
             'objects': objects
@@ -52,8 +55,10 @@ class ModelResource(object):
 
     @classmethod
     def prepare(cls, queryset):
+        prepared_queryset = queryset
         for field in cls.fields:
-            field.prepare(queryset)
+            prepared_queryset = field.prepare(prepared_queryset)
+        return prepared_queryset
 
     def get(self, **kwargs):
         target_dict = dict()

@@ -3,8 +3,29 @@ from mock import Mock
 
 from savory_pie import resources, fields
 
+
+class QuerySet(object):
+    def __init__(self, *elements):
+        super(QuerySet, self).__init__()
+        self.elements = elements
+
+    def __iter__(self):
+        return self.elements
+
+    def filter(self, **kwargs):
+        return QuerySet()
+
+
+class Manager(Mock):
+    def __init__(self):
+        super(Manager, self).__init__()
+
+        self.all = Mock()
+        self.all.return_value = QuerySet()
+
+
 class User(Mock):
-    objects = Mock()
+    objects = Manager()
 
     def __init__(self, **kwargs):
         super(User, self).__init__()
@@ -58,7 +79,13 @@ class UserQuerySetResource(resources.QuerySetResource):
     resource_class = UserResource
     model_class = User
 
+
 class QuerySetResourceTest(unittest.TestCase):
-    User.objects.all.return_value = [
-        User
-    ]
+    def test_get(self):
+        User.objects.all = Mock(return_value=QuerySet(
+            User(user='Alice', age=31),
+            User(name='Bob', age=20)
+        ))
+
+        resource = UserQuerySetResource()
+        resource.get()
