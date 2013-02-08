@@ -1,3 +1,5 @@
+from savory_pie.utils import append_select_related
+
 #protocol Field:
 #    def handle_incoming(self, source_dict, target_obj)
 #    def handle_outgoing(self, source_obj, target_dict)
@@ -72,7 +74,7 @@ class FKPropertyField(object):
 
     def prepare(self, queryset):
         segments = self.property.split('.')
-        queryset = queryset.select_related('__'.join(segments[:-1]))
+        append_select_related(queryset, '__'.join(segments[:-1]))
         return queryset
 
 
@@ -97,7 +99,7 @@ class SubModelResourceField(object):
         target_dict[self.json_property] = self.resource_class(sub_model).get()
 
     def prepare(self, queryset):
-        return queryset.select_related(self.property)
+        append_select_related(queryset, self.property)
 
 
 def _python_to_js_name(python_name):

@@ -1,5 +1,6 @@
 import unittest
 import mock_orm
+import django.db.models.query
 from savory_pie import resources, fields
 
 
@@ -98,3 +99,28 @@ class QuerySetResourceTest(unittest.TestCase):
 
         model_resource = queryset_resource.get_child_resource(999)
         self.assertIsNone(model_resource)
+
+
+class ResourcePrepareTest(unittest.TestCase):
+
+    class TestResource(resources.ModelResource):
+        model_class = User
+        fields = [
+            fields.FKPropertyField(property='group.name', type=str),
+            fields.FKPropertyField(property='domain.name', type=str)
+        ]
+
+    def test_select_related(self):
+        queryset = django.db.models.query.QuerySet()
+
+        queryset = self.TestResource.prepare(queryset)
+
+        select_related = queryset.query.select_related
+        self.assertEqual(
+            {
+                'group': {},
+                'domain': {},
+            },
+            select_related
+        )
+

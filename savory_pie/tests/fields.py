@@ -118,15 +118,14 @@ class FKPropertyFieldTest(unittest.TestCase):
 
     def test_prepare(self):
         query_set = Mock()
+        query_set.query.select_related = {}
 
         field = FKPropertyField(property='foo.bar.baz', type=int)
 
         result_query_set = field.prepare(query_set)
 
-        query_set.select_related.assert_called_with('foo__bar')
-        query_set_1 = query_set.select_related.return_value
-
-        self.assertEqual(query_set_1, result_query_set)
+        self.assertEqual({'foo': {'bar': {}}}, query_set.query.select_related)
+        self.assertEqual(query_set, result_query_set)
 
 
 class SubModelResourceFieldTest(unittest.TestCase):
