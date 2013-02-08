@@ -1,3 +1,4 @@
+from django.http import HttpResponse
 import json
 
 def service_dispatcher(root_resource):
