@@ -61,10 +61,10 @@ class ModelResource(object):
 
     @classmethod
     def get_from_queryset(cls, queryset, path_fragment):
-        attr, type = cls.published_key
+        attr, type_ = cls.published_key
 
         kwargs = dict()
-        kwargs[attr] = type(path_fragment)
+        kwargs[attr] = type_(path_fragment)
         return queryset.get(**kwargs)
 
     @classmethod
@@ -79,7 +79,7 @@ class ModelResource(object):
 
     @property
     def key(self):
-        attr, type = self.published_key
+        attr, type_ = self.published_key
         return str(getattr(self.model, attr))
 
     def get(self, **kwargs):
