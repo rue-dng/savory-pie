@@ -78,10 +78,23 @@ class QuerySetResourceTest(unittest.TestCase):
         self.assertEqual(new_user.age, 20)
         self.assertTrue(new_user.save.called)
 
-    def test_child_resource(self):
+    def test_get_child_resource_success(self):
+        alice = User(pk=1, name='Alice', age=31)
+        bob = User(pk=2, name='Bob', age=20)
+
         queryset_resource = UserQuerySetResource(mock_orm.QuerySet(
+            alice,
+            bob
+        ))
+
+        model_resource = queryset_resource.get_child_resource(1)
+        self.assertEqual(model_resource.model, alice)
+
+    def test_get_child_resource_fail(self):
+        queryset_resource = QuerySetResource(mock_orm.QuerySet(
             User(pk=1, name='Alice', age=31),
             User(pk=2, name='Bob', age=20)
         ))
 
-        queryset_resource.get_child_resource(20)
+        model_resource = query_resource.get_child_resource(999)
+        self.assertIsNone(model_resource)

@@ -1,4 +1,6 @@
 from mock import Mock
+from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
+
 
 class QuerySet(object):
     def __init__(self, *elements):
@@ -9,13 +11,28 @@ class QuerySet(object):
         return iter(self.elements)
 
     def filter(self, **kwargs):
-        filtered_elements = self.elements
-        for key, value in kwargs.iteritems():
-            filtered_elements = self._filter(key, value)
-        return QuerySet(*filtered_elements)
+        return QuerySet(*self._filter_elements(**kwargs))
 
-    def _filter(self, attr, value):
-        return [element for element in self.elements if getattr(element, attr) == value]
+    def get(self, **kwargs):
+        filtered_elements = self._filter_elements(**kwargs)
+        count = len(filtered_elements)
+
+        if count == 0:
+            # This is not really correct, should return an exception that
+            # matches the specific sub-class, but this is close enough for
+            # the purpose of many tests.
+            raise Model.DoesNotExist
+        elif count == 1:
+            return filtered_elements[0]
+        else:
+            raise MultipleObjectsReturned
+
+    def _filter_elements(self, **kwargs):
+        filtered_elements = self.elements
+        for attr, value in kwargs.iteritems():
+            filtered_elements = \
+                [element for element in self.elements if getattr(element, attr) == value]
+        return filtered_elements
 
 
 class Manager(Mock):
@@ -27,6 +44,10 @@ class Manager(Mock):
 
 
 class Model(Mock):
+    # Not exactly semantically equivalent to Django, but close enough for most tests
+    class DoesNotExist(ObjectDoesNotExist):
+        pass
+
     objects = Manager()
 
     def __init__(self, **kwargs):

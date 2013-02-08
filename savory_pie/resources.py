@@ -1,7 +1,9 @@
+from django.core.exceptions import ObjectDoesNotExist
+
 #protocol Resource:
 #    def get(self, **kwargs): dict
 #    def post(self, dict):
-#    def put(self, dict): resource
+#    def put(self, dict): Resource
 #    def delete(self)
 #    def get_child_resource(self, path_fragment): resource or None
 
@@ -43,15 +45,24 @@ class QuerySetResource(object):
         return resource
 
     def get_child_resource(self, path_fragment):
-        pass
+        try:
+            model = self.resource_class.get_from_queryset(self.queryset, path_fragment)
+            return self.to_resource(model)
+        except ObjectDoesNotExist:
+            return None
 
 
 class ModelResource(object):
-    published_key = 'pk'
+    published_key = ('pk', int)
     fields = []
 
-    def __init__(self, model):
-        self.model = model
+    @classmethod
+    def get_from_queryset(cls, queryset, path_fragment):
+        attr, type = cls.published_key
+
+        kwargs = dict()
+        kwargs[attr] = type(path_fragment)
+        return queryset.get(**kwargs)
 
     @classmethod
     def prepare(cls, queryset):
@@ -59,6 +70,14 @@ class ModelResource(object):
         for field in cls.fields:
             prepared_queryset = field.prepare(prepared_queryset)
         return prepared_queryset
+
+    def __init__(self, model):
+        self.model = model
+
+    @property
+    def key(self):
+        attr, type = self.published_key
+        return str(getattr(self.model, attr))
 
     def get(self, **kwargs):
         target_dict = dict()
