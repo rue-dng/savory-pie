@@ -46,7 +46,10 @@ class QuerySetResource(object):
 
     def get_child_resource(self, path_fragment):
         try:
-            model = self.resource_class.get_from_queryset(self.queryset, path_fragment)
+            model = self.resource_class.get_from_queryset(
+                self.prepare(self.queryset),
+                path_fragment
+            )
             return self.to_resource(model)
         except ObjectDoesNotExist:
             return None
