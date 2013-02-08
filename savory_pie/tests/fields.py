@@ -56,6 +56,14 @@ class PropertyFieldTest(unittest.TestCase):
 
         self.assertEqual(target_object.foo, 20)
 
+    def test_automatic_json_naming(self):
+        field = PropertyField(property='foo_bar', type=int)
+
+        target_object = Mock()
+        field.handle_incoming({'fooBar': 20}, target_object)
+
+        self.assertEqual(target_object.foo_bar, 20)
+
 
 class FKPropertyFieldTest(unittest.TestCase):
     def test_simple_outgoing(self):
