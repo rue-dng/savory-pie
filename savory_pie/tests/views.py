@@ -50,3 +50,12 @@ class ViewTest(unittest.TestCase):
         view(Request(method='POST', path='/', body='{}'))
 
         root_resource.post.assert_called_with({})
+
+    def test_delete(self):
+        root_resource = Mock()
+        root_resource.delete = Mock()
+
+        view = views.service_dispatcher(root_resource)
+        view(Request(method='DELETE', path='/'))
+
+        self.assertTrue(root_resource.delete.called)
