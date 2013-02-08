@@ -36,6 +36,9 @@ class User(Mock):
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
 
+        self.save = Mock()
+        self.delete = Mock()
+
 
 class UserResource(resources.ModelResource):
     fields = [
@@ -55,8 +58,7 @@ class ModelResourceTest(unittest.TestCase):
         self.assertEqual(dict['age'], 20)
 
     def test_put(self):
-        user = Mock()
-        user.save = Mock()
+        user = User()
 
         resource = UserResource(user)
         resource.put({
@@ -69,8 +71,7 @@ class ModelResourceTest(unittest.TestCase):
         self.assertTrue(user.save.called)
 
     def test_delete(self):
-        user = Mock()
-        user.delete = Mock()
+        user = User()
 
         resource = UserResource(user)
         resource.delete()
@@ -95,3 +96,18 @@ class QuerySetResourceTest(unittest.TestCase):
             {'name': 'Alice', 'age': 31},
             {'name': 'Bob', 'age': 20}
         ])
+
+    def test_post(self):
+        queryset_resource = UserQuerySetResource()
+
+        new_resource = queryset_resource.post({
+            'name': 'Bob',
+            'age': 20
+        })
+
+        new_user = new_resource.model
+
+        self.assertEqual(new_user.name, 'Bob')
+        self.assertEqual(new_user.age, 20)
+        self.assertTrue(new_user.save.called)
+
