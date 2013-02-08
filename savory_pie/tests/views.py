@@ -31,6 +31,14 @@ class ViewTest(unittest.TestCase):
 
         self.assertTrue(resource.get.called)
 
+    def test_get_not_supported(self):
+        resource = object()
+
+        view = views.service_dispatcher(resource)
+        response = view(Request(method='GET', path='/'))
+
+        self.assertEqual(response.status_code, 405)
+
     def test_put_success(self):
         root_resource = Mock()
         new_resource = Mock()
@@ -42,6 +50,14 @@ class ViewTest(unittest.TestCase):
 
         root_resource.put.assert_called_with({})
 
+    def test_put_not_supported(self):
+        resource = object()
+
+        view = views.service_dispatcher(resource)
+        response = view(Request(method='PUT', path='/'))
+
+        self.assertEqual(response.status_code, 405)
+
     def test_post_success(self):
         root_resource = Mock()
         root_resource.post = Mock()
@@ -51,6 +67,14 @@ class ViewTest(unittest.TestCase):
 
         root_resource.post.assert_called_with({})
 
+    def test_post_not_supported(self):
+        resource = object()
+
+        view = views.service_dispatcher(resource)
+        response = view(Request(method='POST', path='/'))
+
+        self.assertEqual(response.status_code, 405)
+
     def test_delete(self):
         root_resource = Mock()
         root_resource.delete = Mock()
@@ -59,3 +83,11 @@ class ViewTest(unittest.TestCase):
         view(Request(method='DELETE', path='/'))
 
         self.assertTrue(root_resource.delete.called)
+
+    def test_delete_not_supported(self):
+        resource = object()
+
+        view = views.service_dispatcher(resource)
+        response = view(Request(method='DELETE', path='/'))
+
+        self.assertEqual(response.status_code, 405)
