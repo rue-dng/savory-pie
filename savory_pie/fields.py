@@ -76,6 +76,5 @@ class FKPropertyField(object):
 
     def prepare(self, queryset):
         segments = self.property.split('.')
-        for segment in segments[:-1]:
-            queryset = queryset.select_related(segment)
+        queryset = queryset.select_related('__'.join(segments[:-1]))
         return queryset

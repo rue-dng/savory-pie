@@ -66,14 +66,9 @@ class FKPropertyFieldTest(unittest.TestCase):
 
         result_query_set = field.prepare(query_set)
 
-        query_set.select_related.assert_called_with('foo')
-
+        query_set.select_related.assert_called_with('foo__bar')
         query_set_1 = query_set.select_related.return_value
-        query_set_1.select_related.assert_called_with('bar')
 
-        query_set_2 = query_set_1.select_related.return_value
-        self.assertFalse(query_set_2.select_related.called)
-
-        self.assertEqual(query_set_2, result_query_set)
+        self.assertEqual(query_set_1, result_query_set)
 
     # TODO: test alternate names
