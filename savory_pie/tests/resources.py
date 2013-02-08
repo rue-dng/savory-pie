@@ -8,6 +8,7 @@ class User(mock_orm.Model):
 
 
 class UserResource(resources.ModelResource):
+    model_class = User
     fields = [
         fields.PropertyField(property='name', type=str),
         fields.PropertyField(property='age', type=int)
@@ -48,7 +49,6 @@ class ModelResourceTest(unittest.TestCase):
 
 class UserQuerySetResource(resources.QuerySetResource):
     resource_class = UserResource
-    model_class = User
 
 
 class QuerySetResourceTest(unittest.TestCase):

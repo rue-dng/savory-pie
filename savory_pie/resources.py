@@ -9,18 +9,14 @@ from django.core.exceptions import ObjectDoesNotExist
 
 class QuerySetResource(object):
     # resource_class
-    # model_class
     def __init__(self, queryset=None):
-        self.queryset = queryset or self.model_class.objects.all()
+        self.queryset = queryset or self.resource_class.model_class.objects.all()
 
     def filter_queryset(self, **kwargs):
         return self.queryset.filter(**kwargs)
 
     def to_resource(self, model):
         return self.resource_class(model)
-
-    def create_resource(self):
-        return self.resource_class(self.model_class())
 
     def prepare(self, queryset):
         try:
@@ -40,7 +36,7 @@ class QuerySetResource(object):
         }
 
     def post(self, source_dict):
-        resource = self.create_resource()
+        resource = self.resource_class.create_resource()
         resource.put(source_dict)
         return resource
 
@@ -56,6 +52,7 @@ class QuerySetResource(object):
 
 
 class ModelResource(object):
+    # model_class
     published_key = ('pk', int)
     fields = []
 
@@ -66,6 +63,10 @@ class ModelResource(object):
         kwargs = dict()
         kwargs[attr] = type_(path_fragment)
         return queryset.get(**kwargs)
+
+    @classmethod
+    def create_resource(cls):
+        return cls(cls.model_class())
 
     @classmethod
     def prepare(cls, queryset):

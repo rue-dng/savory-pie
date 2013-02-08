@@ -1,7 +1,8 @@
 import unittest
 from mock import Mock
 
-from savory_pie.fields import PropertyField, FKPropertyField
+from savory_pie.resources import ModelResource
+from savory_pie.fields import PropertyField, FKPropertyField, SubModelResourceField
 
 
 class PropertyFieldTest(unittest.TestCase):
@@ -30,7 +31,30 @@ class PropertyFieldTest(unittest.TestCase):
 
         self.assertEqual(target_object.foo, 20)
 
-    # TODO: test alternate names
+    def test_alternate_name_outgoing(self):
+        source_object = Mock()
+        source_object.foo = 20
+
+        field = PropertyField(property='foo', type=int, json_property='bar')
+
+        target_dict = dict()
+
+        field.handle_outgoing(source_object, target_dict)
+
+        self.assertEqual(target_dict['bar'], 20)
+
+    def test_alternate_name_incoming(self):
+        source_dict = {
+            'bar': 20
+        }
+
+        field = PropertyField(property='foo', type=int, json_property='bar')
+
+        target_object = Mock()
+
+        field.handle_incoming(source_dict, target_object)
+
+        self.assertEqual(target_object.foo, 20)
 
 
 class FKPropertyFieldTest(unittest.TestCase):
@@ -59,6 +83,31 @@ class FKPropertyFieldTest(unittest.TestCase):
 
         self.assertEqual(target_object.foo.bar, 20)
 
+    def test_alternate_name_outgoing(self):
+        source_object = Mock()
+        source_object.foo.bar = 20
+
+        field = FKPropertyField(property='foo.bar', type=int, json_property='foo')
+
+        target_dict = dict()
+
+        field.handle_outgoing(source_object, target_dict)
+
+        self.assertEqual(target_dict['foo'], 20)
+
+    def test_alternate_name_incoming(self):
+        source_dict = {
+            'foo': 20
+        }
+
+        field = FKPropertyField(property='foo.bar', type=int, json_property='foo')
+
+        target_object = Mock()
+
+        field.handle_incoming(source_dict, target_object)
+
+        self.assertEqual(target_object.foo.bar, 20)
+
     def test_prepare(self):
         query_set = Mock()
 
@@ -71,4 +120,60 @@ class FKPropertyFieldTest(unittest.TestCase):
 
         self.assertEqual(query_set_1, result_query_set)
 
-    # TODO: test alternate names
+
+class SubModelResourceFieldTest(unittest.TestCase):
+    def test_simple_outgoing(self):
+        source_object = Mock()
+        source_object.foo.bar = 20
+
+        class Resource(ModelResource):
+            fields = [
+                PropertyField(property='bar', type=int),
+            ]
+        field = SubModelResourceField(property='foo', resource_class=Resource)
+
+        target_dict = dict()
+
+        field.handle_outgoing(source_object, target_dict)
+
+        self.assertEqual(target_dict['foo'], {'bar': 20})
+
+    def test_simple_incoming(self):
+        source_dict = {
+            'foo': {'bar': 20},
+        }
+
+        class Resource(ModelResource):
+            model_class = Mock()
+            fields = [
+                PropertyField(property='bar', type=int),
+            ]
+        field = SubModelResourceField(property='foo', resource_class=Resource)
+
+        target_object = Mock()
+
+        field.handle_incoming(source_dict, target_object)
+
+        self.assertEqual(20, target_object.foo.bar)
+        target_object.foo.save.assert_called_with()
+
+    def test_new_object_incoming(self):
+        source_dict = {
+            'foo': {'bar': 20},
+        }
+
+        class Resource(ModelResource):
+            model_class = Mock()
+            fields = [
+                PropertyField(property='bar', type=int),
+            ]
+        field = SubModelResourceField(property='foo', resource_class=Resource)
+
+        target_object = Mock()
+        target_object.foo = None
+
+        field.handle_incoming(source_dict, target_object)
+
+        self.assertEqual(20, target_object.foo.bar)
+        self.assertEqual(Resource.model_class.return_value, target_object.foo)
+        target_object.foo.save.assert_called_with()

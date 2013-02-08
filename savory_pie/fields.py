@@ -39,7 +39,7 @@ class FKPropertyField(object):
 
     FKPropertyField('other.name', type=int) will return this json {'name': other.name}
     """
-    def __init__(self, property=None, json_property=None, type=None):
+    def __init__(self, property, type, json_property=None):
         self.property = property
         self.json_property = json_property or _python_to_js_name(self.property.split('.')[-1])
         self.type = type
@@ -78,3 +78,27 @@ class FKPropertyField(object):
         segments = self.property.split('.')
         queryset = queryset.select_related('__'.join(segments[:-1]))
         return queryset
+
+
+class SubModelResourceField(object):
+    def __init__(self, property, resource_class, json_property=None):
+        self.property = property
+        self.resource_class = resource_class
+        self.json_property = json_property or _python_to_js_name(self.property)
+
+    def handle_incoming(self, source_dict, target_obj):
+        sub_model = getattr(target_obj, self.property, None)
+        if sub_model is None:
+            sub_resource = self.resource_class.create_resource()
+            # I am not 100% happy with this
+            setattr(target_obj, self.property, sub_resource.model)
+        else:
+            sub_resource = self.resource_class(sub_model)
+        sub_resource.put(source_dict[self.json_property])
+
+    def handle_outgoing(self, source_obj, target_dict):
+        sub_model = getattr(source_obj, self.property)
+        target_dict[self.json_property] = self.resource_class(sub_model).get()
+
+    def prepare(self, queryset):
+        return queryset.select_related(self.property)
