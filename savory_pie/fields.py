@@ -4,6 +4,7 @@
 #    def prepare(self, queryset)
 
 def _python_to_js_name(python_name):
+    # TODO: Give me a real implementation
     return python_name
 
 class PropertyField(object):
