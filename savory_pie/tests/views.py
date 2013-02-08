@@ -105,10 +105,30 @@ class ViewTest(unittest.TestCase):
         root_resource = Mock(name='root')
         root_resource.get_child_resource = Mock(return_value=child_resource)
 
-        response = dispatch(root_resource, method='GET', resource_path='child')
+        dispatch(root_resource, method='GET', resource_path='child')
 
         root_resource.get_child_resource.assert_called_with('child')
         self.assertTrue(child_resource.get.called)
 
     def test_grandchild_resolution(self):
-        pass
+        grand_child_resource = Mock(name='grandchild')
+        grand_child_resource.get = Mock(return_value={})
+
+        child_resource = Mock(name='child')
+        child_resource.get_child_resource = Mock(return_value=grand_child_resource)
+
+        root_resource = Mock(name='root')
+        root_resource.get_child_resource = Mock(return_value=child_resource)
+
+        dispatch(root_resource, method='GET', resource_path='child/grandchild')
+
+        root_resource.get_child_resource.assert_called_with('child')
+        child_resource.get_child_resource.assert_called_with('grandchild')
+        self.assertTrue(grand_child_resource.get.called)
+
+    def test_child_resolution_fail(self):
+        root_resource = Mock(name='root')
+        root_resource.get_child_resource = Mock(return_value=None)
+
+        response = dispatch(root_resource, method='GET', resource_path='child/grandchild')
+        self.assertEqual(response.status_code, 404)

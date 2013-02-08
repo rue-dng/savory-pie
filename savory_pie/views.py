@@ -4,6 +4,9 @@ import json
 def api_view(root_resource):
     def view(request, resource_path):
         resource = _resolve_resource(root_resource, _split_resource_path(resource_path))
+        if resource is None:
+            return _process_not_found(request)
+
         if request.method == 'GET':
             return _process_get(resource, request)
         elif request.method == 'POST':
@@ -75,6 +78,9 @@ def _process_delete(resource, request):
 def _process_unsupported_method(resource, request):
     # Ill-behaved should reply with a set of allowed actions
     return HttpResponse(status=405)
+
+def _process_not_found(request):
+    return HttpResponse(status=404)
 
 def _process_success(resource, request):
     return HttpResponse(status=200)
