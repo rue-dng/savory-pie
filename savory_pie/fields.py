@@ -4,8 +4,21 @@
 #    def prepare(self, queryset)
 
 def _python_to_js_name(python_name):
-    # TODO: Give me a real implementation
-    return python_name
+    js_name = []
+    last_was_underscore = False
+
+    for char in python_name:
+        if char == '_':
+            last_was_underscore = True
+        else:
+            if last_was_underscore:
+                js_name.append(char.upper())
+            else:
+                js_name.append(char)
+
+            last_was_underscore = False
+
+    return ''.join(js_name)
 
 class PropertyField(object):
     def __init__(self, property, type, json_property=None):
