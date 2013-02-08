@@ -4,8 +4,25 @@ from StringIO import StringIO
 from mock import Mock
 from savory_pie import views
 
+
+def dispatch(root_resource, method, resource_path='', body=None, GET=None, POST=None):
+    view = views.api_view(root_resource)
+    request = Request(
+        method=method,
+        path='api/' + resource_path,
+        body=body,
+        GET=GET,
+        POST=POST
+    )
+
+    return view(request=request, resource_path=resource_path)
+
+
 class Request(object):
-    def __init__(self, method, path, body=None, GET=None, POST=None):
+    def __init__(self, method, host='localhost', path='', body=None, GET=None, POST=None):
+        self.host = host
+        self.path = path
+
         self.method = method
         self.body = body
         self.body_file = None
@@ -23,20 +40,18 @@ class Request(object):
 
 class ViewTest(unittest.TestCase):
     def test_get_success(self):
-        resource = Mock()
-        resource.get = Mock(return_value={})
+        root_resource = Mock()
+        root_resource.get = Mock(return_value={'foo': 'bar'})
 
-        view = views.service_dispatcher(resource)
-        view(Request(method='GET', path='/'))
+        response = dispatch(root_resource, method='GET')
+        self.assertEqual(response.content, '{"foo": "bar"}')
 
-        self.assertTrue(resource.get.called)
+        self.assertTrue(root_resource.get.called)
 
     def test_get_not_supported(self):
-        resource = object()
+        root_resource = object()
 
-        view = views.service_dispatcher(resource)
-        response = view(Request(method='GET', path='/'))
-
+        response = dispatch(root_resource, method='GET')
         self.assertEqual(response.status_code, 405)
 
     def test_put_success(self):
@@ -45,49 +60,55 @@ class ViewTest(unittest.TestCase):
 
         root_resource.put = Mock(return_value=new_resource)
 
-        view = views.service_dispatcher(root_resource)
-        view(Request(method='PUT', path='/', body='{}'))
+        dispatch(root_resource, method='PUT', body='{}')
 
         root_resource.put.assert_called_with({})
 
     def test_put_not_supported(self):
-        resource = object()
+        root_resource = object()
 
-        view = views.service_dispatcher(resource)
-        response = view(Request(method='PUT', path='/'))
-
+        response = dispatch(root_resource, method='PUT')
         self.assertEqual(response.status_code, 405)
 
     def test_post_success(self):
         root_resource = Mock()
         root_resource.post = Mock()
 
-        view = views.service_dispatcher(root_resource)
-        view(Request(method='POST', path='/', body='{}'))
+        dispatch(root_resource, method='POST', body='{}')
 
         root_resource.post.assert_called_with({})
 
     def test_post_not_supported(self):
-        resource = object()
+        root_resource = object()
 
-        view = views.service_dispatcher(resource)
-        response = view(Request(method='POST', path='/'))
-
+        response = dispatch(root_resource, method='POST')
         self.assertEqual(response.status_code, 405)
 
     def test_delete(self):
         root_resource = Mock()
         root_resource.delete = Mock()
 
-        view = views.service_dispatcher(root_resource)
-        view(Request(method='DELETE', path='/'))
+        dispatch(root_resource, method='DELETE')
 
         self.assertTrue(root_resource.delete.called)
 
     def test_delete_not_supported(self):
-        resource = object()
+        root_resource = object()
 
-        view = views.service_dispatcher(resource)
-        response = view(Request(method='DELETE', path='/'))
-
+        response = dispatch(root_resource, method='DELETE')
         self.assertEqual(response.status_code, 405)
+
+    def test_child_resolution(self):
+        child_resource = Mock(name='child')
+        child_resource.get = Mock(return_value={})
+
+        root_resource = Mock(name='root')
+        root_resource.get_child_resource = Mock(return_value=child_resource)
+
+        response = dispatch(root_resource, method='GET', resource_path='child')
+
+        root_resource.get_child_resource.assert_called_with('child')
+        self.assertTrue(child_resource.get.called)
+
+    def test_grandchild_resolution(self):
+        pass

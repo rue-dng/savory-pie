@@ -1,9 +1,9 @@
 from django.http import HttpResponse
 import json
 
-def service_dispatcher(root_resource):
-    def view(request):
-        resource = _resolve_resource(root_resource, [])
+def api_view(root_resource):
+    def view(request, resource_path):
+        resource = _resolve_resource(root_resource, _split_resource_path(resource_path))
         if request.method == 'GET':
             return _process_get(resource, request)
         elif request.method == 'POST':
@@ -17,7 +17,19 @@ def service_dispatcher(root_resource):
 
     return view
 
-def _resolve_resource(resource, path_fragments):
+def _split_resource_path(resource_path):
+    path_fragments = resource_path.split('/')
+    if path_fragments[-1] == '':
+        return path_fragments[:-1]
+    else:
+        return path_fragments
+
+def _resolve_resource(root_resource, path_fragments):
+    resource = root_resource
+    for path_fragment in path_fragments:
+        resource = resource.get_child_resource(path_fragment)
+        if not resource:
+            return None
     return resource
 
 def _deserialize_request(request):
