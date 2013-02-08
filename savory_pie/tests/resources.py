@@ -13,10 +13,13 @@ class QuerySet(object):
         return iter(self.elements)
 
     def filter(self, **kwargs):
-        if kwargs:
-            return QuerySet()
-        else:
-            return QuerySet(*self.elements)
+        filtered_elements = self.elements
+        for key, value in kwargs.iteritems():
+            filtered_elements = self._filter(key, value)
+        return QuerySet(*filtered_elements)
+
+    def _filter(self, attr, value):
+        return [element for element in self.elements if getattr(element, attr) == value]
 
 
 class Manager(Mock):
@@ -111,3 +114,10 @@ class QuerySetResourceTest(unittest.TestCase):
         self.assertEqual(new_user.age, 20)
         self.assertTrue(new_user.save.called)
 
+    def test_child_resource(self):
+        queryset_resource = UserQuerySetResource(QuerySet(
+            User(pk=1, name='Alice', age=31),
+            User(pk=2, name='Bob', age=20)
+        ))
+
+        queryset_resource.get_child_resource(20)
