@@ -42,9 +42,12 @@ class QuerySetResource(object):
         resource.put(source_dict)
         return resource
 
+    def get_child_resource(self, path_fragment):
+        pass
+
 
 class ModelResource(object):
-    # published_key = 'pk'
+    published_key = 'pk'
     fields = []
 
     def __init__(self, model):

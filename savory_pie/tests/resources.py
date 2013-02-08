@@ -1,46 +1,10 @@
 import unittest
-from mock import Mock
-
+import mock_orm
 from savory_pie import resources, fields
 
 
-class QuerySet(object):
-    def __init__(self, *elements):
-        super(QuerySet, self).__init__()
-        self.elements = elements
-
-    def __iter__(self):
-        return iter(self.elements)
-
-    def filter(self, **kwargs):
-        filtered_elements = self.elements
-        for key, value in kwargs.iteritems():
-            filtered_elements = self._filter(key, value)
-        return QuerySet(*filtered_elements)
-
-    def _filter(self, attr, value):
-        return [element for element in self.elements if getattr(element, attr) == value]
-
-
-class Manager(Mock):
-    def __init__(self):
-        super(Manager, self).__init__()
-
-        self.all = Mock()
-        self.all.return_value = QuerySet()
-
-
-class User(Mock):
-    objects = Manager()
-
-    def __init__(self, **kwargs):
-        super(User, self).__init__()
-
-        for key, value in kwargs.iteritems():
-            setattr(self, key, value)
-
-        self.save = Mock()
-        self.delete = Mock()
+class User(mock_orm.Model):
+    pass
 
 
 class UserResource(resources.ModelResource):
@@ -89,7 +53,7 @@ class UserQuerySetResource(resources.QuerySetResource):
 
 class QuerySetResourceTest(unittest.TestCase):
     def test_get(self):
-        resource = UserQuerySetResource(QuerySet(
+        resource = UserQuerySetResource(mock_orm.QuerySet(
             User(name='Alice', age=31),
             User(name='Bob', age=20)
         ))
@@ -115,7 +79,7 @@ class QuerySetResourceTest(unittest.TestCase):
         self.assertTrue(new_user.save.called)
 
     def test_child_resource(self):
-        queryset_resource = UserQuerySetResource(QuerySet(
+        queryset_resource = UserQuerySetResource(mock_orm.QuerySet(
             User(pk=1, name='Alice', age=31),
             User(pk=2, name='Bob', age=20)
         ))

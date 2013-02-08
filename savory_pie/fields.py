@@ -3,10 +3,13 @@
 #    def handle_outgoing(self, source_obj, target_dict)
 #    def prepare(self, queryset)
 
+def _python_to_js_name(python_name):
+    return python_name
+
 class PropertyField(object):
     def __init__(self, property=None, json_property=None, type=None):
         self.property = property
-        self.json_property = json_property or self.property
+        self.json_property = json_property or _python_to_js_name(self.property)
         self.type = type
 
     def handle_incoming(self, source_dict, target_obj):
