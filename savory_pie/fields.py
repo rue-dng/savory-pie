@@ -100,6 +100,7 @@ class SubModelResourceField(object):
 
     def prepare(self, queryset):
         append_select_related(queryset, self.property)
+        return queryset
 
 
 class RelatedManagerField(object):
