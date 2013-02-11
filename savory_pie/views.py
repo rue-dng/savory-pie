@@ -46,27 +46,29 @@ def _serialize_to_response(dict):
 
 def _process_get(resource, request):
     try:
-        return _serialize_to_response(resource.get(**request.GET))
+        # dereference get first, so unsupported method will be properly returned.
+        get = resource.get
     except AttributeError:
         return _process_unsupported_method(resource, request)
+    return _serialize_to_response(get(**request.GET))
 
 def _process_post(resource, request):
     try:
         # dereference post first, so unsupported method will be properly returned.
         post = resource.post
-        post(_deserialize_request(request))
-        return _process_success(request, request)
     except AttributeError:
         return _process_unsupported_method(resource, request)
+    post(_deserialize_request(request))
+    return _process_success(request, request)
 
 def _process_put(resource, request):
     try:
         # dereference put first, so unsupported method will be properly returned.
         put = resource.put
-        new_resource = put(_deserialize_request(request))
-        #TODO: form a valid response
     except AttributeError:
         return _process_unsupported_method(resource, request)
+    new_resource = put(_deserialize_request(request))
+    #TODO: form a valid response
 
 def _process_delete(resource, request):
     try:
