@@ -1,9 +1,19 @@
 from django.http import HttpResponse
 import json
 
+
+class APIContext(object):
+    def resolve_resource(self, uri):
+        pass
+
+    def build_absolute_uri(self, resource):
+        pass
+
+
 def api_view(root_resource):
     def view(request, resource_path):
         resource = _resolve_resource(root_resource, _split_resource_path(resource_path))
+
         if resource is None:
             return _process_not_found(request)
 

@@ -1,15 +1,17 @@
 from django.core.exceptions import ObjectDoesNotExist
 
 #protocol Resource:
-#    property resource_uri
-#    def get(self, **kwargs): dict
-#    def post(self, dict)
-#    def put(self, dict): Resource
-#    def delete(self)
-#    def get_child_resource(self, path_fragment): Resource or None
+class Resource(object):
+    resource_path = None
+
+#   def get(self, **kwargs): dict
+#   def post(self, dict)
+#   def put(self, dict): Resource
+#   def delete(self)
+#   def get_child_resource(self, path_fragment, light): Resource or None
 
 
-class APIResource(object):
+class APIResource(Resource):
     def __init__(self):
         self._child_resources = dict()
 
@@ -20,11 +22,11 @@ class APIResource(object):
     def register_class(self, name, resource_class):
         return self.register(name, resource_class())
 
-    def get_child_resource(self, path_fragment):
+    def get_child_resource(self, path_fragment, light):
         return self._child_resources.get(path_fragment, None)
 
 
-class QuerySetResource(object):
+class QuerySetResource(Resource):
     # resource_class
     def __init__(self, queryset=None):
         self.queryset = queryset or self.resource_class.model_class.objects.all()
@@ -68,7 +70,7 @@ class QuerySetResource(object):
             return None
 
 
-class ModelResource(object):
+class ModelResource(Resource):
     # model_class
     published_key = ('pk', int)
     fields = []
