@@ -1,8 +1,8 @@
 import unittest
 from mock import Mock
 
-from savory_pie.resources import ModelResource
-from savory_pie.fields import PropertyField, FKPropertyField, SubModelResourceField
+from savory_pie.resources import ModelResource, QuerySetResource
+from savory_pie.fields import PropertyField, FKPropertyField, SubModelResourceField, RelatedManagerField
 
 
 class PropertyFieldTest(unittest.TestCase):
@@ -184,3 +184,28 @@ class SubModelResourceFieldTest(unittest.TestCase):
         self.assertEqual(20, target_object.foo.bar)
         self.assertEqual(Resource.model_class.return_value, target_object.foo)
         target_object.foo.save.assert_called_with()
+
+
+class RelatedManagerFieldTest(unittest.TestCase):
+    def test_outgoing(self):
+
+        class MockResource(ModelResource):
+            model_class = Mock()
+            fields = [
+                PropertyField(property='bar', type=int),
+            ]
+
+
+        class MockQuerySetResource(QuerySetResource):
+            resource_class = MockResource
+
+        field = RelatedManagerField(property='foo', resource_class=MockQuerySetResource)
+
+        source_object = Mock()
+        source_object.foo.all.return_value.filter.return_value = [Mock(bar=14)]
+
+        target_dict = {}
+
+        field.handle_outgoing(source_object, target_dict)
+
+        self.assertEqual([{'bar': 14}], target_dict['foo'])

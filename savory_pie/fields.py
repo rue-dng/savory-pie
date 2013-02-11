@@ -102,6 +102,26 @@ class SubModelResourceField(object):
         append_select_related(queryset, self.property)
 
 
+class RelatedManagerField(object):
+    def __init__(self, property, resource_class, json_property=None):
+        self.property = property
+        self.resource_class = resource_class
+        self.json_property = json_property or _python_to_js_name(self.property)
+
+    def handle_incoming(self, source_dict, target_obj):
+        # TODO something
+        pass
+
+    def handle_outgoing(self, source_obj, target_dict):
+        manager = getattr(source_obj, self.property)
+        # TODO assert manager/resource_class types are correct
+        target_dict[self.json_property] = self.resource_class(manager.all()).get()['objects']
+
+    def prepare(self, queryset):
+        append_select_related(queryset, self.property)
+        return queryset
+
+
 def _python_to_js_name(python_name):
     js_name = []
     last_was_underscore = False
