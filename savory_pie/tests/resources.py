@@ -2,7 +2,9 @@ import unittest
 import mock_orm
 import django.db.models.query
 from savory_pie import resources, fields
+from mock import Mock
 
+from savory_pie.tests.mock_requests import mock_get, mock_put, mock_post, mock_delete
 
 class User(mock_orm.Model):
     pass
@@ -19,21 +21,20 @@ class UserResource(resources.ModelResource):
 class ModelResourceTest(unittest.TestCase):
     def test_get(self):
         user = User(name='Bob', age=20)
-
         resource = UserResource(user)
-        dict = resource.get()
+
+        dict = resource.get(mock_get())
 
         self.assertEqual(dict['name'], 'Bob')
         self.assertEqual(dict['age'], 20)
 
     def test_put(self):
         user = User()
-
         resource = UserResource(user)
-        resource.put({
+        resource.put(mock_put({
             'name': 'Bob',
             'age': 20
-        })
+        }))
 
         self.assertEqual(user.name, 'Bob')
         self.assertEqual(user.age, 20)
@@ -43,7 +44,7 @@ class ModelResourceTest(unittest.TestCase):
         user = User()
 
         resource = UserResource(user)
-        resource.delete()
+        resource.delete(mock_delete())
 
         self.assertTrue(user.delete.called)
 
@@ -58,7 +59,7 @@ class QuerySetResourceTest(unittest.TestCase):
             User(name='Alice', age=31),
             User(name='Bob', age=20)
         ))
-        data = resource.get()
+        data = resource.get(mock_get())
 
         self.assertEqual(data['objects'], [
             {'name': 'Alice', 'age': 31},
@@ -68,10 +69,10 @@ class QuerySetResourceTest(unittest.TestCase):
     def test_post(self):
         queryset_resource = UserQuerySetResource()
 
-        new_resource = queryset_resource.post({
+        new_resource = queryset_resource.post(mock_post({
             'name': 'Bob',
             'age': 20
-        })
+        }))
 
         new_user = new_resource.model
 
