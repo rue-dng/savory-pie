@@ -3,16 +3,17 @@ import json
 
 
 class APIContext(object):
-    def __init__(self, http_request, base_uri, root_resource):
-        self.http_request = http_request
-        self.base_uri = base_uri
+    def __init__(self, http_request, base_path, root_resource):
+        self.base_uri = http_request.build_absolute_uri(base_path)
         self.root_resource = root_resource
 
-    def resolve_resource(self, uri):
+    def resolve_resource_uri(self, uri):
         if not uri.startswith(self.base_uri):
             return None
 
-        resource_path = uri[len(self.base_uri):]
+        return self.resolve_resource_path(uri[len(self.base_uri):])
+
+    def resolve_resource_path(self, resource_path):
         return _resolve_resource(
             self.root_resource,
             _split_resource_path(resource_path)
@@ -20,31 +21,32 @@ class APIContext(object):
 
     def build_absolute_uri(self, resource):
         if resource.resource_path is None:
-            raise ValueError, 'not addressable resource'
+            raise ValueError, 'unaddressable resource'
 
-        return self.http_request.build_absolute_uri(resource.resource_path)
+        #return self.http_request.build_absolute_uri(resource.resource_path)
+        return self.base_uri + resource.resource_path
 
 
 def api_view(root_resource):
     if root_resource.resource_path is None:
         root_resource.resource_path = ''
 
-    #if root_resource.resource_path != '':
+    # if root_resource.resource_path != '':
     #    raise ValueError, 'mismatched ' + root_resource.resource_path + ' != ""'
 
     def view(request, resource_path):
         full_path = _strip_query_string(request.get_full_path())
         if len(resource_path) == 0:
-            base_uri = full_path
+            base_path = full_path
         else:
-            base_uri = full_path[:-len(resource_path)]
+            base_path = full_path[:-len(resource_path)]
 
         ctx = APIContext(
             http_request=request,
-            base_uri=base_uri,
+            base_path=base_path,
             root_resource=root_resource
         )
-        resource = ctx.resolve_resource(full_path)
+        resource = ctx.resolve_resource_path(resource_path)
 
         if resource is None:
             return _process_not_found(ctx, request)

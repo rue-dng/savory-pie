@@ -39,7 +39,10 @@ class Request(object):
         self.REQUEST = dict(self.GET, **self.POST)
 
     def get_full_path(self):
-        return 'http://' + self.host + '/' + self.path
+        return 'api/' + self.path
+
+    def build_absolute_uri(self, django_path):
+        return 'http://' + self.host + '/' + django_path
 
     def read(self):
         if not self.body_file:
