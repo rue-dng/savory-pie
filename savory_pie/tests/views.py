@@ -93,7 +93,6 @@ class ViewTest(unittest.TestCase):
         root_resource.delete = Mock()
 
         dispatch(root_resource, method='DELETE')
-        print 'delete', root_resource.delete
         self.assertTrue(root_resource.delete.called)
 
     def test_delete_not_supported(self):

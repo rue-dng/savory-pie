@@ -103,7 +103,6 @@ def _process_post(ctx, resource, request):
     except AttributeError:
         return _process_unsupported_method(ctx, resource, request)
 
-    print 'post'
     post(ctx, _deserialize_request(request))
     return _process_success(ctx, request, request)
 
