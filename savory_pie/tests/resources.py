@@ -15,7 +15,7 @@ class User(mock_orm.Model):
 class UserResource(resources.ModelResource):
     resource_path = 'users'
     model_class = User
-    
+
     fields = [
         fields.PropertyField(property='name', type=str),
         fields.PropertyField(property='age', type=int)
