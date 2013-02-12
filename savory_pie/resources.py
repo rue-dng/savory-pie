@@ -2,10 +2,10 @@ from django.core.exceptions import ObjectDoesNotExist
 
 class Resource(object):
     resource_path = None
-#   def get(self, **kwargs): dict
-#   def post(self, dict)
-#   def put(self, dict): Resource
-#   def delete(self)
+#   def get(self, ctx, **kwargs): dict
+#   def post(self, ctx, dict)
+#   def put(self, ctx, dict): Resource
+#   def delete(self, ctx)
 #   def get_child_resource(self, path_fragment, light): Resource or None
 
 
@@ -46,20 +46,20 @@ class QuerySetResource(object):
         except KeyError:
             return queryset
 
-    def get(self, **kwargs):
+    def get(self, ctx, **kwargs):
         queryset = self.prepare(self.filter_queryset(**kwargs))
 
         objects = []
         for model in queryset:
-            objects.append(self.to_resource(model).get())
+            objects.append(self.to_resource(model).get(ctx))
 
         return {
             'objects': objects
         }
 
-    def post(self, source_dict):
+    def post(self, ctx, source_dict):
         resource = self.resource_class.create_resource()
-        resource.put(source_dict)
+        resource.put(ctx, source_dict)
         return resource
 
     def get_child_resource(self, path_fragment):
@@ -105,19 +105,19 @@ class ModelResource(object):
         attr, type_ = self.published_key
         return str(getattr(self.model, attr))
 
-    def get(self, **kwargs):
+    def get(self, ctx, **kwargs):
         target_dict = dict()
 
         for field in self.fields:
-            field.handle_outgoing(self.model, target_dict)
+            field.handle_outgoing(ctx, self.model, target_dict)
 
         return target_dict
 
-    def put(self, source_dict):
+    def put(self, ctx, source_dict):
         for field in self.fields:
-            field.handle_incoming(source_dict, self.model)
+            field.handle_incoming(ctx, source_dict, self.model)
 
         self.model.save()
 
-    def delete(self):
+    def delete(self, ctx):
         self.model.delete()

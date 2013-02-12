@@ -33,26 +33,26 @@ def api_view(root_resource):
         else:
             base_uri = full_path[:-len(resource_path)]
 
-        api_context = APIContext(
+        ctx = APIContext(
             http_request=request,
             base_uri=base_uri,
             root_resource=root_resource
         )
-        resource = api_context.resolve_resource(full_path)
+        resource = ctx.resolve_resource(full_path)
 
         if resource is None:
-            return _process_not_found(request)
+            return _process_not_found(ctx, request)
 
         if request.method == 'GET':
-            return _process_get(resource, request)
+            return _process_get(ctx, resource, request)
         elif request.method == 'POST':
-            return _process_post(resource, request)
+            return _process_post(ctx, resource, request)
         elif request.method == 'PUT':
-            return _process_put(resource, request)
+            return _process_put(ctx, resource, request)
         elif request.method == 'DELETE':
-            return _process_delete(resource, request)
+            return _process_delete(ctx, resource, request)
         else:
-            return _process_unsupported_method(resource, request)
+            return _process_unsupported_method(ctx, resource, request)
 
     return view
 
@@ -87,50 +87,51 @@ def _serialize_to_response(dict):
     json.dump(dict, response)
     return response
 
-def _process_get(resource, request):
+def _process_get(ctx, resource, request):
     try:
         # dereference get first, so unsupported method will be properly returned.
         get = resource.get
     except AttributeError:
-        return _process_unsupported_method(resource, request)
+        return _process_unsupported_method(ctx, resource, request)
 
-    return _serialize_to_response(get(**request.GET))
+    return _serialize_to_response(get(ctx, **request.GET))
 
-def _process_post(resource, request):
+def _process_post(ctx, resource, request):
     try:
         # dereference post first, so unsupported method will be properly returned.
         post = resource.post
     except AttributeError:
-        return _process_unsupported_method(resource, request)
+        return _process_unsupported_method(ctx, resource, request)
 
-    post(_deserialize_request(request))
-    return _process_success(request, request)
+    print 'post'
+    post(ctx, _deserialize_request(request))
+    return _process_success(ctx, request, request)
 
-def _process_put(resource, request):
+def _process_put(ctx, resource, request):
     try:
         # dereference put first, so unsupported method will be properly returned.
         put = resource.put
     except AttributeError:
-        return _process_unsupported_method(resource, request)
+        return _process_unsupported_method(ctx, resource, request)
 
-    new_resource = put(_deserialize_request(request))
+    new_resource = put(ctx, _deserialize_request(request))
     #TODO: form a valid response
 
-def _process_delete(resource, request):
+def _process_delete(ctx, resource, request):
     try:
         delete = resource.delete
     except AttributeError:
-        return _process_unsupported_method(resource, request)
+        return _process_unsupported_method(ctx, resource, request)
 
-    delete()
-    return _process_success(resource, request)
+    delete(ctx)
+    return _process_success(ctx, resource, request)
 
-def _process_unsupported_method(resource, request):
+def _process_unsupported_method(ctx, resource, request):
     # Ill-behaved should reply with a set of allowed actions
     return HttpResponse(status=405)
 
-def _process_not_found(request):
+def _process_not_found(ctx, request):
     return HttpResponse(status=404)
 
-def _process_success(resource, request):
+def _process_success(ctx, resource, request):
     return HttpResponse(status=200)

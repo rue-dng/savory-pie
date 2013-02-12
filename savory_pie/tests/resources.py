@@ -4,6 +4,10 @@ import django.db.models.query
 from savory_pie import resources, fields
 
 
+def mock_context():
+    return object()
+
+
 class User(mock_orm.Model):
     pass
 
@@ -21,7 +25,7 @@ class ModelResourceTest(unittest.TestCase):
         user = User(name='Bob', age=20)
 
         resource = UserResource(user)
-        dict = resource.get()
+        dict = resource.get(mock_context())
 
         self.assertEqual(dict['name'], 'Bob')
         self.assertEqual(dict['age'], 20)
@@ -30,7 +34,7 @@ class ModelResourceTest(unittest.TestCase):
         user = User()
 
         resource = UserResource(user)
-        resource.put({
+        resource.put(mock_context(), {
             'name': 'Bob',
             'age': 20
         })
@@ -43,7 +47,7 @@ class ModelResourceTest(unittest.TestCase):
         user = User()
 
         resource = UserResource(user)
-        resource.delete()
+        resource.delete(mock_context())
 
         self.assertTrue(user.delete.called)
 
@@ -58,7 +62,7 @@ class QuerySetResourceTest(unittest.TestCase):
             User(name='Alice', age=31),
             User(name='Bob', age=20)
         ))
-        data = resource.get()
+        data = resource.get(mock_context())
 
         self.assertEqual(data['objects'], [
             {'name': 'Alice', 'age': 31},
@@ -68,7 +72,7 @@ class QuerySetResourceTest(unittest.TestCase):
     def test_post(self):
         queryset_resource = UserQuerySetResource()
 
-        new_resource = queryset_resource.post({
+        new_resource = queryset_resource.post(mock_context(), {
             'name': 'Bob',
             'age': 20
         })

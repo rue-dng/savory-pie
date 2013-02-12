@@ -5,6 +5,10 @@ from savory_pie.resources import ModelResource, QuerySetResource
 from savory_pie.fields import PropertyField, FKPropertyField, SubModelResourceField, RelatedManagerField
 
 
+def mock_context():
+    return object()
+
+
 class PropertyFieldTest(unittest.TestCase):
     def test_simple_outgoing(self):
         source_object = Mock()
@@ -14,7 +18,7 @@ class PropertyFieldTest(unittest.TestCase):
 
         target_dict = dict()
 
-        field.handle_outgoing(source_object, target_dict)
+        field.handle_outgoing(mock_context(), source_object, target_dict)
 
         self.assertEqual(target_dict['foo'], 20)
 
@@ -27,7 +31,7 @@ class PropertyFieldTest(unittest.TestCase):
 
         target_object = Mock()
 
-        field.handle_incoming(source_dict, target_object)
+        field.handle_incoming(mock_context(), source_dict, target_object)
 
         self.assertEqual(target_object.foo, 20)
 
@@ -39,7 +43,7 @@ class PropertyFieldTest(unittest.TestCase):
 
         target_dict = dict()
 
-        field.handle_outgoing(source_object, target_dict)
+        field.handle_outgoing(mock_context(), source_object, target_dict)
 
         self.assertEqual(target_dict['bar'], 20)
 
@@ -52,7 +56,7 @@ class PropertyFieldTest(unittest.TestCase):
 
         target_object = Mock()
 
-        field.handle_incoming(source_dict, target_object)
+        field.handle_incoming(mock_context(), source_dict, target_object)
 
         self.assertEqual(target_object.foo, 20)
 
@@ -60,7 +64,7 @@ class PropertyFieldTest(unittest.TestCase):
         field = PropertyField(property='foo_bar', type=int)
 
         target_object = Mock()
-        field.handle_incoming({'fooBar': 20}, target_object)
+        field.handle_incoming(mock_context(), {'fooBar': 20}, target_object)
 
         self.assertEqual(target_object.foo_bar, 20)
 
@@ -74,7 +78,7 @@ class FKPropertyFieldTest(unittest.TestCase):
 
         target_dict = dict()
 
-        field.handle_outgoing(source_object, target_dict)
+        field.handle_outgoing(mock_context(), source_object, target_dict)
 
         self.assertEqual(target_dict['bar'], 20)
 
@@ -87,7 +91,7 @@ class FKPropertyFieldTest(unittest.TestCase):
 
         target_object = Mock()
 
-        field.handle_incoming(source_dict, target_object)
+        field.handle_incoming(mock_context(), source_dict, target_object)
 
         self.assertEqual(target_object.foo.bar, 20)
 
@@ -99,7 +103,7 @@ class FKPropertyFieldTest(unittest.TestCase):
 
         target_dict = dict()
 
-        field.handle_outgoing(source_object, target_dict)
+        field.handle_outgoing(mock_context(), source_object, target_dict)
 
         self.assertEqual(target_dict['foo'], 20)
 
@@ -112,7 +116,7 @@ class FKPropertyFieldTest(unittest.TestCase):
 
         target_object = Mock()
 
-        field.handle_incoming(source_dict, target_object)
+        field.handle_incoming(mock_context(), source_dict, target_object)
 
         self.assertEqual(target_object.foo.bar, 20)
 
@@ -141,7 +145,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
 
         target_dict = dict()
 
-        field.handle_outgoing(source_object, target_dict)
+        field.handle_outgoing(mock_context(), source_object, target_dict)
 
         self.assertEqual(target_dict['foo'], {'bar': 20})
 
@@ -159,7 +163,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
 
         target_object = Mock()
 
-        field.handle_incoming(source_dict, target_object)
+        field.handle_incoming(mock_context(), source_dict, target_object)
 
         self.assertEqual(20, target_object.foo.bar)
         target_object.foo.save.assert_called_with()
@@ -179,7 +183,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
         target_object = Mock()
         target_object.foo = None
 
-        field.handle_incoming(source_dict, target_object)
+        field.handle_incoming(mock_context(), source_dict, target_object)
 
         self.assertEqual(20, target_object.foo.bar)
         self.assertEqual(Resource.model_class.return_value, target_object.foo)
@@ -206,6 +210,6 @@ class RelatedManagerFieldTest(unittest.TestCase):
 
         target_dict = {}
 
-        field.handle_outgoing(source_object, target_dict)
+        field.handle_outgoing(mock_context(), source_object, target_dict)
 
         self.assertEqual([{'bar': 14}], target_dict['foo'])

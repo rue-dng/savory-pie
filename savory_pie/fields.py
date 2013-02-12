@@ -11,12 +11,12 @@ class PropertyField(object):
         self.json_property = json_property or _python_to_js_name(self.property)
         self.type = type
 
-    def handle_incoming(self, source_dict, target_obj):
+    def handle_incoming(self, ctx, source_dict, target_obj):
         setattr(target_obj, self.property,
             self.serialize(source_dict[self.json_property])
         )
 
-    def handle_outgoing(self, source_obj, target_dict):
+    def handle_outgoing(self, ctx, source_obj, target_dict):
         target_dict[self.json_property] = self.deserialize(
             getattr(source_obj, self.property)
         )
@@ -55,13 +55,13 @@ class FKPropertyField(object):
             property = getattr(property, segment)
         setattr(property, segments[-1], value)
 
-    def handle_incoming(self, source_dict, target_obj):
+    def handle_incoming(self, ctx, source_dict, target_obj):
         self._set_property(
             target_obj,
             self.serialize(source_dict[self.json_property])
         )
 
-    def handle_outgoing(self, source_obj, target_dict):
+    def handle_outgoing(self, ctx, source_obj, target_dict):
         target_dict[self.json_property] = self.deserialize(
             self._get_property(source_obj)
         )
@@ -84,7 +84,7 @@ class SubModelResourceField(object):
         self.resource_class = resource_class
         self.json_property = json_property or _python_to_js_name(self.property)
 
-    def handle_incoming(self, source_dict, target_obj):
+    def handle_incoming(self, ctx, source_dict, target_obj):
         sub_model = getattr(target_obj, self.property, None)
         if sub_model is None:
             sub_resource = self.resource_class.create_resource()
@@ -92,11 +92,12 @@ class SubModelResourceField(object):
             setattr(target_obj, self.property, sub_resource.model)
         else:
             sub_resource = self.resource_class(sub_model)
-        sub_resource.put(source_dict[self.json_property])
 
-    def handle_outgoing(self, source_obj, target_dict):
+        sub_resource.put(ctx, source_dict[self.json_property])
+
+    def handle_outgoing(self, ctx, source_obj, target_dict):
         sub_model = getattr(source_obj, self.property)
-        target_dict[self.json_property] = self.resource_class(sub_model).get()
+        target_dict[self.json_property] = self.resource_class(sub_model).get(ctx)
 
     def prepare(self, queryset):
         append_select_related(queryset, self.property)
@@ -109,14 +110,14 @@ class RelatedManagerField(object):
         self.resource_class = resource_class
         self.json_property = json_property or _python_to_js_name(self.property)
 
-    def handle_incoming(self, source_dict, target_obj):
+    def handle_incoming(self, ctx, source_dict, target_obj):
         # TODO something
         pass
 
-    def handle_outgoing(self, source_obj, target_dict):
+    def handle_outgoing(self, ctx, source_obj, target_dict):
         manager = getattr(source_obj, self.property)
         # TODO assert manager/resource_class types are correct
-        target_dict[self.json_property] = self.resource_class(manager.all()).get()['objects']
+        target_dict[self.json_property] = self.resource_class(manager.all()).get(ctx)['objects']
 
     def prepare(self, queryset):
         append_select_related(queryset, self.property)

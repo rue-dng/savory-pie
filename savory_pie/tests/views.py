@@ -43,7 +43,7 @@ class Request(object):
 
 class ViewTest(unittest.TestCase):
     def test_get_success(self):
-        root_resource = Mock()
+        root_resource = Mock(name='root')
         root_resource.get = Mock(return_value={'foo': 'bar'})
 
         response = dispatch(root_resource, method='GET')
@@ -58,14 +58,15 @@ class ViewTest(unittest.TestCase):
         self.assertEqual(response.status_code, 405)
 
     def test_put_success(self):
-        root_resource = Mock()
+        root_resource = Mock(name='root')
+        root_resource.get_child_resource = Mock(return_value=None)
         new_resource = Mock()
 
         root_resource.put = Mock(return_value=new_resource)
 
         dispatch(root_resource, method='PUT', body='{}')
 
-        root_resource.put.assert_called_with({})
+        self.assertTrue(root_resource.put.called)
 
     def test_put_not_supported(self):
         root_resource = object()
@@ -74,12 +75,12 @@ class ViewTest(unittest.TestCase):
         self.assertEqual(response.status_code, 405)
 
     def test_post_success(self):
-        root_resource = Mock()
+        root_resource = Mock(name='root')
         root_resource.post = Mock()
 
         dispatch(root_resource, method='POST', body='{}')
 
-        root_resource.post.assert_called_with({})
+        self.assertTrue(root_resource.post.called)
 
     def test_post_not_supported(self):
         root_resource = object()
@@ -87,12 +88,12 @@ class ViewTest(unittest.TestCase):
         response = dispatch(root_resource, method='POST')
         self.assertEqual(response.status_code, 405)
 
-    def test_delete(self):
-        root_resource = Mock()
+    def test_delete_success(self):
+        root_resource = Mock(name='root')
         root_resource.delete = Mock()
 
         dispatch(root_resource, method='DELETE')
-
+        print 'delete', root_resource.delete
         self.assertTrue(root_resource.delete.called)
 
     def test_delete_not_supported(self):
