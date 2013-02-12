@@ -1,9 +1,7 @@
 from django.core.exceptions import ObjectDoesNotExist
 
-#protocol Resource:
 class Resource(object):
     resource_path = None
-
 #   def get(self, **kwargs): dict
 #   def post(self, dict)
 #   def put(self, dict): Resource
@@ -11,23 +9,28 @@ class Resource(object):
 #   def get_child_resource(self, path_fragment, light): Resource or None
 
 
-class APIResource(Resource):
-    def __init__(self):
+class APIResource(object):
+    def __init__(self, resource_path=''):
+        self.resource_path = resource_path
         self._child_resources = dict()
 
-    def register(self, name, resource):
-        self._child_resources[name] = resource
+    def register(self, resource):
+        if resource.resource_path.find('/') != -1:
+            raise ValueError, 'resource_path should be top-level'
+
+        self._child_resources[resource.resource_path] = resource
         return self
 
-    def register_class(self, name, resource_class):
-        return self.register(name, resource_class())
+    def register_class(self, resource_class):
+        return self.register(resource_class())
 
     def get_child_resource(self, path_fragment, light):
         return self._child_resources.get(path_fragment, None)
 
 
-class QuerySetResource(Resource):
+class QuerySetResource(object):
     # resource_class
+
     def __init__(self, queryset=None):
         self.queryset = queryset or self.resource_class.model_class.objects.all()
 
@@ -70,7 +73,7 @@ class QuerySetResource(Resource):
             return None
 
 
-class ModelResource(Resource):
+class ModelResource(object):
     # model_class
     published_key = ('pk', int)
     fields = []

@@ -31,6 +31,9 @@ class Request(object):
         self.POST = POST or {}
         self.REQUEST = dict(self.GET, **self.POST)
 
+    def get_full_path(self):
+        return 'http://' + self.host + '/' + self.path
+
     def read(self):
         if not self.body_file:
             self.body_file = StringIO(self.body)
