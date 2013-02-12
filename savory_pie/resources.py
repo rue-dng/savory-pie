@@ -40,7 +40,12 @@ class QuerySetResource(Resource):
         return self.queryset.filter(**kwargs)
 
     def to_resource(self, model):
-        return self.resource_class(model)
+        resource = self.resource_class(model)
+
+        if self.resource_path is not None and resource.resource_path is None:
+            resource.resource_path = self.resource_path + '/' + str(resource.key)
+
+        return resource
 
     def prepare(self, queryset):
         try:
@@ -134,6 +139,9 @@ class ModelResource(Resource):
 
         for field in self.fields:
             field.handle_outgoing(ctx, self.model, target_dict)
+
+        if self.resource_path is not None:
+            target_dict['resourceUri'] = ctx.build_absolute_uri(self)
 
         return target_dict
 

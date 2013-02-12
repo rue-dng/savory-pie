@@ -3,17 +3,19 @@ import mock_orm
 import django.db.models.query
 from savory_pie import resources, fields
 
+from mock import Mock
 
 def mock_context():
-    return object()
-
+    ctx = Mock(spec=[])
+    ctx.build_absolute_uri = lambda resource: resource.resource_path
+    return ctx
 
 class User(mock_orm.Model):
     pass
 
 
 class UserResource(resources.ModelResource):
-    resource_path = 'users'
+    parent_resource_path = 'users'
     model_class = User
 
     fields = [
@@ -24,13 +26,16 @@ class UserResource(resources.ModelResource):
 
 class ModelResourceTest(unittest.TestCase):
     def test_get(self):
-        user = User(name='Bob', age=20)
+        user = User(pk=1, name='Bob', age=20)
 
         resource = UserResource(user)
         dict = resource.get(mock_context())
 
-        self.assertEqual(dict['name'], 'Bob')
-        self.assertEqual(dict['age'], 20)
+        self.assertEqual(dict, {
+            'name': 'Bob',
+            'age': 20,
+            'resourceUri': 'users/1'
+        })
 
     def test_put(self):
         user = User()
@@ -55,20 +60,21 @@ class ModelResourceTest(unittest.TestCase):
 
 
 class UserQuerySetResource(resources.QuerySetResource):
+    resource_path = 'users'
     resource_class = UserResource
 
 
 class QuerySetResourceTest(unittest.TestCase):
     def test_get(self):
         resource = UserQuerySetResource(mock_orm.QuerySet(
-            User(name='Alice', age=31),
-            User(name='Bob', age=20)
+            User(pk=1, name='Alice', age=31),
+            User(pk=2, name='Bob', age=20)
         ))
         data = resource.get(mock_context())
 
         self.assertEqual(data['objects'], [
-            {'name': 'Alice', 'age': 31},
-            {'name': 'Bob', 'age': 20}
+            {'resourceUri': 'users/1', 'name': 'Alice', 'age': 31},
+            {'resourceUri': 'users/2', 'name': 'Bob', 'age': 20}
         ])
 
     def test_post(self):

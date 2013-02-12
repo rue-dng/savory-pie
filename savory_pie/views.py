@@ -18,11 +18,11 @@ class APIContext(object):
             _split_resource_path(resource_path)
         )
 
-    def build_absolute_uri(self, resource_path, path_addition=None):
-        if path_addition:
-            resource_path = resource_path + '/' + path_addition
+    def build_absolute_uri(self, resource):
+        if resource.resource_path is None:
+            raise ValueError, 'not addressable resource'
 
-        return self.http_request.build_absolute_uri(resource_path)
+        return self.http_request.build_absolute_uri(resource.resource_path)
 
 
 def api_view(root_resource):
