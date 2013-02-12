@@ -1,14 +1,17 @@
 from django.core.exceptions import ObjectDoesNotExist
 
 #protocol Resource:
-#   def get(self, api_request): dict
-#   def post(self, api_request)
-#   def put(self, api_request): resource_path
-#   def delete(self, api_request)
+class Resource(object):
+    resource_path = None
+
+#   def get(self, **kwargs): dict
+#   def post(self, dict)
+#   def put(self, dict): Resource
+#   def delete(self)
 #   def get_child_resource(self, path_fragment, light): Resource or None
 
 
-class APIResource(object):
+class APIResource(Resource):
     def __init__(self):
         self._child_resources = dict()
 
@@ -23,7 +26,7 @@ class APIResource(object):
         return self._child_resources.get(path_fragment, None)
 
 
-class QuerySetResource(object):
+class QuerySetResource(Resource):
     # resource_class
     def __init__(self, queryset=None):
         self.queryset = queryset or self.resource_class.model_class.objects.all()
@@ -40,30 +43,21 @@ class QuerySetResource(object):
         except KeyError:
             return queryset
 
-    def get(self, api_request):
-        queryset = self.prepare(self.filter_queryset(**api_request.GET))
+    def get(self, **kwargs):
+        queryset = self.prepare(self.filter_queryset(**kwargs))
 
         objects = []
         for model in queryset:
-            resource = self.to_resource(model)
-            objects.append(resource.get(api_request.synthetic_get(str(resource.key))))
+            objects.append(self.to_resource(model).get())
 
         return {
             'objects': objects
         }
 
-    def post(self, api_request):
-        # This is a bit of an abuse of HTTP semantics...
-        # - creates an initially unaddressable resource
-        # - then PUT-s to the unaddressable resource - using the original POST request
-        # After that is done, the resource becomes addressable -- via its key
-
-        # NOTE: This is contrast to get which is called with an internal
-        # sub-request with the appropriate URI.
-
+    def post(self, source_dict):
         resource = self.resource_class.create_resource()
-        resource.put(api_request.synthetic_put('does-not-exist'))
-        return api_request.resource_path + '/' + resource.pk
+        resource.put(source_dict)
+        return resource
 
     def get_child_resource(self, path_fragment):
         try:
@@ -76,7 +70,7 @@ class QuerySetResource(object):
             return None
 
 
-class ModelResource(object):
+class ModelResource(Resource):
     # model_class
     published_key = ('pk', int)
     fields = []
@@ -108,21 +102,19 @@ class ModelResource(object):
         attr, type_ = self.published_key
         return str(getattr(self.model, attr))
 
-    def get(self, api_request):
+    def get(self, **kwargs):
         target_dict = dict()
 
         for field in self.fields:
-            field.handle_outgoing(api_request, self.model, target_dict)
+            field.handle_outgoing(self.model, target_dict)
 
         return target_dict
 
-    def put(self, api_request):
-        print 'api_request.body_dict', api_request.body_dict
-
+    def put(self, source_dict):
         for field in self.fields:
-            field.handle_incoming(api_request, api_request.body_dict, self.model)
+            field.handle_incoming(source_dict, self.model)
 
         self.model.save()
 
-    def delete(self, api_request):
+    def delete(self):
         self.model.delete()

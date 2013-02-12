@@ -1,13 +1,13 @@
 import unittest
 from StringIO import StringIO
 
-from mock_requests import HttpRequest
+from mock import Mock
 from savory_pie import views
 
 
 def dispatch(root_resource, method, resource_path='', body=None, GET=None, POST=None):
     view = views.api_view(root_resource)
-    request = HttpRequest(
+    request = Request(
         method=method,
         path='api/' + resource_path,
         body=body,
@@ -16,6 +16,26 @@ def dispatch(root_resource, method, resource_path='', body=None, GET=None, POST=
     )
 
     return view(request=request, resource_path=resource_path)
+
+
+class Request(object):
+    def __init__(self, method, host='localhost', path='', body=None, GET=None, POST=None):
+        self.host = host
+        self.path = path
+
+        self.method = method
+        self.body = body
+        self.body_file = None
+
+        self.GET = GET or {}
+        self.POST = POST or {}
+        self.REQUEST = dict(self.GET, **self.POST)
+
+    def read(self):
+        if not self.body_file:
+            self.body_file = StringIO(self.body)
+
+        return self.body_file.read()
 
 
 class ViewTest(unittest.TestCase):
@@ -42,7 +62,7 @@ class ViewTest(unittest.TestCase):
 
         dispatch(root_resource, method='PUT', body='{}')
 
-        self.assertTrue(root_resource.put.called)
+        root_resource.put.assert_called_with({})
 
     def test_put_not_supported(self):
         root_resource = object()
@@ -56,7 +76,7 @@ class ViewTest(unittest.TestCase):
 
         dispatch(root_resource, method='POST', body='{}')
 
-        self.assertTrue(root_resource.post.called)
+        root_resource.post.assert_called_with({})
 
     def test_post_not_supported(self):
         root_resource = object()
@@ -80,7 +100,7 @@ class ViewTest(unittest.TestCase):
 
     def test_child_resolution(self):
         child_resource = Mock(name='child')
-        child_resource.get = Mock(return_value=dict())
+        child_resource.get = Mock(return_value={})
 
         root_resource = Mock(name='root')
         root_resource.get_child_resource = Mock(return_value=child_resource)
@@ -92,7 +112,7 @@ class ViewTest(unittest.TestCase):
 
     def test_grandchild_resolution(self):
         grand_child_resource = Mock(name='grandchild')
-        grand_child_resource.get = Mock(return_value=dict())
+        grand_child_resource.get = Mock(return_value={})
 
         child_resource = Mock(name='child')
         child_resource.get_child_resource = Mock(return_value=grand_child_resource)
