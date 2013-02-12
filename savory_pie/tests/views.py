@@ -5,6 +5,13 @@ from mock import Mock
 from savory_pie import views
 
 
+def mock_resource(name=None, child_resource=None):
+    resource = Mock(name=name, spec=[])
+    resource.resource_path = None
+    resource.get_child_resource = Mock(return_value=child_resource)
+    return resource
+
+
 def dispatch(root_resource, method, resource_path='', body=None, GET=None, POST=None):
     view = views.api_view(root_resource)
     request = Request(
@@ -43,7 +50,7 @@ class Request(object):
 
 class ViewTest(unittest.TestCase):
     def test_get_success(self):
-        root_resource = Mock(name='root')
+        root_resource = mock_resource(name='root')
         root_resource.get = Mock(return_value={'foo': 'bar'})
 
         response = dispatch(root_resource, method='GET')
@@ -52,14 +59,13 @@ class ViewTest(unittest.TestCase):
         self.assertTrue(root_resource.get.called)
 
     def test_get_not_supported(self):
-        root_resource = object()
+        root_resource = mock_resource(name='root')
 
         response = dispatch(root_resource, method='GET')
         self.assertEqual(response.status_code, 405)
 
     def test_put_success(self):
-        root_resource = Mock(name='root')
-        root_resource.get_child_resource = Mock(return_value=None)
+        root_resource = mock_resource(name='root')
         new_resource = Mock()
 
         root_resource.put = Mock(return_value=new_resource)
@@ -69,13 +75,13 @@ class ViewTest(unittest.TestCase):
         self.assertTrue(root_resource.put.called)
 
     def test_put_not_supported(self):
-        root_resource = object()
+        root_resource = mock_resource(name='root')
 
         response = dispatch(root_resource, method='PUT')
         self.assertEqual(response.status_code, 405)
 
     def test_post_success(self):
-        root_resource = Mock(name='root')
+        root_resource = mock_resource(name='root')
         root_resource.post = Mock()
 
         dispatch(root_resource, method='POST', body='{}')
@@ -83,30 +89,29 @@ class ViewTest(unittest.TestCase):
         self.assertTrue(root_resource.post.called)
 
     def test_post_not_supported(self):
-        root_resource = object()
+        root_resource = mock_resource(name='root')
 
         response = dispatch(root_resource, method='POST')
         self.assertEqual(response.status_code, 405)
 
     def test_delete_success(self):
-        root_resource = Mock(name='root')
+        root_resource = mock_resource(name='root')
         root_resource.delete = Mock()
 
         dispatch(root_resource, method='DELETE')
         self.assertTrue(root_resource.delete.called)
 
     def test_delete_not_supported(self):
-        root_resource = object()
+        root_resource = mock_resource(name='root')
 
         response = dispatch(root_resource, method='DELETE')
         self.assertEqual(response.status_code, 405)
 
     def test_child_resolution(self):
-        child_resource = Mock(name='child')
+        child_resource = mock_resource(name='child')
         child_resource.get = Mock(return_value={})
 
-        root_resource = Mock(name='root')
-        root_resource.get_child_resource = Mock(return_value=child_resource)
+        root_resource = mock_resource(name='root', child_resource=child_resource)
 
         dispatch(root_resource, method='GET', resource_path='child')
 
@@ -114,14 +119,12 @@ class ViewTest(unittest.TestCase):
         self.assertTrue(child_resource.get.called)
 
     def test_grandchild_resolution(self):
-        grand_child_resource = Mock(name='grandchild')
+        grand_child_resource = mock_resource(name='grandchild')
         grand_child_resource.get = Mock(return_value={})
 
-        child_resource = Mock(name='child')
-        child_resource.get_child_resource = Mock(return_value=grand_child_resource)
+        child_resource = mock_resource(name='child', child_resource=grand_child_resource)
 
-        root_resource = Mock(name='root')
-        root_resource.get_child_resource = Mock(return_value=child_resource)
+        root_resource = mock_resource(name='root', child_resource=child_resource)
 
         dispatch(root_resource, method='GET', resource_path='child/grandchild')
 
@@ -130,8 +133,7 @@ class ViewTest(unittest.TestCase):
         self.assertTrue(grand_child_resource.get.called)
 
     def test_child_resolution_fail(self):
-        root_resource = Mock(name='root')
-        root_resource.get_child_resource = Mock(return_value=None)
+        root_resource = mock_resource(name='root')
 
         response = dispatch(root_resource, method='GET', resource_path='child/grandchild')
         self.assertEqual(response.status_code, 404)

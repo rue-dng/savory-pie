@@ -26,6 +26,12 @@ class APIContext(object):
 
 
 def api_view(root_resource):
+    if root_resource.resource_path is None:
+        root_resource.resource_path = ''
+
+    #if root_resource.resource_path != '':
+    #    raise ValueError, 'mismatched ' + root_resource.resource_path + ' != ""'
+
     def view(request, resource_path):
         full_path = _strip_query_string(request.get_full_path())
         if len(resource_path) == 0:
@@ -72,10 +78,18 @@ def _split_resource_path(resource_path):
 
 def _resolve_resource(root_resource, path_fragments):
     resource = root_resource
+    cur_resource_path = ''
+
     for path_fragment in path_fragments:
         resource = resource.get_child_resource(path_fragment)
         if not resource:
             return None
+
+        cur_resource_path = cur_resource_path + '/' + path_fragment
+
+        if resource.resource_path is None:
+            resource.resource_path = cur_resource_path
+
     return resource
 
 def _deserialize_request(request):
