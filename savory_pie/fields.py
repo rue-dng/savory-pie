@@ -1,16 +1,15 @@
 from savory_pie.utils import append_select_related
 
 #protocol Field:
-
-#    def handle_incoming(self, source_dict, target_obj)
+#    def handle_incoming(self, ctx, source_dict, target_obj)
 #       Called by ModelResource.put or post to set Model properties on
 #       target_obj based on information from the source_dict.
 
-#    def handle_outgoing(self, source_obj, target_dict)
+#    def handle_outgoing(self, ctx, source_obj, target_dict)
 #       Called by ModelResource.get to set key on the target_dict based
 #       on information in the Model source_obj.
 
-#    def prepare(self, queryset)
+#    def prepare(self, ctx, queryset)
 #       Called by ModelResource.prepare to allow for select_related calls
 #       on the queryset, so related collections objects can be retrieved
 #       efficiently.
@@ -44,7 +43,7 @@ class PropertyField(object):
     def deserialize(self, string):
         return None if string is None else self.type(string)
 
-    def prepare(self, queryset):
+    def prepare(self, ctx, queryset):
         return queryset
 
 
@@ -89,7 +88,7 @@ class FKPropertyField(object):
     def deserialize(self, str):
         return self.type(str)
 
-    def prepare(self, queryset):
+    def prepare(self, ctx, queryset):
         segments = self.property.split('.')
         append_select_related(queryset, '__'.join(segments[:-1]))
         return queryset
@@ -116,7 +115,7 @@ class SubModelResourceField(object):
         sub_model = getattr(source_obj, self.property)
         target_dict[self.json_property] = self.resource_class(sub_model).get(ctx)
 
-    def prepare(self, queryset):
+    def prepare(self, ctx, queryset):
         append_select_related(queryset, self.property)
         return queryset
 
@@ -136,7 +135,7 @@ class RelatedManagerField(object):
         # TODO assert manager/resource_class types are correct
         target_dict[self.json_property] = self.resource_class(manager.all()).get(ctx)['objects']
 
-    def prepare(self, queryset):
+    def prepare(self, ctx, queryset):
         append_select_related(queryset, self.property)
         return queryset
 

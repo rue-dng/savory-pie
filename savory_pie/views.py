@@ -29,6 +29,7 @@ class APIContext(object):
         within the same resource tree.
         """
         return _resolve_resource(
+            self,
             self.root_resource,
             _split_resource_path(resource_path)
         )
@@ -98,12 +99,12 @@ def _split_resource_path(resource_path):
     else:
         return path_fragments
 
-def _resolve_resource(root_resource, path_fragments):
+def _resolve_resource(ctx, root_resource, path_fragments):
     resource = root_resource
     cur_resource_path = ''
 
     for path_fragment in path_fragments:
-        resource = resource.get_child_resource(path_fragment)
+        resource = resource.get_child_resource(ctx, path_fragment)
         if not resource:
             return None
 

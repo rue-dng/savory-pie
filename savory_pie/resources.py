@@ -131,14 +131,14 @@ class QuerySetResource(Resource):
 
         return resource
 
-    def prepare(self, queryset):
+    def prepare(self, ctx, queryset):
         try:
-            return self.resource_class.prepare(queryset)
+            return self.resource_class.prepare(ctx, queryset)
         except KeyError:
             return queryset
 
     def get(self, ctx, **kwargs):
-        queryset = self.prepare(self.filter_queryset(**kwargs))
+        queryset = self.prepare(ctx, self.filter_queryset(**kwargs))
 
         objects = []
         for model in queryset:
@@ -157,10 +157,10 @@ class QuerySetResource(Resource):
 
         return resource
 
-    def get_child_resource(self, path_fragment):
+    def get_child_resource(self, ctx, path_fragment):
         try:
             model = self.resource_class.get_from_queryset(
-                self.prepare(self.queryset),
+                self.prepare(ctx, self.queryset),
                 path_fragment
             )
             return self.to_resource(model)
@@ -215,14 +215,14 @@ class ModelResource(Resource):
         return cls(cls.model_class())
 
     @classmethod
-    def prepare(cls, queryset):
+    def prepare(cls, ctx, queryset):
         """
         Called by QuerySetResource to add necessary select_related-s
         calls to the QuerySet.
         """
         prepared_queryset = queryset
         for field in cls.fields:
-            prepared_queryset = field.prepare(prepared_queryset)
+            prepared_queryset = field.prepare(ctx, prepared_queryset)
         return prepared_queryset
 
     def __init__(self, model):

@@ -112,7 +112,7 @@ class QuerySetResourceTest(unittest.TestCase):
             bob
         ))
 
-        model_resource = queryset_resource.get_child_resource(1)
+        model_resource = queryset_resource.get_child_resource(mock_context(), 1)
         self.assertEqual(model_resource.model, alice)
 
     def test_get_child_resource_fail(self):
@@ -121,7 +121,7 @@ class QuerySetResourceTest(unittest.TestCase):
             User(pk=2, name='Bob', age=20)
         ))
 
-        model_resource = queryset_resource.get_child_resource(999)
+        model_resource = queryset_resource.get_child_resource(mock_context(), 999)
         self.assertIsNone(model_resource)
 
 
@@ -137,7 +137,7 @@ class ResourcePrepareTest(unittest.TestCase):
     def test_select_related(self):
         queryset = django.db.models.query.QuerySet()
 
-        queryset = self.TestResource.prepare(queryset)
+        queryset = self.TestResource.prepare(mock_context(), queryset)
 
         select_related = queryset.query.select_related
         self.assertEqual(

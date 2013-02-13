@@ -19,6 +19,9 @@ def mock_resource(name=None, resource_path=None, child_resource=None):
 
     return resource
 
+def call_args_sans_context(mock):
+    return list(mock.call_args[0][1:])
+
 
 def dispatch(root_resource, method, resource_path='', body=None, GET=None, POST=None):
     view = views.api_view(root_resource)
@@ -80,9 +83,11 @@ class ViewTest(unittest.TestCase):
         root_resource = mock_resource(name='root')
         root_resource.allowed_methods.add('PUT')
 
-        dispatch(root_resource, method='PUT', body='{}')
+        dispatch(root_resource, method='PUT', body='{"foo": "bar"}')
 
-        self.assertTrue(root_resource.put.called)
+        self.assertTrue(call_args_sans_context(root_resource.put), [{
+            'foo': 'bar'
+        }])
 
     def test_put_not_supported(self):
         root_resource = mock_resource(name='root')
@@ -98,9 +103,11 @@ class ViewTest(unittest.TestCase):
         root_resource.post = Mock(return_value=new_resource)
 
         response = dispatch(root_resource, method='POST', body='{}')
-        self.assertEqual(response['Location'], 'http://localhost/api/foo')
 
-        self.assertTrue(root_resource.post.called)
+        self.assertTrue(call_args_sans_context(root_resource.post), [{
+             'foo': 'bar'
+        }])
+        self.assertEqual(response['Location'], 'http://localhost/api/foo')
 
     def test_post_not_supported(self):
         root_resource = mock_resource(name='root')
@@ -130,7 +137,7 @@ class ViewTest(unittest.TestCase):
 
         dispatch(root_resource, method='GET', resource_path='child')
 
-        root_resource.get_child_resource.assert_called_with('child')
+        self.assertEqual(call_args_sans_context(root_resource.get_child_resource), ['child'])
         self.assertTrue(child_resource.get.called)
 
     def test_grandchild_resolution(self):
@@ -144,8 +151,8 @@ class ViewTest(unittest.TestCase):
 
         dispatch(root_resource, method='GET', resource_path='child/grandchild')
 
-        root_resource.get_child_resource.assert_called_with('child')
-        child_resource.get_child_resource.assert_called_with('grandchild')
+        self.assertEqual(call_args_sans_context(root_resource.get_child_resource), ['child'])
+        self.assertEqual(call_args_sans_context(child_resource.get_child_resource), ['grandchild'])
         self.assertTrue(grand_child_resource.get.called)
 
     def test_child_resolution_fail(self):

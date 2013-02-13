@@ -126,7 +126,7 @@ class FKPropertyFieldTest(unittest.TestCase):
 
         field = FKPropertyField(property='foo.bar.baz', type=int)
 
-        result_query_set = field.prepare(query_set)
+        result_query_set = field.prepare(mock_context(), query_set)
 
         self.assertEqual({'foo': {'bar': {}}}, query_set.query.select_related)
         self.assertEqual(query_set, result_query_set)
