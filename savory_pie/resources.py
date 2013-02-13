@@ -7,7 +7,7 @@ class Resource(object):
 
     Properties...
     resource_path - defaults to None
-        Internal path (from root of the resource tre to this Resource).
+        Internal path (from root of the resource tree to this Resource).
         If not set, this is auto-filled during Resource traversal;
         however, if you wish for a Resource to always be addressable,
         resource_path should be set at construction.
