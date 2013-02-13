@@ -7,8 +7,20 @@ from mock import Mock
 
 def mock_context():
     ctx = Mock(spec=[])
-    ctx.build_absolute_uri = lambda resource: resource.resource_path
+    ctx.build_resource_uri = lambda resource: resource.resource_path
     return ctx
+
+
+class ResourceTest(unittest.TestCase):
+    def no_allowed_methods(self):
+        resource = resources.Resource()
+        self.assertEqual(resource.allowed_methods, set())
+
+    def allows_get(self):
+        resource = resources.Resource()
+        resource.get = lambda: dict()
+        self.assertEqual(resource.allowed_methods, {'GET'})
+
 
 class User(mock_orm.Model):
     pass

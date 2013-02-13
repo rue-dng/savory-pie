@@ -5,10 +5,18 @@ from mock import Mock
 from savory_pie import views
 
 
-def mock_resource(name=None, child_resource=None):
+def mock_resource(name=None, resource_path=None, child_resource=None):
     resource = Mock(name=name, spec=[])
-    resource.resource_path = None
+    resource.resource_path = resource_path
+
+    resource.allowed_methods = set()
+    resource.get = Mock(name='get')
+    resource.post = Mock(name='post')
+    resource.put = Mock(name='put')
+    resource.delete = Mock(name='delete')
+
     resource.get_child_resource = Mock(return_value=child_resource)
+
     return resource
 
 
@@ -54,6 +62,7 @@ class Request(object):
 class ViewTest(unittest.TestCase):
     def test_get_success(self):
         root_resource = mock_resource(name='root')
+        root_resource.allowed_methods.add('GET')
         root_resource.get = Mock(return_value={'foo': 'bar'})
 
         response = dispatch(root_resource, method='GET')
@@ -69,9 +78,7 @@ class ViewTest(unittest.TestCase):
 
     def test_put_success(self):
         root_resource = mock_resource(name='root')
-        new_resource = Mock()
-
-        root_resource.put = Mock(return_value=new_resource)
+        root_resource.allowed_methods.add('PUT')
 
         dispatch(root_resource, method='PUT', body='{}')
 
@@ -85,7 +92,10 @@ class ViewTest(unittest.TestCase):
 
     def test_post_success(self):
         root_resource = mock_resource(name='root')
-        root_resource.post = Mock()
+        root_resource.allowed_methods.add('POST')
+
+        new_resource = mock_resource(name='new', resource_path='foo')
+        root_resource.post = Mock(return_value=new_resource)
 
         dispatch(root_resource, method='POST', body='{}')
 
@@ -99,7 +109,7 @@ class ViewTest(unittest.TestCase):
 
     def test_delete_success(self):
         root_resource = mock_resource(name='root')
-        root_resource.delete = Mock()
+        root_resource.allowed_methods.add('DELETE')
 
         dispatch(root_resource, method='DELETE')
         self.assertTrue(root_resource.delete.called)
@@ -112,6 +122,7 @@ class ViewTest(unittest.TestCase):
 
     def test_child_resolution(self):
         child_resource = mock_resource(name='child')
+        child_resource.allowed_methods.add('GET')
         child_resource.get = Mock(return_value={})
 
         root_resource = mock_resource(name='root', child_resource=child_resource)
@@ -123,6 +134,7 @@ class ViewTest(unittest.TestCase):
 
     def test_grandchild_resolution(self):
         grand_child_resource = mock_resource(name='grandchild')
+        grand_child_resource.allowed_methods.add('GET')
         grand_child_resource.get = Mock(return_value={})
 
         child_resource = mock_resource(name='child', child_resource=grand_child_resource)

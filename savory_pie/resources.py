@@ -1,15 +1,58 @@
 from django.core.exceptions import ObjectDoesNotExist
 
+
 class Resource(object):
     resource_path = None
 
+    @property
+    def allowed_methods(self):
+        allowed_methods = set()
+
+        for http_method in set('GET', 'POST', 'PUT', 'DELETE'):
+            obj_method = http_method.lower()
+            try:
+                getattr(self, obj_method)
+                allowed_methods.add(http_method)
+            except AttributeError:
+                pass
+
+        return allowed_methods
+
+    # def get(self, ctx, **kwargs):
+        """
+        Optional method that is called during a GET request.
+
+        get is provided an APIContext and an optional set of kwargs that include the
+        query string params.
+
+        Returns a dict of data to be serialized to the requested format.
+        """
+
+    # def post(self, ctx, dict):
+        """
+        Optional method that is called during a POST request.
+
+        post is provided with a dict representing the deserialized representation of
+        the body content.
+
+        Returns a new Resource
+        """
+
+    # def put(self, ctx, dict):
+        """
+        Optional method that is called during a PUT request.
+
+        put is provided with a dict representing the deserialized representation of
+        the body content.
+        """
+
+    # def delete(self, ctx):
+        """
+        Optional method that is called during a DELETE request.
+        """
+
     def get_child_resource(self, path_fragment):
         return None
-#   def get(self, ctx, **kwargs): dict
-#   def post(self, ctx, dict)
-#   def put(self, ctx, dict): Resource
-#   def delete(self, ctx)
-
 
 class APIResource(Resource):
     def __init__(self, resource_path=''):
@@ -133,7 +176,6 @@ class ModelResource(Resource):
         # TODO: Sanity checks that path is bound properly
         self._resource_path = resource_path
 
-
     def get(self, ctx, **kwargs):
         target_dict = dict()
 
@@ -141,7 +183,7 @@ class ModelResource(Resource):
             field.handle_outgoing(ctx, self.model, target_dict)
 
         if self.resource_path is not None:
-            target_dict['resourceUri'] = ctx.build_absolute_uri(self)
+            target_dict['resourceUri'] = ctx.build_resource_uri(self)
 
         return target_dict
 

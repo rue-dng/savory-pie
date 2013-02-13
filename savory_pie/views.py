@@ -19,7 +19,7 @@ class APIContext(object):
             _split_resource_path(resource_path)
         )
 
-    def build_absolute_uri(self, resource):
+    def build_resource_uri(self, resource):
         if resource.resource_path is None:
             raise ValueError, 'unaddressable resource'
 
@@ -49,7 +49,7 @@ def api_view(root_resource):
         resource = ctx.resolve_resource_path(resource_path)
 
         if resource is None:
-            return _process_not_found(ctx, request)
+            return _not_found(ctx, request)
 
         if request.method == 'GET':
             return _process_get(ctx, resource, request)
@@ -60,7 +60,7 @@ def api_view(root_resource):
         elif request.method == 'DELETE':
             return _process_delete(ctx, resource, request)
         else:
-            return _process_unsupported_method(ctx, resource, request)
+            return _not_allowed_method(ctx, resource, request)
 
     return view
 
@@ -98,55 +98,53 @@ def _deserialize_request(request):
     #TODO: Add a check for MIME type
     return json.load(request)
 
-def _serialize_to_response(dict):
-    response = HttpResponse(content_type='application/json')
-    json.dump(dict, response)
-    return response
-
 def _process_get(ctx, resource, request):
-    try:
-        # dereference get first, so unsupported method will be properly returned.
-        get = resource.get
-    except AttributeError:
-        return _process_unsupported_method(ctx, resource, request)
-
-    return _serialize_to_response(get(ctx, **request.GET))
+    if 'GET' in resource.allowed_methods:
+        content_dict = resource.get(ctx, **request.GET)
+        return _json_success(ctx, resource, request, content_dict)
+    else:
+        return _not_allowed_method(ctx, resource, request)
 
 def _process_post(ctx, resource, request):
-    try:
-        # dereference post first, so unsupported method will be properly returned.
-        post = resource.post
-    except AttributeError:
-        return _process_unsupported_method(ctx, resource, request)
-
-    post(ctx, _deserialize_request(request))
-    return _process_success(ctx, request, request)
+    if 'POST' in resource.allowed_methods:
+        new_resource = resource.post(ctx, _deserialize_request(request))
+        return _created(ctx, request, request, new_resource)
+    else:
+        return _not_allowed_method(ctx, resource, request)
 
 def _process_put(ctx, resource, request):
-    try:
-        # dereference put first, so unsupported method will be properly returned.
-        put = resource.put
-    except AttributeError:
-        return _process_unsupported_method(ctx, resource, request)
-
-    new_resource = put(ctx, _deserialize_request(request))
-    #TODO: form a valid response
+    if 'PUT' in resource.allowed_methods:
+        resource.put(ctx, _deserialize_request(request))
+        return _success(ctx, request, request)
+    else:
+        return _not_allowed_method(ctx, resource, request)
 
 def _process_delete(ctx, resource, request):
-    try:
-        delete = resource.delete
-    except AttributeError:
-        return _process_unsupported_method(ctx, resource, request)
+    if 'DELETE' in resource.allowed_methods:
+        resource.delete()
+        return _success(ctx, request, request)
+    else:
+        return _not_allowed_method(ctx, resource, request)
 
-    delete(ctx)
-    return _process_success(ctx, resource, request)
 
-def _process_unsupported_method(ctx, resource, request):
-    # Ill-behaved should reply with a set of allowed actions
-    return HttpResponse(status=405)
-
-def _process_not_found(ctx, request):
+def _not_found(ctx, request):
     return HttpResponse(status=404)
 
-def _process_success(ctx, resource, request):
+def _not_allowed_method(ctx, resource, request):
+    response = HttpResponse(status=405)
+    response['Allowed'] = ','.join(resource.allowed_methods)
+    return response
+
+def _created(ctx, resource, request, new_resource):
+    response = HttpResponse(status=201)
+    response['Location'] = ctx.build_resource_uri(new_resource)
+    return response
+
+def _json_success(ctx, resource, request, content_dict):
+    response = HttpResponse(status=200, content_type='application/json')
+    json.dump(content_dict, response)
+    return response
+
+def _success(ctx, resource, request, content_dict=None):
     return HttpResponse(status=200)
+
