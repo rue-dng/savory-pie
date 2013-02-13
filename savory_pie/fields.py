@@ -1,11 +1,28 @@
 from savory_pie.utils import append_select_related
 
 #protocol Field:
+
 #    def handle_incoming(self, source_dict, target_obj)
+#       Called by ModelResource.put or post to set Model properties on
+#       target_obj based on information from the source_dict.
+
 #    def handle_outgoing(self, source_obj, target_dict)
+#       Called by ModelResource.get to set key on the target_dict based
+#       on information in the Model source_obj.
+
 #    def prepare(self, queryset)
+#       Called by ModelResource.prepare to allow for select_related calls
+#       on the queryset, so related collections objects can be retrieved
+#       efficiently.
 
 class PropertyField(object):
+    """
+    Simple Field that translates an object property to/from a dict.
+    property - property on the Model
+    type - expecting type of value - int, bool, etc.
+    json_property - name under which the value is placed into the dict
+        - by default - inferred from property
+    """
     def __init__(self, property, type, json_property=None):
         self.property = property
         self.json_property = json_property or _python_to_js_name(self.property)
@@ -24,8 +41,8 @@ class PropertyField(object):
     def serialize(self, value):
         return value
 
-    def deserialize(self, str):
-        return self.type(str)
+    def deserialize(self, string):
+        return None if string is None else self.type(string)
 
     def prepare(self, queryset):
         return queryset

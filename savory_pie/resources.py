@@ -2,6 +2,22 @@ from django.core.exceptions import ObjectDoesNotExist
 
 
 class Resource(object):
+    """
+    Base object for defining resources.
+
+    Properties...
+    resource_path - defaults to None
+        Internal path (from root of the resource tre to this Resource).
+        If not set, this is auto-filled during Resource traversal;
+        however, if you wish for a Resource to always be addressable,
+        resource_path should be set at construction.
+
+    allowed_methods - defaults to set of available methods based on
+        presence of the optional methods - get, post, put, etc.
+
+        Can be overridden with a static set or dynamic property to
+        create access controls.
+    """
     resource_path = None
 
     @property
@@ -51,7 +67,7 @@ class Resource(object):
         Optional method that is called during a DELETE request.
         """
 
-    def get_child_resource(self, path_fragment):
+    def get_child_resource(self, ctx, path_fragment):
         return None
 
 class APIResource(Resource):
@@ -60,6 +76,10 @@ class APIResource(Resource):
         self._child_resources = dict()
 
     def register(self, resource):
+        """
+        Register a resource into the API.  The Resource must
+        have a first-level resource_path already set.
+        """
         if resource.resource_path.find('/') != -1:
             raise ValueError, 'resource_path should be top-level'
 
@@ -67,13 +87,31 @@ class APIResource(Resource):
         return self
 
     def register_class(self, resource_class):
+        """
+        Register a resource class into the API.  The constructed
+        Resource must have a first-level resource_path set after
+        construction.
+        """
         return self.register(resource_class())
 
-    def get_child_resource(self, path_fragment):
+    def get_child_resource(self, ctx, path_fragment):
         return self._child_resources.get(path_fragment, None)
 
 
 class QuerySetResource(Resource):
+    """
+    Resource abstract around Django QuerySets.
+    resource_class - type of Resource to create for a given Model in the queryset.
+
+    Typical usage...
+    class FooResource(ModelResource):
+        parent_resource_path = 'foos'
+        model_class = Foo
+
+    class FooQuerySetResource(QuerySetResource):
+        resource_path = 'foos'
+        resource_class = FooResource
+    """
     # resource_class
 
     def __init__(self, queryset=None):
@@ -83,6 +121,9 @@ class QuerySetResource(Resource):
         return self.queryset.filter(**kwargs)
 
     def to_resource(self, model):
+        """
+        Constructs a new instance of resource_class around the provided model.
+        """
         resource = self.resource_class(model)
 
         if self.resource_path is not None and resource.resource_path is None:
@@ -128,6 +169,25 @@ class QuerySetResource(Resource):
 
 
 class ModelResource(Resource):
+    """
+    Resource abstract around ModelResource.
+
+    parent_resource_path - path of parent resource - used to compute resource_path
+    resource_class - type of Resource to create for a given Model in the queryset.
+    published_key - tuple of (name, type) of the key property used in the resource_path
+        - defaults to ('pk', int)
+    fields - a list of Field-s that are used to determine what properties are placed
+        into and read from dict-s being handled by get, post, and put
+
+    Typical usage...
+    class FooResource(ModelResource):
+        parent_resource_path = 'foos'
+        model_class = Foo
+
+    class FooQuerySetResource(QuerySetResource):
+        resource_path = 'foos'
+        resource_class = FooResource
+    """
     # model_class
     parent_resource_path = None
     published_key = ('pk', int)
@@ -137,6 +197,10 @@ class ModelResource(Resource):
 
     @classmethod
     def get_from_queryset(cls, queryset, path_fragment):
+        """
+        Called by containing QuerySetResource to filter the QuerySet down
+        to a single item -- represented by this ModelResource
+        """
         attr, type_ = cls.published_key
 
         kwargs = dict()
@@ -145,10 +209,17 @@ class ModelResource(Resource):
 
     @classmethod
     def create_resource(cls):
+        """
+        Creates a new ModelResource around a new model_class instance
+        """
         return cls(cls.model_class())
 
     @classmethod
     def prepare(cls, queryset):
+        """
+        Called by QuerySetResource to add necessary select_related-s
+        calls to the QuerySet.
+        """
         prepared_queryset = queryset
         for field in cls.fields:
             prepared_queryset = field.prepare(prepared_queryset)
@@ -159,6 +230,10 @@ class ModelResource(Resource):
 
     @property
     def key(self):
+        """
+        Provides the value of the published_key of this ModelResource.
+        May fail if the ModelResource was constructed around an uncommitted Model.
+        """
         attr, type_ = self.published_key
         return str(getattr(self.model, attr))
 
