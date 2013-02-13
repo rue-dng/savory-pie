@@ -55,5 +55,8 @@ class Model(Mock):
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
 
-        self.save = Mock()
-        self.delete = Mock()
+        def save_side_effect():
+            self.pk = 314159
+
+        self.save = Mock(name='save', side_effect=save_side_effect)
+        self.delete = Mock(name='delete')

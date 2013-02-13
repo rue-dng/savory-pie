@@ -6,7 +6,7 @@ from savory_pie import resources, fields
 from mock import Mock
 
 def mock_context():
-    ctx = Mock(spec=[])
+    ctx = Mock(name='context', spec=[])
     ctx.build_resource_uri = lambda resource: resource.resource_path
     return ctx
 
@@ -26,7 +26,7 @@ class User(mock_orm.Model):
     pass
 
 
-class UserResource(resources.ModelResource):
+class AddressableUserResource(resources.ModelResource):
     parent_resource_path = 'users'
     model_class = User
 
@@ -36,11 +36,27 @@ class UserResource(resources.ModelResource):
     ]
 
 
+class UnaddressableUserResource(resources.ModelResource):
+    parent_resource_path =  'users'
+    model_class = User
+
+    fields = [
+        fields.PropertyField(property='name', type=str),
+        fields.PropertyField(property='age', type=int)
+    ]
+
+
 class ModelResourceTest(unittest.TestCase):
+    def test_resource_path(self):
+        user = User(pk=1, name='Bob', age=20)
+        resource = AddressableUserResource(user)
+
+        self.assertEqual(resource.resource_path, 'users/1')
+
     def test_get(self):
         user = User(pk=1, name='Bob', age=20)
 
-        resource = UserResource(user)
+        resource = AddressableUserResource(user)
         dict = resource.get(mock_context())
 
         self.assertEqual(dict, {
@@ -52,7 +68,7 @@ class ModelResourceTest(unittest.TestCase):
     def test_put(self):
         user = User()
 
-        resource = UserResource(user)
+        resource = AddressableUserResource(user)
         resource.put(mock_context(), {
             'name': 'Bob',
             'age': 20
@@ -65,20 +81,25 @@ class ModelResourceTest(unittest.TestCase):
     def test_delete(self):
         user = User()
 
-        resource = UserResource(user)
+        resource = AddressableUserResource(user)
         resource.delete(mock_context())
 
         self.assertTrue(user.delete.called)
 
 
-class UserQuerySetResource(resources.QuerySetResource):
+class AddressableUserQuerySetResource(resources.QuerySetResource):
     resource_path = 'users'
-    resource_class = UserResource
+    resource_class = AddressableUserResource
+
+
+class SemiUnaddressableUserQuerySetResource(resources.QuerySetResource):
+    resource_path = 'users'
+    resource_class = UnaddressableUserResource
 
 
 class QuerySetResourceTest(unittest.TestCase):
     def test_get(self):
-        resource = UserQuerySetResource(mock_orm.QuerySet(
+        resource = AddressableUserQuerySetResource(mock_orm.QuerySet(
             User(pk=1, name='Alice', age=31),
             User(pk=2, name='Bob', age=20)
         ))
@@ -89,8 +110,8 @@ class QuerySetResourceTest(unittest.TestCase):
             {'resourceUri': 'users/2', 'name': 'Bob', 'age': 20}
         ])
 
-    def test_post(self):
-        queryset_resource = UserQuerySetResource()
+    def test_addressable_post(self):
+        queryset_resource = AddressableUserQuerySetResource()
 
         new_resource = queryset_resource.post(mock_context(), {
             'name': 'Bob',
@@ -98,16 +119,27 @@ class QuerySetResourceTest(unittest.TestCase):
         })
 
         new_user = new_resource.model
+        self.assertEqual(new_resource.resource_path, 'users/314159')
 
         self.assertEqual(new_user.name, 'Bob')
         self.assertEqual(new_user.age, 20)
         self.assertTrue(new_user.save.called)
 
+    def test_unaddressable_post(self):
+        queryset_resource = SemiUnaddressableUserQuerySetResource()
+
+        new_resource = queryset_resource.post(mock_context(), {
+            'name': 'Bob',
+            'age': 20
+        })
+        self.assertEqual(new_resource.resource_path, 'users/314159')
+
+
     def test_get_child_resource_success(self):
         alice = User(pk=1, name='Alice', age=31)
         bob = User(pk=2, name='Bob', age=20)
 
-        queryset_resource = UserQuerySetResource(mock_orm.QuerySet(
+        queryset_resource = AddressableUserQuerySetResource(mock_orm.QuerySet(
             alice,
             bob
         ))
@@ -116,7 +148,7 @@ class QuerySetResourceTest(unittest.TestCase):
         self.assertEqual(model_resource.model, alice)
 
     def test_get_child_resource_fail(self):
-        queryset_resource = UserQuerySetResource(mock_orm.QuerySet(
+        queryset_resource = AddressableUserQuerySetResource(mock_orm.QuerySet(
             User(pk=1, name='Alice', age=31),
             User(pk=2, name='Bob', age=20)
         ))
@@ -140,11 +172,8 @@ class ResourcePrepareTest(unittest.TestCase):
         queryset = self.TestResource.prepare(mock_context(), queryset)
 
         select_related = queryset.query.select_related
-        self.assertEqual(
-            {
-                'group': {},
-                'domain': {},
-            },
-            select_related
-        )
+        self.assertEqual(select_related, {
+            'group': {},
+            'domain': {},
+        })
 
