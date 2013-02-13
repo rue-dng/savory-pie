@@ -14,26 +14,56 @@ class PropertyFieldTest(unittest.TestCase):
         source_object = Mock()
         source_object.foo = 20
 
-        field = PropertyField(property='foo', type=int)
-
         target_dict = dict()
 
+        field = PropertyField(property='foo', type=int)
         field.handle_outgoing(mock_context(), source_object, target_dict)
 
         self.assertEqual(target_dict['foo'], 20)
+
+    def test_none_outgoing(self):
+        source_object = Mock()
+        source_object.foo = None
+
+        target_dict = dict()
+
+        field = PropertyField(property='foo', type=int)
+        field.handle_outgoing(mock_context(), source_object, target_dict)
+
+        self.assertEqual(target_dict['foo'], None)
 
     def test_simple_incoming(self):
         source_dict = {
             'foo': 20
         }
 
-        field = PropertyField(property='foo', type=int)
-
         target_object = Mock()
 
+        field = PropertyField(property='foo', type=int)
         field.handle_incoming(mock_context(), source_dict, target_object)
 
         self.assertEqual(target_object.foo, 20)
+
+    def test_none_incoming(self):
+        source_dict = {
+            'foo': None
+        }
+
+        target_object = Mock()
+
+        field = PropertyField(property='foo', type=int)
+        field.handle_incoming(mock_context(), source_dict, target_object)
+
+        self.assertEqual(target_object.foo, None)
+
+    def test_missing_incoming(self):
+        source_dict = {}
+
+        target_object = Mock()
+
+        field = PropertyField(property='foo', type=int)
+        with self.assertRaises(KeyError):
+            field.handle_incoming(mock_context(), source_dict, target_object)
 
     def test_alternate_name_outgoing(self):
         source_object = Mock()

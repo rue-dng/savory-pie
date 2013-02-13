@@ -1,7 +1,7 @@
 from savory_pie.utils import append_select_related
 
 #protocol Field:
-#    def handle_incoming(self, ctx, source_dict, target_obj)
+#    def handle_incoming(self, source_dict, target_obj)
 #       Called by ModelResource.put or post to set Model properties on
 #       target_obj based on information from the source_dict.
 
@@ -28,6 +28,7 @@ class PropertyField(object):
         self.type = type
 
     def handle_incoming(self, ctx, source_dict, target_obj):
+        # deliberately strict about requiring explicit None
         setattr(target_obj, self.property,
             self.serialize(source_dict[self.json_property])
         )
