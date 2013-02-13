@@ -104,11 +104,12 @@ def _resolve_resource(ctx, root_resource, path_fragments):
     cur_resource_path = ''
 
     for path_fragment in path_fragments:
+        cur_resource_path = cur_resource_path + '/' + path_fragment
         resource = resource.get_child_resource(ctx, path_fragment)
+
         if not resource:
             return None
 
-        cur_resource_path = cur_resource_path + '/' + path_fragment
 
         if resource.resource_path is None:
             resource.resource_path = cur_resource_path

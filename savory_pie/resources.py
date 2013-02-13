@@ -24,7 +24,7 @@ class Resource(object):
     def allowed_methods(self):
         allowed_methods = set()
 
-        for http_method in set('GET', 'POST', 'PUT', 'DELETE'):
+        for http_method in ['GET', 'POST', 'PUT', 'DELETE']:
             obj_method = http_method.lower()
             try:
                 getattr(self, obj_method)
@@ -88,9 +88,8 @@ class APIResource(Resource):
 
     def register_class(self, resource_class):
         """
-        Register a resource class into the API.  The constructed
-        Resource must have a first-level resource_path set after
-        construction.
+        Register a resource class into the API.  The constructed Resource
+        must have a first-level resource_path set after construction.
         """
         return self.register(resource_class())
 

@@ -1,7 +1,7 @@
 import unittest
 
 from mock import Mock
-from mock_request import savory_dispatch
+from savory_pie.tests.mock_request import savory_dispatch
 
 
 def mock_resource(name=None, resource_path=None, child_resource=None):

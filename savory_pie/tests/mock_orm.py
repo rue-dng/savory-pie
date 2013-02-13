@@ -39,8 +39,7 @@ class Manager(Mock):
     def __init__(self):
         super(Manager, self).__init__()
 
-        self.all = Mock()
-        self.all.return_value = QuerySet()
+        self.all = Mock(return_value=QuerySet())
 
 
 class Model(Mock):
