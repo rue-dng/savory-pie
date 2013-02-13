@@ -41,7 +41,6 @@ class APIContext(object):
         if resource.resource_path is None:
             raise ValueError, 'unaddressable resource'
 
-        #return self.http_request.build_absolute_uri(resource.resource_path)
         return self.base_uri + resource.resource_path
 
 
@@ -54,9 +53,6 @@ def api_view(root_resource):
     """
     if root_resource.resource_path is None:
         root_resource.resource_path = ''
-
-    # if root_resource.resource_path != '':
-    #    raise ValueError, 'mismatched ' + root_resource.resource_path + ' != ""'
 
     def view(request, resource_path):
         full_path = _strip_query_string(request.get_full_path())
