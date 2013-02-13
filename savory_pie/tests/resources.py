@@ -119,7 +119,7 @@ class QuerySetResourceTest(unittest.TestCase):
         })
 
         new_user = new_resource.model
-        self.assertEqual(new_resource.resource_path, 'users/314159')
+        self.assertEqual(new_resource.resource_path, 'users/' + str(new_user.pk))
 
         self.assertEqual(new_user.name, 'Bob')
         self.assertEqual(new_user.age, 20)
@@ -132,7 +132,7 @@ class QuerySetResourceTest(unittest.TestCase):
             'name': 'Bob',
             'age': 20
         })
-        self.assertEqual(new_resource.resource_path, 'users/314159')
+        self.assertEqual(new_resource.resource_path, 'users/' + str(new_resource.model.pk))
 
 
     def test_get_child_resource_success(self):

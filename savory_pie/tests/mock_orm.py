@@ -1,6 +1,6 @@
 from mock import Mock
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
-
+import random
 
 class QuerySet(object):
     def __init__(self, *elements):
@@ -51,12 +51,14 @@ class Model(Mock):
 
     def __init__(self, **kwargs):
         super(Model, self).__init__()
+        self.pk = None
 
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
 
         def save_side_effect():
-            self.pk = 314159
+            if self.pk is None:
+                self.pk = random.randint(1000, 10000)
 
         self.save = Mock(name='save', side_effect=save_side_effect)
         self.delete = Mock(name='delete')
