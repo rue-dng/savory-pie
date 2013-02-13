@@ -3,23 +3,41 @@ import json
 
 
 class APIContext(object):
+    """
+    Context object passed as the second argument (after self) to Resources and Fields.
+
+    The context object provides a hook into the underlying means to translates
+    resources to / from URIs.
+    """
     def __init__(self, http_request, base_path, root_resource):
         self.base_uri = http_request.build_absolute_uri(base_path)
         self.root_resource = root_resource
 
     def resolve_resource_uri(self, uri):
+        """
+        Resolves the resource that corresponds to the current URI, but only
+        within the same resource tree.
+        """
         if not uri.startswith(self.base_uri):
             return None
 
         return self.resolve_resource_path(uri[len(self.base_uri):])
 
     def resolve_resource_path(self, resource_path):
+        """
+        Resolves a resource using a resource path (not a full URI), but only
+        within the same resource tree.
+        """
         return _resolve_resource(
             self.root_resource,
             _split_resource_path(resource_path)
         )
 
     def build_resource_uri(self, resource):
+        """
+        Given a Resource with a resource_path, provides the correspond URI.
+        Raises a ValueError if the resource_path of the Resource is None.
+        """
         if resource.resource_path is None:
             raise ValueError, 'unaddressable resource'
 
@@ -28,6 +46,12 @@ class APIContext(object):
 
 
 def api_view(root_resource):
+    """
+    View function factory that provides accessing to the resource tree
+    rooted at root_resource.
+
+    The produced function needs to be bound into URLs as r'^some/base/path/(.*)$'
+    """
     if root_resource.resource_path is None:
         root_resource.resource_path = ''
 
