@@ -24,7 +24,7 @@ def dispatch(root_resource, method, resource_path='', body=None, GET=None, POST=
     view = views.api_view(root_resource)
     request = Request(
         method=method,
-        path='api/' + resource_path,
+        resource_path=resource_path,
         body=body,
         GET=GET,
         POST=POST
@@ -34,9 +34,9 @@ def dispatch(root_resource, method, resource_path='', body=None, GET=None, POST=
 
 
 class Request(object):
-    def __init__(self, method, host='localhost', path='', body=None, GET=None, POST=None):
+    def __init__(self, method, host='localhost', resource_path='', body=None, GET=None, POST=None):
         self.host = host
-        self.path = path
+        self.resource_path = resource_path
 
         self.method = method
         self.body = body
@@ -47,7 +47,7 @@ class Request(object):
         self.REQUEST = dict(self.GET, **self.POST)
 
     def get_full_path(self):
-        return 'api/' + self.path
+        return 'api/' + self.resource_path
 
     def build_absolute_uri(self, django_path):
         return 'http://' + self.host + '/' + django_path
@@ -97,7 +97,8 @@ class ViewTest(unittest.TestCase):
         new_resource = mock_resource(name='new', resource_path='foo')
         root_resource.post = Mock(return_value=new_resource)
 
-        dispatch(root_resource, method='POST', body='{}')
+        response = dispatch(root_resource, method='POST', body='{}')
+        self.assertEqual(response['Location'], 'http://localhost/api/foo')
 
         self.assertTrue(root_resource.post.called)
 
