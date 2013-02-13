@@ -37,7 +37,6 @@ class AddressableUserResource(resources.ModelResource):
 
 
 class UnaddressableUserResource(resources.ModelResource):
-    parent_resource_path =  'users'
     model_class = User
 
     fields = [
@@ -97,6 +96,10 @@ class SemiUnaddressableUserQuerySetResource(resources.QuerySetResource):
     resource_class = UnaddressableUserResource
 
 
+class FullyUnaddressableUserQuerySetResource(resources.QuerySetResource):
+    resource_class = UnaddressableUserResource
+
+
 class QuerySetResourceTest(unittest.TestCase):
     def test_get(self):
         resource = AddressableUserQuerySetResource(mock_orm.QuerySet(
@@ -125,7 +128,7 @@ class QuerySetResourceTest(unittest.TestCase):
         self.assertEqual(new_user.age, 20)
         self.assertTrue(new_user.save.called)
 
-    def test_unaddressable_post(self):
+    def test_semi_unaddressable_post(self):
         queryset_resource = SemiUnaddressableUserQuerySetResource()
 
         new_resource = queryset_resource.post(mock_context(), {
@@ -134,6 +137,14 @@ class QuerySetResourceTest(unittest.TestCase):
         })
         self.assertEqual(new_resource.resource_path, 'users/' + str(new_resource.model.pk))
 
+    def test_fully_unaddressable_post(self):
+        queryset_resource = FullyUnaddressableUserQuerySetResource()
+
+        new_resource = queryset_resource.post(mock_context(), {
+            'name': 'Bob',
+            'age': 20
+        })
+        self.assertIsNone(new_resource.resource_path)
 
     def test_get_child_resource_success(self):
         alice = User(pk=1, name='Alice', age=31)

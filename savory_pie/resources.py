@@ -125,7 +125,11 @@ class QuerySetResource(Resource):
         """
         resource = self.resource_class(model)
 
-        if self.resource_path is not None and resource.resource_path is None:
+        # Normally, traversal would take care of filling in the resource_path
+        # for a child resource, but this is called to create sub-resources that are
+        # embedded into a larger GET.  To make sure, the resourceUri can be
+        # computed for those resources, we need to make sure they have a resource_path.
+        if resource.resource_path is None and self.resource_path is not None:
             resource.resource_path = self.resource_path + '/' + str(resource.key)
 
         return resource
@@ -151,7 +155,10 @@ class QuerySetResource(Resource):
         resource = self.resource_class.create_resource()
         resource.put(ctx, source_dict)
 
-        if resource.resource_path is None:
+        # If the newly created child_resource is not absolutely addressable on
+        # its own, then fill in the address (assuming the QuerySetResource
+        # is addressable itself.)
+        if resource.resource_path is None and self.resource_path is not None:
             resource.resource_path = self.resource_path + '/' + str(resource.key)
 
         return resource
@@ -246,7 +253,7 @@ class ModelResource(Resource):
             return None
 
     @resource_path.setter
-    def set_resource_path(self, resource_path):
+    def resource_path(self, resource_path):
         # TODO: Sanity checks that path is bound properly
         self._resource_path = resource_path
 
