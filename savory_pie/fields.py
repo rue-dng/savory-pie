@@ -30,19 +30,20 @@ class PropertyField(object):
     def handle_incoming(self, ctx, source_dict, target_obj):
         # deliberately strict about requiring explicit None
         setattr(target_obj, self.property,
-            self.serialize(source_dict[self.json_property])
+            self.to_python_value(ctx, source_dict[self.json_property])
         )
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
-        target_dict[self.json_property] = self.deserialize(
+        target_dict[self.json_property] = self.to_api_value(
+            ctx,
             getattr(source_obj, self.property)
         )
 
-    def serialize(self, value):
-        return value
-
-    def deserialize(self, string):
+    def to_python_value(self, ctx, string):
         return None if string is None else self.type(string)
+
+    def to_api_value(self, ctx, value):
+        return value
 
     def prepare(self, ctx, queryset):
         return queryset
@@ -75,19 +76,20 @@ class FKPropertyField(object):
     def handle_incoming(self, ctx, source_dict, target_obj):
         self._set_property(
             target_obj,
-            self.serialize(source_dict[self.json_property])
+            self.to_python_value(ctx, source_dict[self.json_property])
         )
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
-        target_dict[self.json_property] = self.deserialize(
+        target_dict[self.json_property] = self.to_api_value(
+            ctx,
             self._get_property(source_obj)
         )
 
-    def serialize(self, value):
-        return value
+    def to_python_value(self, ctx, string):
+        return None if string is None else self.type(string)
 
-    def deserialize(self, str):
-        return self.type(str)
+    def to_api_value(self, ctx, value):
+        return value
 
     def prepare(self, ctx, queryset):
         segments = self.property.split('.')

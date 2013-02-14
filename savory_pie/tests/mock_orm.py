@@ -3,8 +3,9 @@ from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 import random
 
 class QuerySet(object):
-    def __init__(self, *elements):
-        super(QuerySet, self).__init__()
+    def __init__(self, *elements, **kwargs):
+        #if not elements:
+        #    raise ValueError, 'model_class required if no elements are provided'
         self.elements = elements
 
     def __iter__(self):
@@ -43,7 +44,6 @@ class Manager(Mock):
 
 
 class Model(Mock):
-    # Not exactly semantically equivalent to Django, but close enough for most tests
     class DoesNotExist(ObjectDoesNotExist):
         pass
 
@@ -62,3 +62,9 @@ class Model(Mock):
 
         self.save = Mock(name='save', side_effect=save_side_effect)
         self.delete = Mock(name='delete')
+
+
+# Not quite exactly semantically equivalent to Django because an empty QuerySet
+# will have queryset.model resolve to Model rather than the specified sub-class;
+# however, this is close enough for testing purposes.
+Model.objects.all = Mock(return_value=QuerySet(model_class=Model))

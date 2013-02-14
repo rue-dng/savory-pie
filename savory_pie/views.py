@@ -85,12 +85,9 @@ def api_view(root_resource):
 
     return view
 
+
 def _strip_query_string(path):
-    query_string_pos = path.find('?')
-    if query_string_pos == -1:
-        return path
-    else:
-        return path[:query_string_pos]
+    return path.split('?', 1)[0]
 
 def _split_resource_path(resource_path):
     path_fragments = resource_path.split('/')
@@ -110,15 +107,16 @@ def _resolve_resource(ctx, root_resource, path_fragments):
         if not resource:
             return None
 
-
         if resource.resource_path is None:
             resource.resource_path = cur_resource_path
 
     return resource
 
+
 def _deserialize_request(request):
     #TODO: Add a check for MIME type
     return json.load(request)
+
 
 def _process_get(ctx, resource, request):
     if 'GET' in resource.allowed_methods:

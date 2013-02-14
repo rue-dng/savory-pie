@@ -70,6 +70,7 @@ class Resource(object):
     def get_child_resource(self, ctx, path_fragment):
         return None
 
+
 class APIResource(Resource):
     def __init__(self, resource_path=''):
         self.resource_path = resource_path
@@ -80,7 +81,7 @@ class APIResource(Resource):
         Register a resource into the API.  The Resource must
         have a first-level resource_path already set.
         """
-        if resource.resource_path.find('/') != -1:
+        if '/' in resource.resource_path:
             raise ValueError, 'resource_path should be top-level'
 
         self._child_resources[resource.resource_path] = resource
@@ -135,10 +136,7 @@ class QuerySetResource(Resource):
         return resource
 
     def prepare(self, ctx, queryset):
-        try:
-            return self.resource_class.prepare(ctx, queryset)
-        except KeyError:
-            return queryset
+        return self.resource_class.prepare(ctx, queryset)
 
     def get(self, ctx, **kwargs):
         queryset = self.prepare(ctx, self.filter_queryset(**kwargs))
@@ -179,7 +177,7 @@ class ModelResource(Resource):
     Resource abstract around ModelResource.
 
     parent_resource_path - path of parent resource - used to compute resource_path
-    resource_class - type of Resource to create for a given Model in the queryset.
+    model_class - type of Model consumed / create by this Resource.
     published_key - tuple of (name, type) of the key property used in the resource_path
         - defaults to ('pk', int)
     fields - a list of Field-s that are used to determine what properties are placed
