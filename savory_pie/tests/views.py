@@ -43,11 +43,12 @@ class ViewTest(unittest.TestCase):
         root_resource = mock_resource(name='root')
         root_resource.allowed_methods.add('PUT')
 
-        savory_dispatch(root_resource, method='PUT', body='{"foo": "bar"}')
+        response = savory_dispatch(root_resource, method='PUT', body='{"foo": "bar"}')
 
         self.assertTrue(call_args_sans_context(root_resource.put), [{
             'foo': 'bar'
         }])
+        self.assertEqual(response.status_code, 204)
 
     def test_put_not_supported(self):
         root_resource = mock_resource(name='root')

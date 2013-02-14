@@ -165,6 +165,9 @@ def _json_success(ctx, resource, request, content_dict):
     json.dump(content_dict, response)
     return response
 
+def _no_content_success(ctx, resource, request):
+    return HttpResponse(status=204)
+
 def _success(ctx, resource, request, content_dict=None):
     return HttpResponse(status=200)
 
