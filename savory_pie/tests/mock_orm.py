@@ -4,8 +4,14 @@ import random
 
 class QuerySet(object):
     def __init__(self, *elements, **kwargs):
-        #if not elements:
-        #    raise ValueError, 'model_class required if no elements are provided'
+        try:
+            self.model = kwargs['model_class']
+        except KeyError:
+            if not elements:
+                raise ValueError, 'no elements provided - kwarg model_class required to determine type'
+
+            self.model = type(elements[0])
+
         self.elements = elements
 
     def __iter__(self):
@@ -38,10 +44,9 @@ class QuerySet(object):
 
 class Manager(Mock):
     def __init__(self):
-        super(Manager, self).__init__()
+        super(Manager, self).__init__(spec=[])
 
-        self.all = Mock(return_value=QuerySet())
-
+        # all is filled in at the end
 
 class Model(Mock):
     class DoesNotExist(ObjectDoesNotExist):
@@ -50,7 +55,7 @@ class Model(Mock):
     objects = Manager()
 
     def __init__(self, **kwargs):
-        super(Model, self).__init__()
+        super(Model, self).__init__(spec=[])
         self.pk = None
 
         for key, value in kwargs.iteritems():
