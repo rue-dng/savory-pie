@@ -33,8 +33,8 @@ class AddressableUserResource(resources.ModelResource):
     model_class = User
 
     fields = [
-        fields.PropertyField(property='name', type=str),
-        fields.PropertyField(property='age', type=int)
+        fields.AttributeField(attribute='name', type=str),
+        fields.AttributeField(attribute='age', type=int)
     ]
 
 
@@ -42,8 +42,8 @@ class UnaddressableUserResource(resources.ModelResource):
     model_class = User
 
     fields = [
-        fields.PropertyField(property='name', type=str),
-        fields.PropertyField(property='age', type=int)
+        fields.AttributeField(attribute='name', type=str),
+        fields.AttributeField(attribute='age', type=int)
     ]
 
 
@@ -175,8 +175,8 @@ class ResourcePrepareTest(unittest.TestCase):
     class TestResource(resources.ModelResource):
         model_class = User
         fields = [
-            fields.FKPropertyField(property='group.name', type=str),
-            fields.FKPropertyField(property='domain.name', type=str)
+            fields.AttributeField(attribute='group.name', type=str),
+            fields.AttributeField(attribute='domain.name', type=str)
         ]
 
     def test_select_related(self):

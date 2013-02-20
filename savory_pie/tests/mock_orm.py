@@ -14,6 +14,9 @@ class QuerySet(object):
 
         self.elements = elements
 
+        self.query = Mock('query')
+        self.query.select_related = dict()
+
     def __iter__(self):
         return iter(self.elements)
 

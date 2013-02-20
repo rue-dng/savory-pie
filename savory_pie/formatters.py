@@ -1,7 +1,7 @@
 import json
 
 #protocol Formatter
-#   def default_published_name(self, attribute)
+#   def default_published_property(self, bare_attribute)
 #   def to_python_value(self, type_, api_value)
 #   def to_api_value(self, type_, python_value)
 
@@ -9,11 +9,11 @@ import json
 class JSONFormatter(object):
     content_type = 'application/json'
 
-    def default_published_name(self, python_attribute):
+    def default_published_property(self, bare_attribute):
         js_name = []
         last_was_underscore = False
 
-        for char in python_attribute:
+        for char in bare_attribute:
             if char == '_':
                 last_was_underscore = True
             else:

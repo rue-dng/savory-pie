@@ -21,8 +21,8 @@ class UserResource(resources.ModelResource):
     model_class = User
 
     fields = [
-        fields.PropertyField(property='name', type=str),
-        fields.PropertyField(property='age', type=int)
+        fields.AttributeField(attribute='name', type=str),
+        fields.AttributeField(attribute='age', type=int)
     ]
 
 

@@ -2,135 +2,103 @@ import unittest
 from mock import Mock
 
 from savory_pie.resources import ModelResource, QuerySetResource
-from savory_pie.fields import PropertyField, FKPropertyField, SubModelResourceField, RelatedManagerField
+from savory_pie.fields import AttributeField, SubModelResourceField, RelatedManagerField
 from savory_pie.formatters import JSONFormatter
+from savory_pie.tests import mock_orm
 
 def mock_context():
     ctx = Mock(name='content', spec=[])
     ctx.formatter = JSONFormatter()
     return ctx
 
-class PropertyFieldTest(unittest.TestCase):
+
+class AttributeFieldTest(unittest.TestCase):
     def test_simple_outgoing(self):
         source_object = Mock()
         source_object.foo = 20
 
         target_dict = dict()
 
-        field = PropertyField(property='foo', type=int)
+        field = AttributeField(attribute='foo', type=int)
         field.handle_outgoing(mock_context(), source_object, target_dict)
 
         self.assertEqual(target_dict['foo'], 20)
 
-    def test_none_outgoing(self):
+    def test_simple_none_outgoing(self):
         source_object = Mock()
         source_object.foo = None
 
         target_dict = dict()
 
-        field = PropertyField(property='foo', type=int)
+        field = AttributeField(attribute='foo', type=int)
         field.handle_outgoing(mock_context(), source_object, target_dict)
 
         self.assertEqual(target_dict['foo'], None)
+
+    def test_multilevel_outgoing(self):
+        source_object = Mock()
+        source_object.foo.bar = 20
+
+        field = AttributeField(attribute='foo.bar', type=int)
+
+        target_dict = dict()
+
+        field.handle_outgoing(mock_context(), source_object, target_dict)
+
+        self.assertEqual(target_dict['bar'], 20)
+
+
+    def test_multilevel_incoming(self):
+        source_dict = {
+            'bar': 20
+        }
+
+        field = AttributeField(attribute='foo.bar', type=int)
+
+        target_object = Mock(name='target')
+
+        field.handle_incoming(mock_context(), source_dict, target_object)
+
+        self.assertEqual(target_object.foo.bar, 20)
 
     def test_simple_incoming(self):
         source_dict = {
             'foo': 20
         }
 
-        target_object = Mock()
+        target_object = Mock(name='target')
 
-        field = PropertyField(property='foo', type=int)
+        field = AttributeField(attribute='foo', type=int)
         field.handle_incoming(mock_context(), source_dict, target_object)
 
         self.assertEqual(target_object.foo, 20)
 
-    def test_none_incoming(self):
+    def test_simple_none_incoming(self):
         source_dict = {
             'foo': None
         }
 
-        target_object = Mock()
+        target_object = Mock(name='target')
 
-        field = PropertyField(property='foo', type=int)
+        field = AttributeField(attribute='foo', type=int)
         field.handle_incoming(mock_context(), source_dict, target_object)
 
         self.assertEqual(target_object.foo, None)
 
-    def test_missing_incoming(self):
+    def test_simple_missing_incoming(self):
         source_dict = {}
 
-        target_object = Mock()
+        target_object = Mock(name='target')
 
-        field = PropertyField(property='foo', type=int)
+        field = AttributeField(attribute='foo', type=int)
         with self.assertRaises(KeyError):
             field.handle_incoming(mock_context(), source_dict, target_object)
 
     def test_alternate_name_outgoing(self):
         source_object = Mock()
-        source_object.foo = 20
-
-        field = PropertyField(property='foo', type=int, json_property='bar')
-
-        target_dict = dict()
-
-        field.handle_outgoing(mock_context(), source_object, target_dict)
-
-        self.assertEqual(target_dict['bar'], 20)
-
-    def test_alternate_name_incoming(self):
-        source_dict = {
-            'bar': 20
-        }
-
-        field = PropertyField(property='foo', type=int, json_property='bar')
-
-        target_object = Mock()
-
-        field.handle_incoming(mock_context(), source_dict, target_object)
-
-        self.assertEqual(target_object.foo, 20)
-
-    def test_automatic_json_naming(self):
-        field = PropertyField(property='foo_bar', type=int)
-
-        target_object = Mock()
-        field.handle_incoming(mock_context(), {'fooBar': 20}, target_object)
-
-        self.assertEqual(target_object.foo_bar, 20)
-
-
-class FKPropertyFieldTest(unittest.TestCase):
-    def test_simple_outgoing(self):
-        source_object = Mock()
         source_object.foo.bar = 20
 
-        field = FKPropertyField(property='foo.bar', type=int)
-
-        target_dict = dict()
-
-        field.handle_outgoing(mock_context(), source_object, target_dict)
-
-        self.assertEqual(target_dict['bar'], 20)
-
-    def test_simple_incoming(self):
-        source_dict = {
-            'bar': 20
-        }
-
-        field = FKPropertyField(property='foo.bar', type=int)
-
-        target_object = Mock()
-
-        field.handle_incoming(mock_context(), source_dict, target_object)
-
-        self.assertEqual(target_object.foo.bar, 20)
-
-    def test_alternate_name_outgoing(self):
-        source_object = Mock()
-        source_object.foo.bar = 20
-
-        field = FKPropertyField(property='foo.bar', type=int, json_property='foo')
+        field = AttributeField(attribute='foo.bar', type=int, published_property='foo')
 
         target_dict = dict()
 
@@ -143,24 +111,24 @@ class FKPropertyFieldTest(unittest.TestCase):
             'foo': 20
         }
 
-        field = FKPropertyField(property='foo.bar', type=int, json_property='foo')
+        field = AttributeField(attribute='foo.bar', type=int, published_property='foo')
 
-        target_object = Mock()
+        target_object = Mock(name='target')
 
         field.handle_incoming(mock_context(), source_dict, target_object)
 
         self.assertEqual(target_object.foo.bar, 20)
 
     def test_prepare(self):
-        query_set = Mock()
-        query_set.query.select_related = {}
+        queryset = Mock(name='queryset')
+        queryset.query.select_related = {}
 
-        field = FKPropertyField(property='foo.bar.baz', type=int)
+        field = AttributeField(attribute='foo.bar.baz', type=int)
 
-        result_query_set = field.prepare(mock_context(), query_set)
+        result_query_set = field.prepare(mock_context(), queryset)
 
-        self.assertEqual({'foo': {'bar': {}}}, query_set.query.select_related)
-        self.assertEqual(query_set, result_query_set)
+        self.assertEqual({'foo': {'bar': {}}}, queryset.query.select_related)
+        self.assertEqual(queryset, result_query_set)
 
 
 class SubModelResourceFieldTest(unittest.TestCase):
@@ -170,7 +138,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
 
         class Resource(ModelResource):
             fields = [
-                PropertyField(property='bar', type=int),
+                AttributeField(attribute='bar', type=int),
             ]
         field = SubModelResourceField(property='foo', resource_class=Resource)
 
@@ -188,7 +156,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
         class Resource(ModelResource):
             model_class = Mock()
             fields = [
-                PropertyField(property='bar', type=int),
+                AttributeField(attribute='bar', type=int),
             ]
         field = SubModelResourceField(property='foo', resource_class=Resource)
 
@@ -207,7 +175,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
         class Resource(ModelResource):
             model_class = Mock()
             fields = [
-                PropertyField(property='bar', type=int),
+                AttributeField(attribute='bar', type=int),
             ]
         field = SubModelResourceField(property='foo', resource_class=Resource)
 
@@ -225,22 +193,24 @@ class RelatedManagerFieldTest(unittest.TestCase):
     def test_outgoing(self):
 
         class MockResource(ModelResource):
-            model_class = Mock()
+            model_class = mock_orm.Model
             fields = [
-                PropertyField(property='bar', type=int),
+                AttributeField(attribute='bar', type=int),
             ]
 
 
         class MockQuerySetResource(QuerySetResource):
             resource_class = MockResource
 
-        field = RelatedManagerField(property='foo', resource_class=MockQuerySetResource)
+        field = RelatedManagerField(attribute='foo', resource_class=MockQuerySetResource)
 
-        source_object = Mock()
-        source_object.foo.all.return_value.filter.return_value = [Mock(bar=14)]
+        source_object = mock_orm.Model()
+        related_manager = mock_orm.Manager()
+        related_manager.all = Mock(return_value=mock_orm.QuerySet(
+            mock_orm.Model(bar=14)
+        ))
+        source_object.foo = mock_orm.Manager()
 
         target_dict = {}
-
         field.handle_outgoing(mock_context(), source_object, target_dict)
-
         self.assertEqual([{'bar': 14}], target_dict['foo'])

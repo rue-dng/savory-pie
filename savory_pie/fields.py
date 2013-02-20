@@ -14,86 +14,78 @@ from savory_pie.utils import append_select_related
 #       on the queryset, so related collections objects can be retrieved
 #       efficiently.
 
-class PropertyField(object):
+class AttributeField(object):
     """
     Simple Field that translates an object property to/from a dict.
-    property - property on the Model
+    attribute - attribute on the Model
+        - can be a multi-level expression - like related_entity.attribute
     type - expecting type of value - int, bool, etc.
-    json_property - name under which the value is placed into the dict
-        - by default - inferred from property
-    """
-    def __init__(self, property, type, json_property=None):
-        self.property = property
-        self.json_property = json_property or _python_to_js_name(self.property)
-        self.type = type
+    published_property - name under which the value is placed into the dict
+    - by default - inferred from property
 
-    def handle_incoming(self, ctx, source_dict, target_obj):
-        # deliberately strict about requiring explicit None
-        setattr(target_obj, self.property,
-            self.to_python_value(ctx, source_dict[self.json_property])
-        )
-
-    def handle_outgoing(self, ctx, source_obj, target_dict):
-        target_dict[self.json_property] = self.to_api_value(
-            ctx,
-            getattr(source_obj, self.property)
-        )
-
-    def to_python_value(self, ctx, api_value):
-        return ctx.formatter.to_python_value(self.type, api_value)
-
-    def to_api_value(self, ctx, python_value):
-        return ctx.formatter.to_api_value(self.type, python_value)
-
-    def prepare(self, ctx, queryset):
-        return queryset
-
-
-class FKPropertyField(object):
-    """
     Used to flatten fields of related models in to a single API object.
 
     FKPropertyField('other.name', type=int) will return this json {'name': other.name}
     """
-    def __init__(self, property, type, json_property=None):
-        self.property = property
-        self.json_property = json_property or _python_to_js_name(self.property.split('.')[-1])
-        self.type = type
+    def __init__(self, attribute, type, published_property=None):
+        self._full_attribute = attribute
+        self._type = type
+        self._published_property = published_property
 
-    def _get_property(self, obj):
-        property = obj
-        for segment in self.property.split('.'):
-            property = getattr(property, segment)
-        return property
+    def _compute_property(self, ctx):
+        if self._published_property is not None:
+            return self._published_property
+        else:
+            return ctx.formatter.default_published_property(self._bare_attribute)
 
-    def _set_property(self, obj, value):
-        property = obj
-        segments = self.property.split('.')
-        for segment in segments[:-1]:
-            property = getattr(property, segment)
-        setattr(property, segments[-1], value)
+    @property
+    def _bare_attribute(self):
+        return self._full_attribute.split('.')[-1]
+
+    @property
+    def _attrs(self):
+        return self._full_attribute.split('.')
+
+    def _get_object(self, root_obj):
+        obj = root_obj
+        for attr in self._attrs[:-1]:
+            obj = getattr(obj, attr)
+            if obj is None:
+                return None
+        return obj
+
+    def _get(self, obj):
+        obj = self._get_object(obj)
+        if obj is None:
+            return None
+        else:
+            return getattr(obj, self._bare_attribute)
+
+    def _set(self, obj, value):
+        obj = self._get_object(obj)
+        # TODO: handle None
+        return setattr(obj, self._bare_attribute, value)
 
     def handle_incoming(self, ctx, source_dict, target_obj):
-        self._set_property(
+        self._set(
             target_obj,
-            self.to_python_value(ctx, source_dict[self.json_property])
+            self.to_python_value(ctx, source_dict[self._compute_property(ctx)])
         )
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
-        target_dict[self.json_property] = self.to_api_value(
+        target_dict[self._compute_property(ctx)] = self.to_api_value(
             ctx,
-            self._get_property(source_obj)
+            self._get(source_obj)
         )
 
     def to_python_value(self, ctx, api_value):
-        return ctx.formatter.to_python_value(self.type, api_value)
+        return ctx.formatter.to_python_value(self._type, api_value)
 
     def to_api_value(self, ctx, python_value):
-        return ctx.formatter.to_api_value(self.type, python_value)
+        return ctx.formatter.to_api_value(self._type, python_value)
 
     def prepare(self, ctx, queryset):
-        segments = self.property.split('.')
-        append_select_related(queryset, '__'.join(segments[:-1]))
+        append_select_related(queryset, '__'.join(self._attrs[:-1]))
         return queryset
 
 
@@ -124,22 +116,29 @@ class SubModelResourceField(object):
 
 
 class RelatedManagerField(object):
-    def __init__(self, property, resource_class, json_property=None):
-        self.property = property
-        self.resource_class = resource_class
-        self.json_property = json_property or _python_to_js_name(self.property)
+    def __init__(self, attribute, resource_class, published_property=None):
+        self._attribute = attribute
+        self._resource_class = resource_class
+        self._published_property = published_property
+
+    def _compute_property(self, ctx):
+        if self._published_property is not None:
+            return self._published_property
+        else:
+            return ctx.formatter.default_published_property(self._attribute)
 
     def handle_incoming(self, ctx, source_dict, target_obj):
         # TODO something
         pass
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
-        manager = getattr(source_obj, self.property)
+        manager = getattr(source_obj, self._attribute)
         # TODO assert manager/resource_class types are correct
-        target_dict[self.json_property] = self.resource_class(manager.all()).get(ctx)['objects']
+        target_dict[self._compute_property(ctx)] = \
+            self._resource_class(manager.all()).get(ctx)['objects']
 
     def prepare(self, ctx, queryset):
-        append_select_related(queryset, self.property)
+        append_select_related(queryset, self._attribute)
         return queryset
 
 
