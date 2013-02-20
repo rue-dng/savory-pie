@@ -3,11 +3,12 @@ from mock import Mock
 
 from savory_pie.resources import ModelResource, QuerySetResource
 from savory_pie.fields import PropertyField, FKPropertyField, SubModelResourceField, RelatedManagerField
-
+from savory_pie.formatters import JSONFormatter
 
 def mock_context():
-    return object()
-
+    ctx = Mock(name='content', spec=[])
+    ctx.formatter = JSONFormatter()
+    return ctx
 
 class PropertyFieldTest(unittest.TestCase):
     def test_simple_outgoing(self):

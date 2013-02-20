@@ -39,11 +39,11 @@ class PropertyField(object):
             getattr(source_obj, self.property)
         )
 
-    def to_python_value(self, ctx, string):
-        return None if string is None else self.type(string)
+    def to_python_value(self, ctx, api_value):
+        return ctx.formatter.to_python_value(self.type, api_value)
 
-    def to_api_value(self, ctx, value):
-        return value
+    def to_api_value(self, ctx, python_value):
+        return ctx.formatter.to_api_value(self.type, python_value)
 
     def prepare(self, ctx, queryset):
         return queryset
@@ -85,11 +85,11 @@ class FKPropertyField(object):
             self._get_property(source_obj)
         )
 
-    def to_python_value(self, ctx, string):
-        return None if string is None else self.type(string)
+    def to_python_value(self, ctx, api_value):
+        return ctx.formatter.to_python_value(self.type, api_value)
 
-    def to_api_value(self, ctx, value):
-        return value
+    def to_api_value(self, ctx, python_value):
+        return ctx.formatter.to_api_value(self.type, python_value)
 
     def prepare(self, ctx, queryset):
         segments = self.property.split('.')

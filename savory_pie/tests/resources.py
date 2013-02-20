@@ -2,11 +2,13 @@ import unittest
 import mock_orm
 import django.db.models.query
 from savory_pie import resources, fields
+from savory_pie.formatters import JSONFormatter
 
 from mock import Mock
 
 def mock_context():
     ctx = Mock(name='context', spec=[])
+    ctx.formatter = JSONFormatter()
     ctx.build_resource_uri = lambda resource: resource.resource_path
     return ctx
 

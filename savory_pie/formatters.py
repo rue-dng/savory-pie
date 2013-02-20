@@ -2,8 +2,8 @@ import json
 
 #protocol Formatter
 #   def default_published_name(self, attribute)
-#   def to_python_value(type_, api_value)
-#   def to_api_value(type_, python_value)
+#   def to_python_value(self, type_, api_value)
+#   def to_api_value(self, type_, python_value)
 
 
 class JSONFormatter(object):
