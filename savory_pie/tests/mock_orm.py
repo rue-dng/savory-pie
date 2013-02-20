@@ -3,14 +3,11 @@ from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 import random
 
 class QuerySet(object):
-    def __init__(self, *elements, **kwargs):
-        try:
-            self.model = kwargs['model_class']
-        except KeyError:
-            if not elements:
-                raise ValueError, 'no elements provided - kwarg model_class required to determine type'
-
+    def __init__(self, *elements):
+        if elements:
             self.model = type(elements[0])
+        else:
+            self.model = Model
 
         self._elements = elements
         self._related = set()
@@ -20,7 +17,7 @@ class QuerySet(object):
         return iter(self._elements)
 
     def filter(self, **kwargs):
-        queryset = QuerySet(model_class=self.model, *self._filter_elements(**kwargs))
+        queryset = QuerySet(*self._filter_elements(**kwargs))
         queryset._related = set(queryset._related)
         queryset._prefetch = set(queryset._prefetch)
         return queryset
@@ -33,21 +30,21 @@ class QuerySet(object):
             # This is not really correct, should return an exception that
             # matches the specific sub-class, but this is close enough for
             # the purpose of many tests.
-            raise Model.DoesNotExist
+            raise self.model.DoesNotExist
         elif count == 1:
             return filtered_elements[0]
         else:
             raise MultipleObjectsReturned
 
     def select_related(self, *fields):
-        queryset = QuerySet(model_class=self.model, *self._elements)
+        queryset = QuerySet(*self._elements)
         # Accurately, recreate Django's broken behavior: https://code.djangoproject.com/ticket/16855
         queryset._related = set(fields)
         queryset._prefetch = set(queryset._prefetch)
         return queryset
 
     def prefetch_related(self, *fields):
-        queryset = QuerySet(model_class=self.model, *self._elements)
+        queryset = QuerySet(*self._elements)
         queryset._related = set(queryset._related)
         queryset._prefetch = set(queryset._prefetch) | set(fields)
         return queryset
@@ -65,7 +62,7 @@ class Manager(Mock):
         super(Manager, self).__init__(spec=[])
 
     def all(self):
-        return QuerySet(model_class=Model)
+        return QuerySet()
 
 class Model(Mock):
     class DoesNotExist(ObjectDoesNotExist):

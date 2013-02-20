@@ -102,6 +102,44 @@ class FullyUnaddressableUserQuerySetResource(resources.QuerySetResource):
     resource_class = UnaddressableUserResource
 
 
+class RelatedTest(unittest.TestCase):
+    def test_select(self):
+        related = resources.Related()
+
+        related.select('foo')
+        self.assertEqual(related._select, {
+            'foo'
+        })
+
+        related.select('bar')
+        self.assertEqual(related._select, {
+            'foo',
+            'bar'
+        })
+
+    def test_prefetch(self):
+        related = resources.Related()
+
+        related.prefetch('foo')
+        self.assertEqual(related._prefetch, {
+            'foo'
+        })
+
+        related.prefetch('bar')
+        self.assertEqual(related._prefetch, {
+            'foo',
+            'bar'
+        })
+
+    def test_prepare(self):
+        related = resources.Related()
+
+        related.select('foo')
+        related.prefetch('bar')
+
+        queryset = mock_orm.QuerySet()
+        queryset = related.prepare(queryset)
+
 class QuerySetResourceTest(unittest.TestCase):
     def test_get(self):
         resource = AddressableUserQuerySetResource(mock_orm.QuerySet(
