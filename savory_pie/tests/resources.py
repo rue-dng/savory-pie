@@ -171,7 +171,6 @@ class QuerySetResourceTest(unittest.TestCase):
 
 
 class ResourcePrepareTest(unittest.TestCase):
-
     class TestResource(resources.ModelResource):
         model_class = User
         fields = [
@@ -180,13 +179,10 @@ class ResourcePrepareTest(unittest.TestCase):
         ]
 
     def test_select_related(self):
-        queryset = django.db.models.query.QuerySet()
+        related = resources.Related()
 
-        queryset = self.TestResource.prepare(mock_context(), queryset)
-
-        select_related = queryset.query.select_related
-        self.assertEqual(select_related, {
-            'group': {},
-            'domain': {},
+        queryset = self.TestResource.prepare(mock_context(), related)
+        self.assertEqual(queryset._select, {
+            'group',
+            'domain'
         })
-

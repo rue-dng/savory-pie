@@ -84,9 +84,8 @@ class AttributeField(object):
     def to_api_value(self, ctx, python_value):
         return ctx.formatter.to_api_value(self._type, python_value)
 
-    def prepare(self, ctx, queryset):
-        append_select_related(queryset, '__'.join(self._attrs[:-1]))
-        return queryset
+    def prepare(self, ctx, related):
+        related.select('__'.join(self._attrs[:-1]))
 
 
 class SubModelResourceField(object):
@@ -116,9 +115,8 @@ class SubModelResourceField(object):
         sub_model = getattr(source_obj, self._attribute)
         target_dict[self._compute_property(ctx)] = self._resource_class(sub_model).get(ctx)
 
-    def prepare(self, ctx, queryset):
-        append_select_related(queryset, self._attribute)
-        return queryset
+    def prepare(self, ctx, related):
+        related.select(self._attribute)
 
 
 class RelatedManagerField(object):
@@ -143,6 +141,5 @@ class RelatedManagerField(object):
         target_dict[self._compute_property(ctx)] = \
             self._resource_class(manager.all()).get(ctx)['objects']
 
-    def prepare(self, ctx, queryset):
-        append_select_related(queryset, self._attribute)
-        return queryset
+    def prepare(self, ctx, related):
+        related.prefetch(self._attribute)

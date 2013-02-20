@@ -95,6 +95,44 @@ class APIResource(Resource):
         return self._child_resources.get(path_fragment, None)
 
 
+class Related(object):
+    """
+    Helper object that helps build related select-s and prefetch-es.
+    Originally created to work around Django silliness - https://code.djangoproject.com/ticket/16855,
+    but later extended to help track the related path from the root Model being selected.
+    """
+    def __init__(self, prefix=None, related=None, prefetch=None):
+        self._prefix = None
+        self._select = set()
+        self._prefetch = set()
+
+    def translate(self, attribute):
+        if self._prefix is None:
+            return attribute
+        else:
+            return self._prefix + '__' + attribute
+
+    def select(self, attribute):
+        self._select.add(self.translate(attribute))
+        return self
+
+    def prefetch(self, attribute):
+        self._prefetch.add(self.translate(attribute))
+        return self
+
+    def sub(self, attribute):
+        return Related(
+            prefix=self.translate(attribute),
+            select=self._select,
+            prefetch=self._prefetch
+        )
+
+    def prepare(self, queryset):
+        queryset = queryset.select_related(*self._select)
+        queryset = queryset.prefetch_related(*self._prefetch)
+        return queryset
+
+
 class QuerySetResource(Resource):
     """
     Resource abstract around Django QuerySets.
@@ -133,7 +171,9 @@ class QuerySetResource(Resource):
         return resource
 
     def prepare(self, ctx, queryset):
-        return self.resource_class.prepare(ctx, queryset)
+        related = Related()
+        self.resource_class.prepare(ctx, related)
+        return related.prepare(queryset)
 
     def get(self, ctx, **kwargs):
         queryset = self.prepare(ctx, self.filter_queryset(**kwargs))
@@ -160,11 +200,8 @@ class QuerySetResource(Resource):
 
     def get_child_resource(self, ctx, path_fragment):
         queryset = self.prepare(ctx, self.queryset)
-
         try:
-            model = self.resource_class.get_from_queryset(
-                queryset, path_fragment
-            )
+            model = self.resource_class.get_from_queryset(queryset, path_fragment)
             return self.to_resource(model)
         except queryset.model.DoesNotExist:
             return None
@@ -217,15 +254,14 @@ class ModelResource(Resource):
         return cls(cls.model_class())
 
     @classmethod
-    def prepare(cls, ctx, queryset):
+    def prepare(cls, ctx, related):
         """
         Called by QuerySetResource to add necessary select_related-s
         calls to the QuerySet.
         """
-        prepared_queryset = queryset
         for field in cls.fields:
-            prepared_queryset = field.prepare(ctx, prepared_queryset)
-        return prepared_queryset
+            field.prepare(ctx, related)
+        return related
 
     def __init__(self, model):
         self.model = model

@@ -12,16 +12,18 @@ class QuerySet(object):
 
             self.model = type(elements[0])
 
-        self.elements = elements
-
-        self.query = Mock('query')
-        self.query.select_related = dict()
+        self._elements = elements
+        self._related = set()
+        self._prefetch = set()
 
     def __iter__(self):
-        return iter(self.elements)
+        return iter(self._elements)
 
     def filter(self, **kwargs):
-        return QuerySet(model_class=self.model, *self._filter_elements(**kwargs))
+        queryset = QuerySet(model_class=self.model, *self._filter_elements(**kwargs))
+        queryset._related = set(queryset._related)
+        queryset._prefetch = set(queryset._prefetch)
+        return queryset
 
     def get(self, **kwargs):
         filtered_elements = self._filter_elements(**kwargs)
@@ -37,11 +39,24 @@ class QuerySet(object):
         else:
             raise MultipleObjectsReturned
 
+    def select_related(self, *fields):
+        queryset = QuerySet(model_class=self.model, *self._elements)
+        # Accurately, recreate Django's broken behavior: https://code.djangoproject.com/ticket/16855
+        queryset._related = set(fields)
+        queryset._prefetch = set(queryset._prefetch)
+        return queryset
+
+    def prefetch_related(self, *fields):
+        queryset = QuerySet(model_class=self.model, *self._elements)
+        queryset._related = set(queryset._related)
+        queryset._prefetch = set(queryset._prefetch) | set(fields)
+        return queryset
+
     def _filter_elements(self, **kwargs):
-        filtered_elements = self.elements
+        filtered_elements = self._elements
         for attr, value in kwargs.iteritems():
             filtered_elements = \
-                [element for element in self.elements if getattr(element, attr) == value]
+                [element for element in self._elements if getattr(element, attr) == value]
         return filtered_elements
 
 

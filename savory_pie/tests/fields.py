@@ -1,7 +1,7 @@
 import unittest
 from mock import Mock
 
-from savory_pie.resources import ModelResource, QuerySetResource
+from savory_pie.resources import Related, ModelResource, QuerySetResource
 from savory_pie.fields import AttributeField, SubModelResourceField, RelatedManagerField
 from savory_pie.formatters import JSONFormatter
 from savory_pie.tests import mock_orm
@@ -120,16 +120,14 @@ class AttributeFieldTest(unittest.TestCase):
         self.assertEqual(target_object.foo.bar, 20)
 
     def test_prepare(self):
-        queryset = Mock(name='queryset')
-        queryset.query.select_related = {}
-
         field = AttributeField(attribute='foo.bar.baz', type=int)
 
-        result_query_set = field.prepare(mock_context(), queryset)
+        related = Related()
+        field.prepare(mock_context(), related)
 
-        self.assertEqual({'foo': {'bar': {}}}, queryset.query.select_related)
-        self.assertEqual(queryset, result_query_set)
-
+        self.assertEqual(related._select, {
+            'foo__bar'
+        })
 
 class SubModelResourceFieldTest(unittest.TestCase):
     def test_simple_outgoing(self):
@@ -158,6 +156,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
             fields = [
                 AttributeField(attribute='bar', type=int),
             ]
+
         field = SubModelResourceField(attribute='foo', resource_class=Resource)
 
         target_object = Mock()
@@ -177,6 +176,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
             fields = [
                 AttributeField(attribute='bar', type=int),
             ]
+
         field = SubModelResourceField(attribute='foo', resource_class=Resource)
 
         target_object = Mock()
