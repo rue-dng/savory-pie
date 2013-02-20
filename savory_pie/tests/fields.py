@@ -140,7 +140,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
             fields = [
                 AttributeField(attribute='bar', type=int),
             ]
-        field = SubModelResourceField(property='foo', resource_class=Resource)
+        field = SubModelResourceField(attribute='foo', resource_class=Resource)
 
         target_dict = dict()
 
@@ -158,7 +158,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
             fields = [
                 AttributeField(attribute='bar', type=int),
             ]
-        field = SubModelResourceField(property='foo', resource_class=Resource)
+        field = SubModelResourceField(attribute='foo', resource_class=Resource)
 
         target_object = Mock()
 
@@ -177,7 +177,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
             fields = [
                 AttributeField(attribute='bar', type=int),
             ]
-        field = SubModelResourceField(property='foo', resource_class=Resource)
+        field = SubModelResourceField(attribute='foo', resource_class=Resource)
 
         target_object = Mock()
         target_object.foo = None
@@ -209,7 +209,7 @@ class RelatedManagerFieldTest(unittest.TestCase):
         related_manager.all = Mock(return_value=mock_orm.QuerySet(
             mock_orm.Model(bar=14)
         ))
-        source_object.foo = mock_orm.Manager()
+        source_object.foo = related_manager
 
         target_dict = {}
         field.handle_outgoing(mock_context(), source_object, target_dict)

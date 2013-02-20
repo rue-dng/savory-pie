@@ -25,7 +25,7 @@ class AttributeField(object):
 
     Used to flatten fields of related models in to a single API object.
 
-    FKPropertyField('other.name', type=int) will return this json {'name': other.name}
+    AttributeField('other.name', type=int) will return this json {'name': other.name}
     """
     def __init__(self, attribute, type, published_property=None):
         self._full_attribute = attribute
@@ -90,28 +90,34 @@ class AttributeField(object):
 
 
 class SubModelResourceField(object):
-    def __init__(self, property, resource_class, json_property=None):
-        self.property = property
-        self.resource_class = resource_class
-        self.json_property = json_property or _python_to_js_name(self.property)
+    def __init__(self, attribute, resource_class, published_property=None):
+        self._attribute = attribute
+        self._resource_class = resource_class
+        self._published_property = published_property
+
+    def _compute_property(self, ctx):
+        if self._published_property is not None:
+            return self._published_property
+        else:
+            return ctx.formatter.default_published_property(self._attribute)
 
     def handle_incoming(self, ctx, source_dict, target_obj):
-        sub_model = getattr(target_obj, self.property, None)
+        sub_model = getattr(target_obj, self._attribute, None)
         if sub_model is None:
-            sub_resource = self.resource_class.create_resource()
+            sub_resource = self._resource_class.create_resource()
             # I am not 100% happy with this
-            setattr(target_obj, self.property, sub_resource.model)
+            setattr(target_obj, self._attribute, sub_resource.model)
         else:
-            sub_resource = self.resource_class(sub_model)
+            sub_resource = self._resource_class(sub_model)
 
-        sub_resource.put(ctx, source_dict[self.json_property])
+        sub_resource.put(ctx, source_dict[self._attribute])
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
-        sub_model = getattr(source_obj, self.property)
-        target_dict[self.json_property] = self.resource_class(sub_model).get(ctx)
+        sub_model = getattr(source_obj, self._attribute)
+        target_dict[self._compute_property(ctx)] = self._resource_class(sub_model).get(ctx)
 
     def prepare(self, ctx, queryset):
-        append_select_related(queryset, self.property)
+        append_select_related(queryset, self._attribute)
         return queryset
 
 
@@ -140,21 +146,3 @@ class RelatedManagerField(object):
     def prepare(self, ctx, queryset):
         append_select_related(queryset, self._attribute)
         return queryset
-
-
-def _python_to_js_name(python_name):
-    js_name = []
-    last_was_underscore = False
-
-    for char in python_name:
-        if char == '_':
-            last_was_underscore = True
-        else:
-            if last_was_underscore:
-                js_name.append(char.upper())
-            else:
-                js_name.append(char)
-
-            last_was_underscore = False
-
-    return ''.join(js_name)

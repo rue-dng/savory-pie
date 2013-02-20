@@ -21,7 +21,7 @@ class QuerySet(object):
         return iter(self.elements)
 
     def filter(self, **kwargs):
-        return QuerySet(*self._filter_elements(**kwargs))
+        return QuerySet(model_class=self.model, *self._filter_elements(**kwargs))
 
     def get(self, **kwargs):
         filtered_elements = self._filter_elements(**kwargs)
@@ -49,7 +49,8 @@ class Manager(Mock):
     def __init__(self):
         super(Manager, self).__init__(spec=[])
 
-        # all is filled in at the end
+    def all(self):
+        return QuerySet(model_class=Model)
 
 class Model(Mock):
     class DoesNotExist(ObjectDoesNotExist):
@@ -70,9 +71,3 @@ class Model(Mock):
 
         self.save = Mock(name='save', side_effect=save_side_effect)
         self.delete = Mock(name='delete')
-
-
-# Not quite exactly semantically equivalent to Django because an empty QuerySet
-# will have queryset.model resolve to Model rather than the specified sub-class;
-# however, this is close enough for testing purposes.
-Model.objects.all = Mock(return_value=QuerySet(model_class=Model))
