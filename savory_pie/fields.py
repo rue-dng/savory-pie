@@ -1,5 +1,3 @@
-from savory_pie.utils import append_select_related
-
 #protocol Field:
 #    def handle_incoming(self, source_dict, target_obj)
 #       Called by ModelResource.put or post to set Model properties on
