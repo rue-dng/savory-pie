@@ -117,7 +117,7 @@ class SubModelResourceField(object):
 
     def prepare(self, ctx, related):
         related.select(self._attribute)
-        self._resource_class.prepare(ctx, related.sub(self._attribute))
+        self._resource_class.prepare(ctx, related.sub_select(self._attribute))
 
 
 class RelatedManagerField(object):
@@ -144,4 +144,4 @@ class RelatedManagerField(object):
 
     def prepare(self, ctx, related):
         related.prefetch(self._attribute)
-        self._resource_class.prepare(ctx, related.sub(self._attribute))
+        self._resource_class.prepare(ctx, related.sub_prefetch(self._attribute))

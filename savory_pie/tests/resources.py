@@ -139,9 +139,9 @@ class RelatedTest(unittest.TestCase):
             'bar'
         })
 
-    def test_sub(self):
+    def test_sub_select(self):
         related = resources.Related()
-        sub_related = related.sub('foo')
+        sub_related = related.sub_select('foo')
 
         sub_related.select('bar')
         sub_related.prefetch('baz')
@@ -151,6 +151,34 @@ class RelatedTest(unittest.TestCase):
         })
         self.assertEqual(related._prefetch, {
             'foo__baz'
+        })
+
+    def test_sub_prefetch(self):
+        related = resources.Related()
+        sub_related = related.sub_prefetch('foo')
+
+        sub_related.select('bar')
+        sub_related.prefetch('baz')
+
+        self.assertEqual(related._select, set())
+        # Because foo is assumed to have a non-one cardinality, sub-selects
+        # through foo are also converted into prefetch-es.  In this case, bar.
+        self.assertEqual(related._prefetch, {
+            'foo__bar',
+            'foo__baz'
+        })
+
+    def test_sub_prefetch_continuation(self):
+        related = resources.Related()
+        sub_related = related.sub_prefetch('foo')
+        sub_sub_related = sub_related.sub_select('bar')
+
+        sub_sub_related.select('baz')
+
+        # Because foo was prefetch, the sub-select of bar is also forced into
+        # prefetch mode, so foo__bar__baz ends up being prefetched.
+        self.assertEqual(related._prefetch, {
+            'foo__bar__baz'
         })
 
     def test_empty_prepare(self):

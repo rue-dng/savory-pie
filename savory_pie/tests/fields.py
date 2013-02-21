@@ -198,7 +198,6 @@ class RelatedManagerFieldTest(unittest.TestCase):
                 AttributeField(attribute='bar', type=int),
             ]
 
-
         class MockQuerySetResource(QuerySetResource):
             resource_class = MockResource
 
@@ -214,3 +213,16 @@ class RelatedManagerFieldTest(unittest.TestCase):
         target_dict = {}
         field.handle_outgoing(mock_context(), source_object, target_dict)
         self.assertEqual([{'bar': 14}], target_dict['foo'])
+
+
+    def test_prepare(self):
+
+        class MockResource(ModelResource):
+            model_class = mock_orm.Model
+            fields = [
+                AttributeField('bar.baz', type=int)
+            ]
+
+        class MockQuerySetResource(QuerySetResource):
+            resource_class = MockResource
+

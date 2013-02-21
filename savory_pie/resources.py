@@ -101,12 +101,13 @@ class Related(object):
     Originally created to work around Django silliness - https://code.djangoproject.com/ticket/16855,
     but later extended to help track the related path from the root Model being selected.
     """
-    def __init__(self, prefix=None, select=None, prefetch=None):
+    def __init__(self, prefix=None, select=None, prefetch=None, force_prefetch=False):
         self._prefix = prefix
 
         # or-s don't work want to continue to use the same empty set
         self._select = select if select is not None else set()
         self._prefetch = prefetch if prefetch is not None else set()
+        self._force_prefetch = force_prefetch
 
     def translate(self, attribute):
         if self._prefix is None:
@@ -115,6 +116,12 @@ class Related(object):
             return self._prefix + '__' + attribute
 
     def select(self, attribute):
+        # If a select call is made on a Related that was created through sub_prefetch,
+        # that call must be converted into prefetch because the relationship to the
+        # top element will not have a cardinality of 1.
+        if self._force_prefetch:
+            return self.prefetch(attribute)
+
         self._select.add(self.translate(attribute))
         return self
 
@@ -122,11 +129,20 @@ class Related(object):
         self._prefetch.add(self.translate(attribute))
         return self
 
-    def sub(self, attribute):
+    def sub_select(self, attribute):
         return Related(
             prefix=self.translate(attribute),
             select=self._select,
-            prefetch=self._prefetch
+            prefetch=self._prefetch,
+            force_prefetch=self._force_prefetch
+        )
+
+    def sub_prefetch(self, attribute):
+        return Related(
+            prefix=self.translate(attribute),
+            select=self._select,
+            prefetch=self._prefetch,
+            force_prefetch=True
         )
 
     def prepare(self, queryset):
