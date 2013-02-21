@@ -178,16 +178,23 @@ class QuerySetResource(Resource):
 
         meta = dict()
         if self.supports_paging:
+            # When paging the sliced_queryset will not contain all the objects,
+            # so the count of the accumulated objects is insufficient.  In that case,
+            # need to make a call queryset.count.
+            count = complete_queryset.count()
+
             page = self.get_page(GET)
             if page > 0:
                 meta['prev'] = self.build_page_uri(ctx, page - 1)
 
-            count = complete_queryset.count()
             meta['count'] = count
 
             if ( page + 1 ) * self.page_size < count:
                 meta['next'] = self.build_page_uri(ctx, page + 1)
         else:
+            # When paging is disabled the sliced_queryset is the complete queryset,
+            # so the accumulated objects contains all the objects.  In this case, just
+            # do a len on the accumulated objects to avoid the extra COUNT(*) query.
             meta['count'] = len(objects)
 
         return {
