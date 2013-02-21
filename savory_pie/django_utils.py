@@ -1,5 +1,3 @@
-
-
 class Related(object):
     """
     Helper object that helps build related select-s and prefetch-es.
