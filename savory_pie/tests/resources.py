@@ -47,6 +47,14 @@ class UnaddressableUserResource(resources.ModelResource):
     ]
 
 
+class ComplexUserResource(resources.ModelResource):
+    model_class = User
+
+    fields = [
+        fields.SubModelResourceField(attribute='manager', resource_class=UnaddressableUserResource),
+        fields.RelatedManagerField(attribute='reports', resource_class=UnaddressableUserResource)
+    ]
+
 class ModelResourceTest(unittest.TestCase):
     def test_resource_path(self):
         user = User(pk=1, name='Bob', age=20)
@@ -131,14 +139,43 @@ class RelatedTest(unittest.TestCase):
             'bar'
         })
 
+    def test_sub(self):
+        related = resources.Related()
+        sub_related = related.sub('foo')
+
+        sub_related.select('bar')
+        sub_related.prefetch('baz')
+
+        self.assertEqual(related._select, {
+            'foo__bar'
+        })
+        self.assertEqual(related._prefetch, {
+            'foo__baz'
+        })
+
+    def test_empty_prepare(self):
+        related = resources.Related()
+
+        queryset = related.prepare(mock_orm.QuerySet())
+
+        self.assertEqual(queryset._selected, set())
+        self.assertEqual(queryset._prefetched, set())
+
     def test_prepare(self):
         related = resources.Related()
 
         related.select('foo')
         related.prefetch('bar')
 
-        queryset = mock_orm.QuerySet()
-        queryset = related.prepare(queryset)
+        queryset = related.prepare(mock_orm.QuerySet())
+
+        self.assertEqual(queryset._selected, {
+            'foo'
+        })
+        self.assertEqual(queryset._prefetched, {
+            'bar'
+        })
+
 
 class QuerySetResourceTest(unittest.TestCase):
     def test_get(self):

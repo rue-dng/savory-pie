@@ -101,10 +101,12 @@ class Related(object):
     Originally created to work around Django silliness - https://code.djangoproject.com/ticket/16855,
     but later extended to help track the related path from the root Model being selected.
     """
-    def __init__(self, prefix=None, related=None, prefetch=None):
-        self._prefix = None
-        self._select = set()
-        self._prefetch = set()
+    def __init__(self, prefix=None, select=None, prefetch=None):
+        self._prefix = prefix
+
+        # or-s don't work want to continue to use the same empty set
+        self._select = select if select is not None else set()
+        self._prefetch = prefetch if prefetch is not None else set()
 
     def translate(self, attribute):
         if self._prefix is None:
@@ -128,8 +130,12 @@ class Related(object):
         )
 
     def prepare(self, queryset):
-        queryset = queryset.select_related(*self._select)
-        queryset = queryset.prefetch_related(*self._prefetch)
+        if self._select:
+            queryset = queryset.select_related(*self._select)
+
+        if self._prefetch:
+            queryset = queryset.prefetch_related(*self._prefetch)
+
         return queryset
 
 
