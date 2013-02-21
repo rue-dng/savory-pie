@@ -130,6 +130,16 @@ class AttributeFieldTest(unittest.TestCase):
             'foo__bar'
         })
 
+    def test_prepare_with_use_prefetch(self):
+        field = AttributeField(attribute='foo.bar.baz', type=int, use_prefetch=True)
+
+        related = Related()
+        field.prepare(mock_context(), related)
+
+        self.assertEqual(related._prefetch, {
+            'foo__bar'
+        })
+
 
 class URIResourceFieldTest(unittest.TestCase):
     def test_outgoing(self):
@@ -246,6 +256,27 @@ class SubModelResourceFieldTest(unittest.TestCase):
         field.prepare(mock_context(), related)
 
         self.assertEqual(related._select, {
+            'foo',
+            'foo__bar'
+        })
+
+    def test_prepare_with_use_prefetch(self):
+        class MockResource(ModelResource):
+            model_class = Mock()
+            fields = [
+                AttributeField(attribute='bar.baz', type=int),
+            ]
+
+        field = SubModelResourceField(
+            attribute='foo',
+            resource_class=MockResource,
+            use_prefetch=True
+        )
+
+        related = Related()
+        field.prepare(mock_context(), related)
+
+        self.assertEqual(related._prefetch, {
             'foo',
             'foo__bar'
         })

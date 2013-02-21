@@ -17,20 +17,28 @@ from savory_pie.utils import append_select_related
 class AttributeField(object):
     """
     Simple Field that translates an object property to/from a dict.
-    attribute - attribute on the Model
-        - can be a multi-level expression - like related_entity.attribute
-    type - expecting type of value - int, bool, etc.
-    published_property - name under which the value is placed into the dict
-    - by default - inferred from property
+        attribute - attribute on the Model
+            - can be a multi-level expression - like related_entity.attribute
+        type - expecting type of value - int, bool, etc.
+        published_property - optional - name exposed in the API
+        use_prefetch - optional - tells the attribute field to use
+            prefetch_related rather than a select_related.  Defaults to false.
 
-    Used to flatten fields of related models in to a single API object.
+            There are two reasons you might need to do this...
+            - select_related will not work when the foreign key allows null.
+            - select_related will not work when the foreign key is a GenericForeignKey.
+            See https://docs.djangoproject.com/en/dev/ref/models/querysets/
 
-    AttributeField('other.name', type=int) will return this json {'name': other.name}
+            This parameter is meaningless for top-level attributes.
+
+    AttributeField('name', type=str) will return the JSON {'name': obj.name}
+    AttributeField('other.age', type=int) will return the JSON {'age': obj.other.age}
     """
-    def __init__(self, attribute, type, published_property=None):
+    def __init__(self, attribute, type, published_property=None, use_prefetch=False):
         self._full_attribute = attribute
         self._type = type
         self._published_property = published_property
+        self._use_prefetch = use_prefetch
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
@@ -85,17 +93,22 @@ class AttributeField(object):
         return ctx.formatter.to_api_value(self._type, python_value)
 
     def prepare(self, ctx, related):
-        related.select('__'.join(self._attrs[:-1]))
+        related_attr = '__'.join(self._attrs[:-1])
+        if related_attr:
+            if self._use_prefetch:
+                related.prefetch(related_attr)
+            else:
+                related.select(related_attr)
 
 
 class URIResourceField(object):
     """
     Field that exposes just the URI of related entity
-    attribute - name of the relationship between the parent object and the related object
-        - may only be single level
-    resource_class - a ModelResource - used to represent the related object
-        - needs to be fully addressable
-    published_property - optional name exposed through the API
+        attribute - name of the relationship between the parent object and the related object
+            - may only be single level
+        resource_class - a ModelResource - used to represent the related object
+            - needs to be fully addressable
+        published_property - optional - name exposed in the API
     """
     def __init__(self, attribute, resource_class, published_property=None):
         self._attribute = attribute
@@ -134,12 +147,20 @@ class SubModelResourceField(object):
         attribute - name of the relationship between the parent object and the related object
             - may only be single level
         resource_class - a ModelResource - used to represent the related object
-        published_property - optional name exposed through the API
+        published_property - optional - name exposed in the API
+        use_prefetch - optional - tells the sub-model resource field to use
+            prefetch_related rather than a select_related.  Defaults to false.
+
+            There are two reasons you might need to do this...
+            - select_related will not work when the foreign key allows null.
+            - select_related will not work when the foreign key is a GenericForeignKey.
+            See https://docs.djangoproject.com/en/dev/ref/models/querysets/
     """
-    def __init__(self, attribute, resource_class, published_property=None):
+    def __init__(self, attribute, resource_class, published_property=None, use_prefetch=False):
         self._attribute = attribute
         self._resource_class = resource_class
         self._published_property = published_property
+        self._use_prefetch = use_prefetch
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
@@ -163,8 +184,12 @@ class SubModelResourceField(object):
         target_dict[self._compute_property(ctx)] = self._resource_class(sub_model).get(ctx)
 
     def prepare(self, ctx, related):
-        related.select(self._attribute)
-        self._resource_class.prepare(ctx, related.sub_select(self._attribute))
+        if self._use_prefetch:
+            related.prefetch(self._attribute)
+            self._resource_class.prepare(ctx, related.sub_prefetch(self._attribute))
+        else:
+            related.select(self._attribute)
+            self._resource_class.prepare(ctx, related.sub_select(self._attribute))
 
 
 class RelatedManagerField(object):
