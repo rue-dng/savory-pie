@@ -176,13 +176,16 @@ class QuerySetResource(Resource):
 
         return resource
 
-    def prepare(self, ctx, queryset):
+    def prepare_queryset(self, ctx, queryset):
         related = Related()
-        self.resource_class.prepare(ctx, related)
+        self.prepare(ctx, related)
         return related.prepare(queryset)
 
+    def prepare(self, ctx, related):
+        self.resource_class.prepare(ctx, related)
+
     def get(self, ctx, **kwargs):
-        queryset = self.prepare(ctx, self.filter_queryset(**kwargs))
+        queryset = self.prepare_queryset(ctx, self.filter_queryset(**kwargs))
 
         objects = []
         for model in queryset:
@@ -205,7 +208,7 @@ class QuerySetResource(Resource):
         return resource
 
     def get_child_resource(self, ctx, path_fragment):
-        queryset = self.prepare(ctx, self.queryset)
+        queryset = self.prepare_queryset(ctx, self.queryset)
         try:
             model = self.resource_class.get_from_queryset(queryset, path_fragment)
             return self.to_resource(model)
