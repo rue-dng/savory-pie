@@ -1,17 +1,9 @@
 import unittest
-import mock_orm
-import django.db.models.query
-from savory_pie import resources, fields
-from savory_pie.formatters import JSONFormatter
-
 from mock import Mock
 
-def mock_context():
-    ctx = Mock(name='context', spec=[])
-    ctx.formatter = JSONFormatter()
-    ctx.build_resource_uri = lambda resource: 'uri://' + resource.resource_path
-    return ctx
-
+from savory_pie import resources, fields
+from savory_pie.tests import mock_orm
+from savory_pie.tests.mock_context import mock_context
 
 class ResourceTest(unittest.TestCase):
     def no_allowed_methods(self):

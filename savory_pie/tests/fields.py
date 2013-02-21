@@ -9,15 +9,9 @@ from savory_pie.fields import (
     RelatedManagerField,
     URIResourceField
 )
-from savory_pie.formatters import JSONFormatter
 from savory_pie.tests import mock_orm
 
-def mock_context():
-    ctx = Mock(name='content', spec=[])
-    ctx.formatter = JSONFormatter()
-    ctx.build_resource_uri = lambda resource: 'uri://' + resource.resource_path
-    return ctx
-
+from savory_pie.tests.mock_context import mock_context
 
 class AttributeFieldTest(unittest.TestCase):
     def test_simple_outgoing(self):
