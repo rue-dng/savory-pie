@@ -176,13 +176,14 @@ class QuerySetResource(Resource):
 
         return resource
 
+    @classmethod
+    def prepare(cls, ctx, related):
+        cls.resource_class.prepare(ctx, related)
+
     def prepare_queryset(self, ctx, queryset):
         related = Related()
         self.prepare(ctx, related)
         return related.prepare(queryset)
-
-    def prepare(self, ctx, related):
-        self.resource_class.prepare(ctx, related)
 
     def get(self, ctx, **kwargs):
         queryset = self.prepare_queryset(ctx, self.filter_queryset(**kwargs))
