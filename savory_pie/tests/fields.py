@@ -130,7 +130,7 @@ class AttributeFieldTest(unittest.TestCase):
         })
 
 class SubModelResourceFieldTest(unittest.TestCase):
-    def test_simple_outgoing(self):
+    def test_outgoing(self):
         source_object = Mock()
         source_object.foo.bar = 20
 
@@ -146,7 +146,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
 
         self.assertEqual(target_dict['foo'], {'bar': 20})
 
-    def test_simple_incoming(self):
+    def test_incoming(self):
         source_dict = {
             'foo': {'bar': 20},
         }
@@ -171,13 +171,13 @@ class SubModelResourceFieldTest(unittest.TestCase):
             'foo': {'bar': 20},
         }
 
-        class Resource(ModelResource):
+        class MockResource(ModelResource):
             model_class = Mock()
             fields = [
                 AttributeField(attribute='bar', type=int),
             ]
 
-        field = SubModelResourceField(attribute='foo', resource_class=Resource)
+        field = SubModelResourceField(attribute='foo', resource_class=MockResource)
 
         target_object = Mock()
         target_object.foo = None
@@ -185,9 +185,25 @@ class SubModelResourceFieldTest(unittest.TestCase):
         field.handle_incoming(mock_context(), source_dict, target_object)
 
         self.assertEqual(20, target_object.foo.bar)
-        self.assertEqual(Resource.model_class.return_value, target_object.foo)
+        self.assertEqual(MockResource.model_class.return_value, target_object.foo)
         target_object.foo.save.assert_called_with()
 
+    def test_prepare(self):
+        class MockResource(ModelResource):
+            model_class = Mock()
+            fields = [
+                AttributeField(attribute='bar.baz', type=int),
+            ]
+
+        field = SubModelResourceField(attribute='foo', resource_class=MockResource)
+
+        related = Related()
+        field.prepare(mock_context(), related)
+
+        self.assertEqual(related._select, {
+            'foo',
+            'foo__bar'
+        })
 
 class RelatedManagerFieldTest(unittest.TestCase):
     def test_outgoing(self):
