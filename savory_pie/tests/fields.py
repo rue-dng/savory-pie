@@ -2,13 +2,19 @@ import unittest
 from mock import Mock
 
 from savory_pie.resources import Related, ModelResource, QuerySetResource
-from savory_pie.fields import AttributeField, SubModelResourceField, RelatedManagerField
+from savory_pie.fields import (
+    AttributeField,
+    SubModelResourceField,
+    RelatedManagerField,
+    URIResourceField
+)
 from savory_pie.formatters import JSONFormatter
 from savory_pie.tests import mock_orm
 
 def mock_context():
     ctx = Mock(name='content', spec=[])
     ctx.formatter = JSONFormatter()
+    ctx.build_resource_uri = lambda resource: 'uri://' + resource.resource_path
     return ctx
 
 
@@ -129,16 +135,58 @@ class AttributeFieldTest(unittest.TestCase):
             'foo__bar'
         })
 
+
+class URIResourceFieldTest(unittest.TestCase):
+    def test_outgoing(self):
+
+        class Resource(ModelResource):
+            parent_resource_path = 'resources'
+
+        field = URIResourceField(attribute='foo', resource_class=Resource)
+
+        source_object = Mock()
+        source_object.foo = mock_orm.Model(pk=2)
+
+        target_dict = dict()
+        field.handle_outgoing(mock_context(), source_object, target_dict)
+
+        self.assertEqual(target_dict['foo'], 'uri://resources/2')
+
+    def test_incoming(self):
+
+        class Resource(ModelResource):
+            pass
+
+        field = URIResourceField(attribute='foo', resource_class=Resource)
+
+        source_dict = {
+            'foo': 'uri://resources/2'
+        }
+        target_object = Mock()
+
+        related_model = mock_orm.Model(pk=2)
+
+        ctx = mock_context()
+        ctx.resolve_resource_uri = Mock(return_value=Resource(related_model))
+
+        field.handle_incoming(ctx, source_dict, target_object)
+
+        ctx.resolve_resource_uri.assert_called_with('uri://resources/2')
+        self.assertEqual(target_object.foo, related_model)
+
+
 class SubModelResourceFieldTest(unittest.TestCase):
     def test_outgoing(self):
-        source_object = Mock()
-        source_object.foo.bar = 20
 
         class Resource(ModelResource):
             fields = [
                 AttributeField(attribute='bar', type=int),
             ]
+
         field = SubModelResourceField(attribute='foo', resource_class=Resource)
+
+        source_object = Mock()
+        source_object.foo.bar = 20
 
         target_dict = dict()
 
@@ -147,9 +195,6 @@ class SubModelResourceFieldTest(unittest.TestCase):
         self.assertEqual(target_dict['foo'], {'bar': 20})
 
     def test_incoming(self):
-        source_dict = {
-            'foo': {'bar': 20},
-        }
 
         class Resource(ModelResource):
             model_class = Mock()
@@ -158,6 +203,10 @@ class SubModelResourceFieldTest(unittest.TestCase):
             ]
 
         field = SubModelResourceField(attribute='foo', resource_class=Resource)
+
+        source_dict = {
+            'foo': {'bar': 20},
+        }
 
         target_object = Mock()
 
@@ -167,9 +216,6 @@ class SubModelResourceFieldTest(unittest.TestCase):
         target_object.foo.save.assert_called_with()
 
     def test_new_object_incoming(self):
-        source_dict = {
-            'foo': {'bar': 20},
-        }
 
         class MockResource(ModelResource):
             model_class = Mock()
@@ -178,6 +224,10 @@ class SubModelResourceFieldTest(unittest.TestCase):
             ]
 
         field = SubModelResourceField(attribute='foo', resource_class=MockResource)
+
+        source_dict = {
+            'foo': {'bar': 20},
+        }
 
         target_object = Mock()
         target_object.foo = None

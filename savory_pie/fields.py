@@ -88,6 +88,46 @@ class AttributeField(object):
         related.select('__'.join(self._attrs[:-1]))
 
 
+class URIResourceField(object):
+    """
+    Field that exposes just the URI of related entity
+    attribute - name of the relationship between the parent object and the related object
+        - may only be single level
+    resource_class - a ModelResource - used to represent the related object
+        - needs to be fully addressable
+    published_property - optional name exposed through the API
+    """
+    def __init__(self, attribute, resource_class, published_property=None):
+        self._attribute = attribute
+        self._resource_class = resource_class
+        self._published_property = published_property
+
+    def _compute_property(self, ctx):
+        if self._published_property is not None:
+            return self._published_property
+        else:
+            return ctx.formatter.default_published_property(self._attribute)
+
+    def handle_incoming(self, ctx, source_dict, target_obj):
+        uri = source_dict[self._compute_property(ctx)]
+
+        resource = ctx.resolve_resource_uri(uri)
+        if resource is None:
+            raise ValueError, 'invalid URI: ' + uri
+
+        setattr(target_obj, self._attribute, resource.model)
+
+    def handle_outgoing(self, ctx, source_obj, target_dict):
+        sub_model = getattr(source_obj, self._attribute)
+        resource = self._resource_class(sub_model)
+
+        target_dict[self._compute_property(ctx)] = ctx.build_resource_uri(resource)
+
+    def prepare(self, ctx, related):
+        related.select(self._attribute)
+        self._resource_class.prepare(ctx, related.sub_select(self._attribute))
+
+
 class SubModelResourceField(object):
     """
     Field that embeds a single related resource into the parent object
@@ -116,7 +156,7 @@ class SubModelResourceField(object):
         else:
             sub_resource = self._resource_class(sub_model)
 
-        sub_resource.put(ctx, source_dict[self._attribute])
+        sub_resource.put(ctx, source_dict[self._compute_property(ctx)])
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
         sub_model = getattr(source_obj, self._attribute)

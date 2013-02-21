@@ -9,7 +9,7 @@ from mock import Mock
 def mock_context():
     ctx = Mock(name='context', spec=[])
     ctx.formatter = JSONFormatter()
-    ctx.build_resource_uri = lambda resource: resource.resource_path
+    ctx.build_resource_uri = lambda resource: 'uri://' + resource.resource_path
     return ctx
 
 
@@ -71,7 +71,7 @@ class ModelResourceTest(unittest.TestCase):
         self.assertEqual(dict, {
             'name': 'Bob',
             'age': 20,
-            'resourceUri': 'users/1'
+            'resourceUri': 'uri://users/1'
         })
 
     def test_put(self):
@@ -214,8 +214,8 @@ class QuerySetResourceTest(unittest.TestCase):
         data = resource.get(mock_context())
 
         self.assertEqual(data['objects'], [
-            {'resourceUri': 'users/1', 'name': 'Alice', 'age': 31},
-            {'resourceUri': 'users/2', 'name': 'Bob', 'age': 20}
+            {'resourceUri': 'uri://users/1', 'name': 'Alice', 'age': 31},
+            {'resourceUri': 'uri://users/2', 'name': 'Bob', 'age': 20}
         ])
 
     def test_addressable_post(self):
