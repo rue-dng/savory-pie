@@ -89,6 +89,13 @@ class AttributeField(object):
 
 
 class SubModelResourceField(object):
+    """
+    Field that embeds a single related resource into the parent object
+        attribute - name of the relationship between the parent object and the related object
+            - may only be single level
+        resource_class - a ModelResource - used to represent the related object
+        published_property - optional name exposed through the API
+    """
     def __init__(self, attribute, resource_class, published_property=None):
         self._attribute = attribute
         self._resource_class = resource_class
@@ -121,6 +128,13 @@ class SubModelResourceField(object):
 
 
 class RelatedManagerField(object):
+    """
+        Field that embeds a many relationship into the parent object -
+            attribute - name of the relationship between the parent object and the related objects
+            - may only be single level
+        resource_class - a QuerySetResource - used to represent the related objects
+        published_property - optional name exposed through the API
+    """
     def __init__(self, attribute, resource_class, published_property=None):
         self._attribute = attribute
         self._resource_class = resource_class
