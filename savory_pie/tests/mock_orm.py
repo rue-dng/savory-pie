@@ -16,6 +16,9 @@ class QuerySet(object):
     def __iter__(self):
         return iter(self._elements)
 
+    def count(self):
+        return len(self._elements)
+
     def filter(self, **kwargs):
         queryset = QuerySet(*self._filter_elements(**kwargs))
         queryset._selected = set(queryset._selected)

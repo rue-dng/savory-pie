@@ -100,7 +100,9 @@ class APIResource(Resource):
 class QuerySetResource(Resource):
     """
     Resource abstract around Django QuerySets.
-    resource_class - type of Resource to create for a given Model in the queryset.
+        resource_class - type of Resource to create for a given Model in the queryset
+        page_size - optional - if set specifies the page size for data returned during a GET
+          - defaults to None (no paging)
 
     Typical usage...
     class FooResource(ModelResource):
@@ -112,12 +114,33 @@ class QuerySetResource(Resource):
         resource_class = FooResource
     """
     # resource_class
+    page_size = None
 
     def __init__(self, queryset=None):
         self.queryset = queryset or self.resource_class.model_class.objects.all()
 
-    def filter_queryset(self, **kwargs):
-        return self.queryset.filter(**kwargs)
+    @property
+    def supports_paging(self):
+        return self.page_size is not None
+
+    def filter_queryset(self, GET):
+        # TODO: Revisit filtering
+        return self.queryset.filter(**GET)
+
+
+    def slice_queryset(self, queryset, GET):
+        if self.supports_paging:
+            page = self.get_page(GET)
+            offset = page * self.page_size
+            return queryset[offset: offset + self.page_size]
+        else:
+            return queryset
+
+    def get_page(self, GET):
+        return int(GET.get('page', '0'))
+
+    def build_page_uri(self, ctx, page):
+        return ctx.build_resource_uri(self) + '?' + urllib.urlencode({'page': page})
 
     def to_resource(self, model):
         """
@@ -143,14 +166,32 @@ class QuerySetResource(Resource):
         self.prepare(ctx, related)
         return related.prepare(queryset)
 
-    def get(self, ctx, **kwargs):
-        queryset = self.prepare_queryset(ctx, self.filter_queryset(**kwargs))
+    def get(self, ctx, **GET):
+        complete_queryset = self.filter_queryset(GET)
+
+        sliced_queryset = self.slice_queryset(complete_queryset, GET)
+        sliced_queryset = self.prepare_queryset(ctx, sliced_queryset)
 
         objects = []
-        for model in queryset:
+        for model in sliced_queryset:
             objects.append(self.to_resource(model).get(ctx))
 
+        meta = dict()
+        if self.supports_paging:
+            page = self.get_page(GET)
+            if page > 0:
+                meta['prev'] = self.build_page_uri(ctx, page - 1)
+
+            count = complete_queryset.count()
+            meta['count'] = count
+
+            if ( page + 1 ) * self.page_size < count:
+                meta['next'] = self.build_page_uri(ctx, page + 1)
+        else:
+            meta['count'] = len(objects)
+
         return {
+            'meta': meta,
             'objects': objects
         }
 
@@ -167,6 +208,7 @@ class QuerySetResource(Resource):
         return resource
 
     def get_child_resource(self, ctx, path_fragment):
+        # No need to filter or slice here, does not make sense as part of get_child_resource
         queryset = self.prepare_queryset(ctx, self.queryset)
         try:
             model = self.resource_class.get_from_queryset(queryset, path_fragment)
