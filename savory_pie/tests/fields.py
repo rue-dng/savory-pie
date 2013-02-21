@@ -1,7 +1,8 @@
 import unittest
 from mock import Mock
 
-from savory_pie.resources import Related, ModelResource, QuerySetResource
+from savory_pie.django_utils import Related
+from savory_pie.resources import ModelResource, QuerySetResource
 from savory_pie.fields import (
     AttributeField,
     SubModelResourceField,
