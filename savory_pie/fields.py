@@ -9,10 +9,9 @@ from savory_pie.utils import append_select_related
 #       Called by ModelResource.get to set key on the target_dict based
 #       on information in the Model source_obj.
 
-#    def prepare(self, ctx, queryset)
-#       Called by ModelResource.prepare to allow for select_related calls
-#       on the queryset, so related collections objects can be retrieved
-#       efficiently.
+#    def prepare(self, ctx, related)
+#       Called by ModelResource.prepare to build up a set of related
+#       select-s or prefetch-es.
 
 class AttributeField(object):
     """
