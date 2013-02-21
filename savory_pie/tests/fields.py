@@ -226,3 +226,12 @@ class RelatedManagerFieldTest(unittest.TestCase):
         class MockQuerySetResource(QuerySetResource):
             resource_class = MockResource
 
+        field = RelatedManagerField(attribute='foo', resource_class=MockQuerySetResource)
+
+        related = Related()
+        field.prepare(mock_context(), related)
+
+        self.assertEqual(related._prefetch, {
+            'foo',
+            'foo__bar'
+        })

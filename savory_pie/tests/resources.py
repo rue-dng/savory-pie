@@ -281,7 +281,7 @@ class ResourcePrepareTest(unittest.TestCase):
             fields.AttributeField(attribute='domain.name', type=str)
         ]
 
-    def test_select_related(self):
+    def test_prepare(self):
         related = resources.Related()
 
         queryset = self.TestResource.prepare(mock_context(), related)
