@@ -1,0 +1,6 @@
+# For testing django support
+Django
+
+# Unit testing tools
+nose
+mock
