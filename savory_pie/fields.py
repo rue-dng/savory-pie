@@ -194,7 +194,7 @@ class RelatedManagerField(object):
         Field that embeds a many relationship into the parent object -
             attribute - name of the relationship between the parent object and the related objects
             - may only be single level
-        resource_class - a QuerySetResource - used to represent the related objects
+        resource_class - a ModelResource - used to represent the related objects
         published_property - optional name exposed through the API
     """
     def __init__(self, attribute, resource_class, published_property=None):
@@ -214,9 +214,10 @@ class RelatedManagerField(object):
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
         manager = getattr(source_obj, self._attribute)
-        # TODO assert manager/resource_class types are correct
-        target_dict[self._compute_property(ctx)] = \
-            self._resource_class(manager.all()).get(ctx)['objects']
+        objects = []
+        for model in manager.all():
+            objects.append(self._resource_class(model).get(ctx))
+        target_dict[self._compute_property(ctx)] = objects
 
     def prepare(self, ctx, related):
         related.prefetch(self._attribute)
