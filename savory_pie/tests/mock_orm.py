@@ -4,6 +4,7 @@ import random
 
 class QuerySet(object):
     def __init__(self, *elements):
+        super(QuerySet, self).__init__()
         if elements:
             self.model = type(elements[0])
         else:
@@ -15,6 +16,9 @@ class QuerySet(object):
 
     def __iter__(self):
         return iter(self._elements)
+
+    def all(self):
+        return QuerySet(*self._elements)
 
     def count(self):
         return len(self._elements)
@@ -83,6 +87,7 @@ class Manager(Mock):
 
     def all(self):
         return QuerySet()
+
 
 class Model(Mock):
     class DoesNotExist(ObjectDoesNotExist):

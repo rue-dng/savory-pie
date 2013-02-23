@@ -1,3 +1,4 @@
+import urllib
 from savory_pie.django_utils import Related
 
 class Resource(object):
@@ -123,10 +124,9 @@ class QuerySetResource(Resource):
     def supports_paging(self):
         return self.page_size is not None
 
-    def filter_queryset(self, GET):
+    def filter_queryset(self, queryset, GET):
         # TODO: Revisit filtering
-        return self.queryset.filter(**GET)
-
+        return queryset.filter(**GET)
 
     def slice_queryset(self, queryset, GET):
         if self.supports_paging:
@@ -167,13 +167,14 @@ class QuerySetResource(Resource):
         return related.prepare(queryset)
 
     def get(self, ctx, **GET):
-        complete_queryset = self.filter_queryset(GET)
+        complete_queryset = queryset = self.queryset.all()
 
         sliced_queryset = self.slice_queryset(complete_queryset, GET)
-        sliced_queryset = self.prepare_queryset(ctx, sliced_queryset)
+        filtered_queryset = self.filter_queryset(sliced_queryset, GET)
+        final_queryset = self.prepare_queryset(ctx, filtered_queryset)
 
         objects = []
-        for model in sliced_queryset:
+        for model in final_queryset:
             objects.append(self.to_resource(model).get(ctx))
 
         meta = dict()
@@ -181,7 +182,7 @@ class QuerySetResource(Resource):
             # When paging the sliced_queryset will not contain all the objects,
             # so the count of the accumulated objects is insufficient.  In that case,
             # need to make a call queryset.count.
-            count = complete_queryset.count()
+            count = self.filter_queryset(complete_queryset, GET).count()
 
             page = self.get_page(GET)
             if page > 0:

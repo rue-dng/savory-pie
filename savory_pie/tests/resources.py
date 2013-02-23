@@ -1,5 +1,5 @@
 import unittest
-from mock import Mock
+from mock import Mock, MagicMock, call
 
 from savory_pie import resources, fields
 from savory_pie.tests import mock_orm
@@ -102,6 +102,10 @@ class FullyUnaddressableUserQuerySetResource(resources.QuerySetResource):
     resource_class = UnaddressableUserResource
 
 
+class ComplexUserResourceQuerySetResource(resources.QuerySetResource):
+    resource_class = ComplexUserResource
+
+
 class QuerySetResourceTest(unittest.TestCase):
     def test_get(self):
         resource = AddressableUserQuerySetResource(mock_orm.QuerySet(
@@ -186,3 +190,14 @@ class ResourcePrepareTest(unittest.TestCase):
             'group',
             'domain'
         })
+
+    def test_prepere_after_filter(self):
+        """
+        Django will reset related selects when a filter is added
+        """
+        queryset = MagicMock()
+        queryset_resource = ComplexUserResourceQuerySetResource(queryset)
+
+        queryset_resource.get(mock_context())
+        calls = call.all().filter().select_related('manager').prefetch_related('reports').call_list()
+        queryset.assert_has_calls(calls)
