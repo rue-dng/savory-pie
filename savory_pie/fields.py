@@ -15,9 +15,12 @@ class AttributeField(object):
     """
     Simple Field that translates an object property to/from a dict.
         attribute - attribute on the Model
-            - can be a multi-level expression - like related_entity.attribute
+            can be a multi-level expression - like related_entity.attribute
+
         type - expecting type of value - int, bool, etc.
+
         published_property - optional - name exposed in the API
+
         use_prefetch - optional - tells the attribute field to use
             prefetch_related rather than a select_related.  Defaults to false.
 
@@ -102,9 +105,11 @@ class URIResourceField(object):
     """
     Field that exposes just the URI of related entity
         attribute - name of the relationship between the parent object and the related object
-            - may only be single level
+            may only be single level
+
         resource_class - a ModelResource - used to represent the related object
-            - needs to be fully addressable
+            needs to be fully addressable
+
         published_property - optional - name exposed in the API
     """
     def __init__(self, attribute, resource_class, published_property=None):
@@ -142,9 +147,12 @@ class SubModelResourceField(object):
     """
     Field that embeds a single related resource into the parent object
         attribute - name of the relationship between the parent object and the related object
-            - may only be single level
+            may only be single level
+
         resource_class - a ModelResource - used to represent the related object
+
         published_property - optional - name exposed in the API
+
         use_prefetch - optional - tells the sub-model resource field to use
             prefetch_related rather than a select_related.  Defaults to false.
 
@@ -192,9 +200,12 @@ class SubModelResourceField(object):
 class RelatedManagerField(object):
     """
         Field that embeds a many relationship into the parent object -
-            attribute - name of the relationship between the parent object and the related objects
-            - may only be single level
+
+        attribute - name of the relationship between the parent object and the related objects
+            may only be single level
+
         resource_class - a ModelResource - used to represent the related objects
+
         published_property - optional name exposed through the API
     """
     def __init__(self, attribute, resource_class, published_property=None):
