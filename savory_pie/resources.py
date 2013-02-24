@@ -101,7 +101,10 @@ class QuerySetResource(Resource):
     """
     Resource abstract around Django QuerySets.
 
-    resource_class - type of Resource to create for a given Model in the queryset
+    Parameters:
+
+        ``resource_class``
+            type of Resource to create for a given Model in the queryset
 
     Typical usage...
 
