@@ -1,12 +1,12 @@
 import json
 
-#protocol Formatter
-#   def default_published_property(self, bare_attribute)
-#   def to_python_value(self, type_, api_value)
-#   def to_api_value(self, type_, python_value)
-
 
 class JSONFormatter(object):
+    """
+    Formatter reads and writes json while converting properties to and from
+    javascript nameing conventions and pep8.
+    """
+
     content_type = 'application/json'
 
     def default_published_property(self, bare_attribute):

@@ -4,6 +4,7 @@ import random
 
 class QuerySet(object):
     def __init__(self, *elements):
+        super(QuerySet, self).__init__()
         if elements:
             self.model = type(elements[0])
         else:
@@ -14,7 +15,16 @@ class QuerySet(object):
         self._prefetched = set()
 
     def __iter__(self):
+        return self.iterator()
+
+    def iterator(self):
         return iter(self._elements)
+
+    def __list__(self):
+        raise UserWarning, 'Don\'t call list; it will not take advantage of prior prefetch optimizations'
+
+    def all(self):
+        return QuerySet(*self._elements)
 
     def count(self):
         return len(self._elements)

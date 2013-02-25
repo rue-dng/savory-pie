@@ -290,10 +290,7 @@ class RelatedManagerFieldTest(unittest.TestCase):
                 AttributeField(attribute='bar', type=int),
             ]
 
-        class MockQuerySetResource(QuerySetResource):
-            resource_class = MockResource
-
-        field = RelatedManagerField(attribute='foo', resource_class=MockQuerySetResource)
+        field = RelatedManagerField(attribute='foo', resource_class=MockResource)
 
         source_object = mock_orm.Model()
         related_manager = mock_orm.Manager()
