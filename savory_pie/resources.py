@@ -1,27 +1,26 @@
 import urllib
 from savory_pie.django_utils import Related
 
+
 class Resource(object):
     """
     Base object for defining resources.
-
-    Properties...
-    resource_path - defaults to None
-        Internal path (from root of the resource tree to this Resource).
-        If not set, this is auto-filled during Resource traversal;
-        however, if you wish for a Resource to always be addressable,
-        resource_path should be set at construction.
-
-    allowed_methods - defaults to set of available methods based on
-        presence of the optional methods - get, post, put, etc.
-
-        Can be overridden with a static set or dynamic property to
-        create access controls.
     """
+    #: Internal path (from root of the resource tree to this Resource).  If not
+    #: set, this is auto-filled during Resource traversal; however, if you wish
+    #: for a Resource to always be addressable, resource_path should be set at
+    #: construction.
     resource_path = None
 
     @property
     def allowed_methods(self):
+        """
+        defaults to set of available methods based on
+        presence of the optional methods - get, post, put, etc.
+
+        Can be overridden with a static set or dynamic property to
+        create access controls.
+        """
         allowed_methods = set()
 
         for http_method in ['GET', 'POST', 'PUT', 'DELETE']:
@@ -101,20 +100,26 @@ class APIResource(Resource):
 class QuerySetResource(Resource):
     """
     Resource abstract around Django QuerySets.
-        resource_class - type of Resource to create for a given Model in the queryset
-        page_size - optional - if set specifies the page size for data returned during a GET
-          - defaults to None (no paging)
+
+    Parameters:
+
+        ``resource_class``
+            type of Resource to create for a given Model in the queryset
 
     Typical usage...
-    class FooResource(ModelResource):
-        parent_resource_path = 'foos'
-        model_class = Foo
 
-    class FooQuerySetResource(QuerySetResource):
-        resource_path = 'foos'
-        resource_class = FooResource
+    .. code::
+
+        class FooResource(ModelResource):
+            parent_resource_path = 'foos'
+            model_class = Foo
+
+        class FooQuerySetResource(QuerySetResource):
+            resource_path = 'foos'
+            resource_class = FooResource
     """
-    # resource_class
+    #: optional - if set specifies the page size for data returned during a GET
+    #: - defaults to None (no paging)
     page_size = None
 
     def __init__(self, queryset=None):
@@ -229,25 +234,28 @@ class ModelResource(Resource):
     """
     Resource abstract around ModelResource.
 
-    parent_resource_path - path of parent resource - used to compute resource_path
-    model_class - type of Model consumed / create by this Resource.
-    published_key - tuple of (name, type) of the key property used in the resource_path
-        - defaults to ('pk', int)
-    fields - a list of Field-s that are used to determine what properties are placed
-        into and read from dict-s being handled by get, post, and put
-
     Typical usage...
-    class FooResource(ModelResource):
-        parent_resource_path = 'foos'
-        model_class = Foo
 
-    class FooQuerySetResource(QuerySetResource):
-        resource_path = 'foos'
-        resource_class = FooResource
+    .. code::
+
+        class FooResource(ModelResource):
+            parent_resource_path = 'foos'
+            model_class = Foo
+
+        class FooQuerySetResource(QuerySetResource):
+            resource_path = 'foos'
+            resource_class = FooResource
     """
     # model_class
+
+    #: path of parent resource - used to compute resource_path
     parent_resource_path = None
+
+    #: tuple of (name, type) of the key property used in the resource_path
     published_key = ('pk', int)
+
+    #: A list of Field-s that are used to determine what properties are placed
+    #: into and read from dict-s being handled by get, post, and put
     fields = []
 
     _resource_path = None

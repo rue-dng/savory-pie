@@ -1,35 +1,47 @@
-#protocol Field:
-#    def handle_incoming(self, source_dict, target_obj)
-#       Called by ModelResource.put or post to set Model properties on
-#       target_obj based on information from the source_dict.
-
-#    def handle_outgoing(self, ctx, source_obj, target_dict)
-#       Called by ModelResource.get to set key on the target_dict based
-#       on information in the Model source_obj.
-
-#    def prepare(self, ctx, related)
-#       Called by ModelResource.prepare to build up a set of related
-#       select-s or prefetch-es.
-
 class AttributeField(object):
     """
     Simple Field that translates an object property to/from a dict.
-        attribute - attribute on the Model
-            - can be a multi-level expression - like related_entity.attribute
-        type - expecting type of value - int, bool, etc.
-        published_property - optional - name exposed in the API
-        use_prefetch - optional - tells the attribute field to use
-            prefetch_related rather than a select_related.  Defaults to false.
 
-            There are two reasons you might need to do this...
-            - select_related will not work when the foreign key allows null.
-            - select_related will not work when the foreign key is a GenericForeignKey.
-            See https://docs.djangoproject.com/en/dev/ref/models/querysets/
+        Parameters:
 
-            This parameter is meaningless for top-level attributes.
+            ``attribute``
+                attribute on the Model can be a multi-level expression - like
+                related_entity.attribute
 
-    AttributeField('name', type=str) will return the JSON {'name': obj.name}
-    AttributeField('other.age', type=int) will return the JSON {'age': obj.other.age}
+            ``type``
+                expecting type of value -- int, bool, etc.
+
+            ``published_property``
+                optional -- name exposed in the API
+
+            ``use_prefetch``
+                optional -- tells the attribute field to use
+                prefetch_related rather than a select_related.  Defaults to false.
+
+                There are two reasons you might need to do this...
+
+                - select_related will not work when the foreign key allows null.
+                - select_related will not work when the foreign key is a GenericForeignKey.
+
+                See https://docs.djangoproject.com/en/dev/ref/models/querysets/
+
+                This parameter is meaningless for top-level attributes.
+
+        .. code-block:: python
+
+            AttributeField('name', type=str)
+
+        .. code-block:: javascript
+
+            {'name': obj.name}
+
+        .. code-block:: python
+
+            AttributeField('other.age', type=int)
+
+        .. code-block:: javascript
+
+           {'age': obj.other.age}
     """
     def __init__(self, attribute, type, published_property=None, use_prefetch=False):
         self._full_attribute = attribute
@@ -101,11 +113,29 @@ class AttributeField(object):
 class URIResourceField(object):
     """
     Field that exposes just the URI of related entity
-        attribute - name of the relationship between the parent object and the related object
-            - may only be single level
-        resource_class - a ModelResource - used to represent the related object
-            - needs to be fully addressable
-        published_property - optional - name exposed in the API
+
+
+    Parameters:
+
+        ``attribute``
+            name of the relationship between the parent object and the related
+            object may only be single level
+
+        ``resource_class``
+            a ModelResource -- used to represent the related object needs to be
+            fully addressable
+
+        ``published_property``
+            optional -- name exposed in the API
+
+
+        .. code-block:: python
+
+            URIResourceField('other', OtherResource)
+
+        .. code-block:: javascript
+
+            {'other': '/api/other/{pk}'}
     """
     def __init__(self, attribute, resource_class, published_property=None):
         self._attribute = attribute
@@ -141,17 +171,37 @@ class URIResourceField(object):
 class SubModelResourceField(object):
     """
     Field that embeds a single related resource into the parent object
-        attribute - name of the relationship between the parent object and the related object
-            - may only be single level
-        resource_class - a ModelResource - used to represent the related object
-        published_property - optional - name exposed in the API
-        use_prefetch - optional - tells the sub-model resource field to use
+
+    Parameters:
+
+        ``attribute``
+            name of the relationship between the parent object and the related
+            object may only be single level
+
+        ``resource_class``
+            a ModelResource -- used to represent the related object
+
+        ``published_property``
+            optional -- name exposed in the API
+
+        ``use_prefetch``
+            optional -- tells the sub-model resource field to use
             prefetch_related rather than a select_related.  Defaults to false.
 
             There are two reasons you might need to do this...
+
             - select_related will not work when the foreign key allows null.
             - select_related will not work when the foreign key is a GenericForeignKey.
+
             See https://docs.djangoproject.com/en/dev/ref/models/querysets/
+
+        .. code-block:: python
+
+            SubModelResourceField('other', OtherResource)
+
+        .. code-block:: javascript
+
+            {'other': {'age': 9}}
     """
     def __init__(self, attribute, resource_class, published_property=None, use_prefetch=False):
         self._attribute = attribute
@@ -191,11 +241,27 @@ class SubModelResourceField(object):
 
 class RelatedManagerField(object):
     """
-        Field that embeds a many relationship into the parent object -
-            attribute - name of the relationship between the parent object and the related objects
-            - may only be single level
-        resource_class - a ModelResource - used to represent the related objects
-        published_property - optional name exposed through the API
+    Field that embeds a many relationship into the parent object
+
+    Parameters:
+
+        ``attribute``
+            name of the relationship between the parent object and the related
+            objects may only be single level
+
+        ``resource_class``
+            a ModelResource -- used to represent the related objects
+
+        ``published_property``
+            optional name exposed through the API
+
+        .. code-block:: python
+
+            RelatedManagerField('others', OtherResource)
+
+        .. code-block:: javascript
+
+            {'others': [{'age': 6}, {'age': 1}]}
     """
     def __init__(self, attribute, resource_class, published_property=None):
         self._attribute = attribute

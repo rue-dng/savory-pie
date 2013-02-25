@@ -4,3 +4,6 @@ Django
 # Unit testing tools
 nose
 mock
+
+# Docs
+sphinx
