@@ -174,9 +174,9 @@ class QuerySetResource(Resource):
     def get(self, ctx, **GET):
         complete_queryset = queryset = self.queryset.all()
 
-        sliced_queryset = self.slice_queryset(complete_queryset, GET)
-        filtered_queryset = self.filter_queryset(sliced_queryset, GET)
-        final_queryset = self.prepare_queryset(ctx, filtered_queryset)
+        filtered_queryset = self.filter_queryset(complete_queryset, GET)
+        sliced_queryset = self.slice_queryset(filtered_queryset, GET)
+        final_queryset = self.prepare_queryset(ctx, sliced_queryset)
 
         objects = []
         for model in final_queryset:
