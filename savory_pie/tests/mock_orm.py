@@ -15,7 +15,13 @@ class QuerySet(object):
         self._prefetched = set()
 
     def __iter__(self):
-        return iter(self._elements)
+        return self.iterator()
+
+    def iterator(self):
+        raise UserWarning, 'Unintuitively Django\'s iterator does not play nice with prefetch - use list instead'
+
+    def list(self):
+        return list(self._elements)
 
     def all(self):
         return QuerySet(*self._elements)
@@ -81,7 +87,7 @@ class QuerySet(object):
         return filtered_elements
 
 
-class Manager(Mock):
+class Manager(object):
     def __init__(self):
         super(Manager, self).__init__(spec=[])
 
@@ -89,14 +95,17 @@ class Manager(Mock):
         return QuerySet()
 
 
+<<<<<<< HEAD
 class Model(Mock):
+=======
+class Model(object):
+>>>>>>> Making the mock a little meaner - to make sure performance problems don't creep back in
     class DoesNotExist(ObjectDoesNotExist):
         pass
 
     objects = Manager()
 
     def __init__(self, **kwargs):
-        super(Model, self).__init__(spec=[])
         self.pk = None
 
         for key, value in kwargs.iteritems():
