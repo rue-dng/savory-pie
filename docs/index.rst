@@ -39,6 +39,11 @@ Narrative documentation
 .. toctree::
    :maxdepth: 2
 
+   narr/getting_started
+   narr/resources
+   narr/fields
+   narr/extending
+
 API Documentation
 =================
 
