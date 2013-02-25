@@ -52,7 +52,7 @@ A Basic API might look something like this:
     {
         'resourceUri': 'http://localhost/api/v1/users/1/',
         'name': 'Bob',
-        'age': 45,
+        'age': 45
     }
 
 Narrative documentation
