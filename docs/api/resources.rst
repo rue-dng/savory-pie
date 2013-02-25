@@ -8,20 +8,22 @@ Resource protocol
 
 .. class:: Resource
 
-    .. attribute:: resource_path
+    Attributes:
 
-        Internal path (from root of the resource tree to this Resource).  If
-        not set, this is auto-filled during Resource traversal; however, if you
-        wish for a Resource to always be addressable, resource_path should be
-        set at construction.
+        .. attribute:: resource_path
 
-    .. attribute:: allowed_methods
+            Internal path (from root of the resource tree to this Resource).  If
+            not set, this is auto-filled during Resource traversal; however, if you
+            wish for a Resource to always be addressable, resource_path should be
+            set at construction.
 
-        List of HTTP methods that this resource allows
+        .. attribute:: allowed_methods
 
-        .. code::
+            List of HTTP methods that this resource allows
 
-            allowed_methods = ['GET', 'POST]
+            .. code::
+
+                allowed_methods = ['GET', 'POST]
 
     .. method:: get_child_resource(ctx, path_fragment)
 
@@ -94,29 +96,32 @@ Resource protocol
 
     .. autoclass:: Resource
 
-        .. autoattribute:: resource_path
+        Attributes:
+            .. autoattribute:: resource_path
 
-        .. autoattribute:: allowed_methods
+            .. autoattribute:: allowed_methods
 
     .. autoclass:: APIResource
         :members:
 
     .. autoclass:: QuerySetResource
 
-        .. attribute:: resource_class
+        Attributes:
+            .. attribute:: resource_class
 
-            type of Resource to create for a given Model in the queryset
+                type of Resource to create for a given Model in the queryset
 
-        .. autoattribute:: page_size
+            .. autoattribute:: page_size
 
     .. autoclass:: ModelResource
 
-        .. attribute:: model_class
+        Attributes:
+            .. attribute:: model_class
 
-            type of Model consumed / create by this Resource.
+                type of Model consumed / create by this Resource.
 
-        .. autoattribute:: fields
+            .. autoattribute:: fields
 
-        .. autoattribute:: parent_resource_path
+            .. autoattribute:: parent_resource_path
 
-        .. autoattribute:: published_key
+            .. autoattribute:: published_key

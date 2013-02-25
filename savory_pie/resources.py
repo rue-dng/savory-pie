@@ -252,7 +252,6 @@ class ModelResource(Resource):
     parent_resource_path = None
 
     #: tuple of (name, type) of the key property used in the resource_path
-    #: - defaults to ('pk', int)
     published_key = ('pk', int)
 
     #: A list of Field-s that are used to determine what properties are placed
