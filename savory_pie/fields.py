@@ -1,16 +1,3 @@
-#protocol Field:
-#    def handle_incoming(self, source_dict, target_obj)
-#       Called by ModelResource.put or post to set Model properties on
-#       target_obj based on information from the source_dict.
-
-#    def handle_outgoing(self, ctx, source_obj, target_dict)
-#       Called by ModelResource.get to set key on the target_dict based
-#       on information in the Model source_obj.
-
-#    def prepare(self, ctx, related)
-#       Called by ModelResource.prepare to build up a set of related
-#       select-s or prefetch-es.
-
 class AttributeField(object):
     """
     Simple Field that translates an object property to/from a dict.
