@@ -47,7 +47,7 @@ Narrative documentation
 API Documentation
 =================
 
-Documentation for all of `Savory Pie` API.
+Documentation for all of Savory Pie API.
 
 .. toctree::
    :maxdepth: 2
