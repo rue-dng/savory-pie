@@ -324,3 +324,84 @@ class RelatedManagerFieldTest(unittest.TestCase):
             'foo',
             'foo__bar'
         })
+
+    def test_incoming_no_id(self):
+        del mock_orm.Model._models[:]
+
+        class MockResource(ModelResource):
+            model_class = mock_orm.Model
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        field = RelatedManagerField(attribute='foo', resource_class=MockResource)
+
+        target_obj = mock_orm.Mock()
+        related_manager = mock_orm.Manager()
+        related_manager.all = Mock(return_value=mock_orm.QuerySet(
+        ))
+        target_obj.foo = related_manager
+        source_dict = {
+            'foo': [{'bar': 4}],
+        }
+
+        model_index = len(mock_orm.Model._models) + 1
+        field.handle_incoming(mock_context(), source_dict, target_obj)
+
+        model = mock_orm.Model._models[model_index]
+        self.assertEqual(4, model.bar)
+        related_manager.add.assert_called_with(model)
+
+    def test_incoming_delete(self):
+        del mock_orm.Model._models[:]
+
+        class MockResource(ModelResource):
+            model_class = mock_orm.Model
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        field = RelatedManagerField(attribute='foo', resource_class=MockResource)
+
+        target_obj = mock_orm.Mock()
+        related_manager = mock_orm.Manager()
+        related_manager.all = Mock(return_value=mock_orm.QuerySet(
+            mock_orm.Model(pk=4, bar=14)
+        ))
+        target_obj.foo = related_manager
+        source_dict = {
+            'foo': [],
+        }
+
+        field.handle_incoming(mock_context(), source_dict, target_obj)
+
+        model = mock_orm.Model._models[0]
+        related_manager.delete.assert_called_with(model)
+
+    def test_incoming_edit(self):
+        del mock_orm.Model._models[:]
+
+        class MockResource(ModelResource):
+            model_class = mock_orm.Model
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        field = RelatedManagerField(attribute='foo', resource_class=MockResource)
+
+        target_obj = mock_orm.Mock()
+        related_manager = mock_orm.Manager()
+        related_manager.all = Mock(return_value=mock_orm.QuerySet(
+            mock_orm.Model(pk=4, bar=14)
+        ))
+        target_obj.foo = related_manager
+        source_dict = {
+            'foo': [{'_id': '4', 'bar': 15}],
+        }
+
+        model_index = len(mock_orm.Model._models) + 1
+        field.handle_incoming(mock_context(), source_dict, target_obj)
+
+        model = mock_orm.Model._models[0]
+        self.assertEqual(15, model.bar)
+        model.save.assert_called()

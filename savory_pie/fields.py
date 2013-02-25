@@ -275,8 +275,37 @@ class RelatedManagerField(object):
             return ctx.formatter.default_published_property(self._attribute)
 
     def handle_incoming(self, ctx, source_dict, target_obj):
-        # TODO something
-        pass
+        manager = getattr(target_obj, self._attribute)
+
+        db_keys = set()
+        db_models = {}
+        for model in manager.all():
+            resource = self._resource_class(model)
+            db_models[resource.key] = model
+            db_keys.add(resource.key)
+
+        new_models = []
+        request_keys = set()
+        request_models = {}
+        for model_dict in source_dict[self._compute_property(ctx)]:
+            if '_id' in model_dict: # TODO what if you give an id that is not in the db?
+                # TODO get key without the extra db lookup
+                model = self._resource_class.get_from_queryset(manager.all(), model_dict['_id'])
+                model_resource = self._resource_class(model)
+                request_models[model_resource.key] = model_resource.model
+                request_keys.add(model_resource.key)
+                if model_resource.key in db_keys:
+                    model_resource.put(ctx, model_dict)
+            else:
+                model_resource = self._resource_class.create_resource()
+                model_resource.put(ctx, model_dict)
+                model_resource = self._resource_class.create_resource()
+                model_resource.put(ctx, model_dict)
+                new_models.append(model_resource.model)
+
+        manager.add(*new_models)
+        models_to_delete = [db_models[key] for key in db_keys - request_keys]
+        manager.delete(*models_to_delete)
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
         manager = getattr(source_obj, self._attribute)
