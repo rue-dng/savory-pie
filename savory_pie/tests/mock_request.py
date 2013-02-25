@@ -1,5 +1,5 @@
 from StringIO import StringIO
-from savory_pie import views
+from savory_pie.django import views
 
 def savory_dispatch(root_resource, method, resource_path='', body=None, GET=None, POST=None):
     view = views.api_view(root_resource)

@@ -101,14 +101,6 @@ class AttributeField(object):
     def to_api_value(self, ctx, python_value):
         return ctx.formatter.to_api_value(self._type, python_value)
 
-    def prepare(self, ctx, related):
-        related_attr = '__'.join(self._attrs[:-1])
-        if related_attr:
-            if self._use_prefetch:
-                related.prefetch(related_attr)
-            else:
-                related.select(related_attr)
-
 
 class URIResourceField(object):
     """
@@ -162,10 +154,6 @@ class URIResourceField(object):
         resource = self._resource_class(sub_model)
 
         target_dict[self._compute_property(ctx)] = ctx.build_resource_uri(resource)
-
-    def prepare(self, ctx, related):
-        related.select(self._attribute)
-        self._resource_class.prepare(ctx, related.sub_select(self._attribute))
 
 
 class SubModelResourceField(object):
@@ -230,16 +218,8 @@ class SubModelResourceField(object):
         sub_model = getattr(source_obj, self._attribute)
         target_dict[self._compute_property(ctx)] = self._resource_class(sub_model).get(ctx)
 
-    def prepare(self, ctx, related):
-        if self._use_prefetch:
-            related.prefetch(self._attribute)
-            self._resource_class.prepare(ctx, related.sub_prefetch(self._attribute))
-        else:
-            related.select(self._attribute)
-            self._resource_class.prepare(ctx, related.sub_select(self._attribute))
 
-
-class RelatedManagerField(object):
+class IterableField(object):
     """
     Field that embeds a many relationship into the parent object
 
@@ -274,6 +254,9 @@ class RelatedManagerField(object):
         else:
             return ctx.formatter.default_published_property(self._attribute)
 
+    def get_iterable(self, value):
+        return value
+
     def handle_incoming(self, ctx, source_dict, target_obj):
         # TODO something
         pass
@@ -284,7 +267,3 @@ class RelatedManagerField(object):
         for model in manager.all():
             objects.append(self._resource_class(model).get(ctx))
         target_dict[self._compute_property(ctx)] = objects
-
-    def prepare(self, ctx, related):
-        related.prefetch(self._attribute)
-        self._resource_class.prepare(ctx, related.sub_prefetch(self._attribute))

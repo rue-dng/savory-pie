@@ -2,8 +2,8 @@ import unittest
 from mock import Mock
 
 from savory_pie.django_utils import Related
-from savory_pie.resources import ModelResource, QuerySetResource
-from savory_pie.fields import (
+from savory_pie.django.resources import ModelResource, QuerySetResource
+from savory_pie.django.fields import (
     AttributeField,
     SubModelResourceField,
     RelatedManagerField,
@@ -244,6 +244,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
         target_object.foo.save.assert_called_with()
 
     def test_prepare(self):
+
         class MockResource(ModelResource):
             model_class = Mock()
             fields = [
@@ -261,6 +262,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
         })
 
     def test_prepare_with_use_prefetch(self):
+
         class MockResource(ModelResource):
             model_class = Mock()
             fields = [
