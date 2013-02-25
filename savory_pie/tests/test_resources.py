@@ -6,11 +6,11 @@ from savory_pie.tests import mock_orm
 from savory_pie.tests.mock_context import mock_context
 
 class ResourceTest(unittest.TestCase):
-    def no_allowed_methods(self):
+    def test_no_allowed_methods(self):
         resource = resources.Resource()
         self.assertEqual(resource.allowed_methods, set())
 
-    def allows_get(self):
+    def test_allows_get(self):
         resource = resources.Resource()
         resource.get = lambda: dict()
         self.assertEqual(resource.allowed_methods, {'GET'})

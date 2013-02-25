@@ -2,7 +2,7 @@ from mock import Mock
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 import random
 
-class QuerySet(object):
+class QuerySet(Mock):
     def __init__(self, *elements):
         super(QuerySet, self).__init__()
         if elements:
