@@ -42,8 +42,19 @@ class AttributeField(object):
 
         .. code-block:: python
 
-            AttributeField('name', type=str) # will return the JSON {'name': obj.name}
-            AttributeField('other.age', type=int) # will return the JSON {'age': obj.other.age}
+            AttributeField('name', type=str)
+
+        .. code-block:: javascript
+
+            {'name': obj.name}
+
+        .. code-block:: python
+
+            AttributeField('other.age', type=int)
+
+        .. code-block:: javascript
+
+           {'age': obj.other.age}
     """
     def __init__(self, attribute, type, published_property=None, use_prefetch=False):
         self._full_attribute = attribute
@@ -129,6 +140,15 @@ class URIResourceField(object):
 
         ``published_property``
             optional -- name exposed in the API
+
+
+        .. code-block:: python
+
+            URIResourceField('other', OtherResource)
+
+        .. code-block:: javascript
+
+            {'other': '/api/other/{pk}'}
     """
     def __init__(self, attribute, resource_class, published_property=None):
         self._attribute = attribute
@@ -187,6 +207,14 @@ class SubModelResourceField(object):
             - select_related will not work when the foreign key is a GenericForeignKey.
 
             See https://docs.djangoproject.com/en/dev/ref/models/querysets/
+
+        .. code-block:: python
+
+            SubModelResourceField('other', OtherResource)
+
+        .. code-block:: javascript
+
+            {'other': {'age': 9}}
     """
     def __init__(self, attribute, resource_class, published_property=None, use_prefetch=False):
         self._attribute = attribute
@@ -239,6 +267,14 @@ class RelatedManagerField(object):
 
         ``published_property``
             optional name exposed through the API
+
+        .. code-block:: python
+
+            RelatedManagerField('others', OtherResource)
+
+        .. code-block:: javascript
+
+            {'others': [{'age': 6}, {'age': 1}]}
     """
     def __init__(self, attribute, resource_class, published_property=None):
         self._attribute = attribute

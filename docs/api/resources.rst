@@ -27,7 +27,7 @@ Resource protocol
 
         Parameters:
 
-            ``ctx``
+            ``ctx`` -- :class:`~savory_pie.context.APIContext`
                 The context of this API call
 
             ``path_fragment``
@@ -39,7 +39,15 @@ Resource protocol
 
         Optional method that is called during a GET request.
 
-        get is provided an APIContext and an optional set of kwargs that include the
+        Parameters:
+
+            ``ctx`` -- :class:`~savory_pie.context.APIContext`
+                The context of this API call
+
+            ``kwargs``
+                Dict of query prams
+
+        get is provided an :class:`~savory_pie.context.APIContext` and an optional set of kwargs that include the
         query string params.
 
         Returns a dict of data to be serialized to the requested format.
@@ -48,8 +56,13 @@ Resource protocol
 
         Optional method that is called during a POST request.
 
-        post is provided with a dict representing the deserialized representation of
-        the body content.
+        Parameters:
+
+            ``ctx`` -- :class:`~savory_pie.context.APIContext`
+                The context of this API call
+
+            ``dict``
+                 deserialized representation of the body content
 
         Returns a new Resource
 
@@ -57,10 +70,20 @@ Resource protocol
 
         Optional method that is called during a PUT request.
 
-        put is provided with a dict representing the deserialized representation of
-        the body content.
+        Parameters:
+
+            ``ctx`` -- :class:`~savory_pie.context.APIContext`
+                The context of this API call
+
+            ``dict``
+                 deserialized representation of the body content
 
     .. method:: delete(ctx)
+
+        Parameters:
+
+            ``ctx`` -- :class:`~savory_pie.context.APIContext`
+                The context of this API call
 
         Optional method that is called during a DELETE request.
 
