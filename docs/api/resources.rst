@@ -25,12 +25,15 @@ Resource protocol
 
     .. method:: get_child_resource(ctx, path_fragment)
 
-       ctx - The context of this API call
+        Parameters:
 
-       path_fragment - Part of the URI after being split on /
+            ``ctx``
+                The context of this API call
 
+            ``path_fragment``
+                Part of the URI after being split on /
 
-       Return the next child resource or None
+        Return the next child resource or None
 
     .. method:: get(ctx, \**kwargs)
 
@@ -50,7 +53,7 @@ Resource protocol
 
         Returns a new Resource
 
-   .. method:: put(ctx, dict)
+    .. method:: put(ctx, dict)
 
         Optional method that is called during a PUT request.
 
