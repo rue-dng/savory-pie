@@ -87,6 +87,27 @@ class ModelResourceTest(unittest.TestCase):
 
         self.assertTrue(user.delete.called)
 
+    def test_get_from_queryset(self):
+        class MockResource(resources.ModelResource):
+            published_key = Mock()
+
+        MockResource.published_key.get_query_args.return_value = {'id': 'foo'}
+
+        queryset = Mock()
+        MockResource.get_from_queryset(queryset, 'foo')
+
+        MockResource.published_key.get_query_args.assert_called_with('foo')
+        queryset.get.assert_called_with(id='foo')
+
+    def test_get_key(self):
+        class MockResource(resources.ModelResource):
+            published_key = Mock()
+
+        MockResource.published_key.get_key.return_value = 'foo'
+        mock_resource = MockResource(Mock())
+
+        self.assertEqual('foo', mock_resource.key)
+
 
 class AddressableUserQuerySetResource(resources.QuerySetResource):
     resource_path = 'users'
@@ -201,3 +222,23 @@ class ResourcePrepareTest(unittest.TestCase):
         queryset_resource.get(mock_context())
         calls = call.all().filter().select_related('manager').prefetch_related('reports').call_list()
         queryset.assert_has_calls(calls)
+
+
+class PKPublishedKeyTest(unittest.TestCase):
+    def test_get_query_args(self):
+        self.assertEqual({'pk': 4}, resources.PKPublishedKey().get_query_args('4'))
+
+    def test_get_key(self):
+        model = Mock(pk=4)
+        self.assertEqual('4', resources.PKPublishedKey().get_key(model))
+
+
+class TuplePublishedKeyTest(unittest.TestCase):
+    def test_get_query_args(self):
+        published_key = resources.TuplePublishedKey(('a', int), ('b', str))
+        self.assertEqual({'a': 1, 'b': '2'}, published_key.get_query_args('1|2'))
+
+    def test_get_key(self):
+        model = Mock(a=1, b='2')
+        published_key = resources.TuplePublishedKey(('a', int), ('b', str))
+        self.assertEqual('1|2', published_key.get_key(model))

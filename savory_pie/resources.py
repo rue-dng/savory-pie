@@ -2,6 +2,34 @@ import urllib
 from savory_pie.django_utils import Related
 
 
+class PKPublishedKey(object):
+    def get_query_args(self, path_fragment):
+        query_args = {}
+        query_args['pk'] = int(path_fragment)
+        return query_args
+
+    def get_key(self, model):
+        return str(model.pk)
+
+
+class TuplePublishedKey(object):
+    def __init__(self, *args):
+        self.fields = args
+
+    def get_query_args(self, path_fragment):
+        path_parts = path_fragment.split('|')
+        query_args = {}
+        for (key, type_), path_part in zip(self.fields, path_parts):
+            query_args[key] = type_(path_part)
+        return query_args
+
+    def get_key(self, model):
+        path_parts = []
+        for key, type_ in self.fields:
+            path_parts.append(str(getattr(model, key)))
+        return '|'.join(path_parts)
+
+
 class Resource(object):
     """
     Base object for defining resources.
@@ -252,7 +280,7 @@ class ModelResource(Resource):
     parent_resource_path = None
 
     #: tuple of (name, type) of the key property used in the resource_path
-    published_key = ('pk', int)
+    published_key = PKPublishedKey()
 
     #: A list of Field-s that are used to determine what properties are placed
     #: into and read from dict-s being handled by get, post, and put
@@ -266,10 +294,7 @@ class ModelResource(Resource):
         Called by containing QuerySetResource to filter the QuerySet down
         to a single item -- represented by this ModelResource
         """
-        attr, type_ = cls.published_key
-
-        kwargs = dict()
-        kwargs[attr] = type_(path_fragment)
+        kwargs = cls.published_key.get_query_args(path_fragment)
         return queryset.get(**kwargs)
 
     @classmethod
@@ -298,8 +323,7 @@ class ModelResource(Resource):
         Provides the value of the published_key of this ModelResource.
         May fail if the ModelResource was constructed around an uncommitted Model.
         """
-        attr, type_ = self.published_key
-        return str(getattr(self.model, attr))
+        return self.published_key.get_key(self.model)
 
     @property
     def resource_path(self):
