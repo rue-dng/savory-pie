@@ -2,6 +2,26 @@ from savory_pie.resources import Resource
 from savory_pie.django_utils import Related
 
 class QuerySetResource(Resource):
+    """
+    Resource abstract around Django QuerySets.
+
+    Parameters:
+
+        ``resource_class``
+            type of Resource to create for a given Model in the queryset
+
+    Typical usage...
+
+    .. code::
+
+        class FooResource(ModelResource):
+            parent_resource_path = 'foos'
+            model_class = Foo
+
+        class FooQuerySetResource(QuerySetResource):
+            resource_path = 'foos'
+            resource_class = FooResource
+    """
     #: optional - if set specifies the page size for data returned during a GET
     #: - defaults to None (no paging)
     page_size = None
