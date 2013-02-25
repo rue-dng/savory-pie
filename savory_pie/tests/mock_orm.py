@@ -87,7 +87,7 @@ class QuerySet(object):
         return filtered_elements
 
 
-class Manager(object):
+class Manager(Mock):
     def all(self):
         return QuerySet()
 
