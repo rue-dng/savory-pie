@@ -13,6 +13,7 @@ from savory_pie.tests import mock_orm
 
 from savory_pie.tests.mock_context import mock_context
 
+
 class AttributeFieldTest(unittest.TestCase):
     def test_simple_outgoing(self):
         source_object = Mock()
@@ -295,14 +296,13 @@ class RelatedManagerFieldTest(unittest.TestCase):
         source_object = mock_orm.Model()
         related_manager = mock_orm.Manager()
         related_manager.all = Mock(return_value=mock_orm.QuerySet(
-            mock_orm.Model(bar=14)
+            mock_orm.Model(pk=4, bar=14)
         ))
         source_object.foo = related_manager
 
         target_dict = {}
         field.handle_outgoing(mock_context(), source_object, target_dict)
-        self.assertEqual([{'bar': 14}], target_dict['foo'])
-
+        self.assertEqual([{'_id': '4', 'bar': 14}], target_dict['foo'])
 
     def test_prepare(self):
 

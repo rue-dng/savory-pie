@@ -282,7 +282,10 @@ class RelatedManagerField(object):
         manager = getattr(source_obj, self._attribute)
         objects = []
         for model in manager.all():
-            objects.append(self._resource_class(model).get(ctx))
+            model_resource = self._resource_class(model)
+            model_dict = model_resource.get(ctx)
+            model_dict['_id'] = model_resource.key
+            objects.append(model_dict)
         target_dict[self._compute_property(ctx)] = objects
 
     def prepare(self, ctx, related):
