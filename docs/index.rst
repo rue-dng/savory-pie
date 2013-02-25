@@ -9,6 +9,8 @@ Django are a single view and Resources and Fields that understand Django's ORM.
 
 A Basic API might look something like this:
 
+**Example Resources**:
+
 .. code-block:: python
 
    class UserResource(savory_pie.resources.ModelResource):
@@ -16,8 +18,8 @@ A Basic API might look something like this:
        model_class = User
 
         fields = [
-            fields.PropertyField(property='name', type=str),
-            fields.PropertyField(property='age', type=int)
+            fields.PropertyField('name', type=str),
+            fields.PropertyField('age', type=int),
         ]
 
 
@@ -25,7 +27,7 @@ A Basic API might look something like this:
         resource_path = 'users'
         resource_class = UserResource
 
-In urls.py :
+**URL configuration**:
 
 .. code-block:: python
 
@@ -33,6 +35,24 @@ In urls.py :
     api_resource.register_class(UserQuerySetResource)
 
     url(r'^api/v1/(.*)$', savory_pie.views.api_view(api_resource))
+
+
+**Request**::
+
+    GET /api/v1/users/1/ HTTP/1.1
+    Host: example.com
+    Accept: application/json
+
+**Response**::
+
+    HTTP/1.1 200 OK
+    Vary: Accept
+    Content-Type: application/json
+
+    {
+        'name': 'Bob',
+        'age': 45,
+    }
 
 Narrative documentation
 =======================
