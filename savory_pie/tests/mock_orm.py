@@ -72,26 +72,23 @@ class QuerySet(object):
     def _filter_elements(self, **kwargs):
         filtered_elements = self._elements
         for attr, value in kwargs.iteritems():
-            filtered_elements = \
+            filtered_elements =\
                 [element for element in self._elements if getattr(element, attr) == value]
         return filtered_elements
 
 
-class Manager(Mock):
-    def __init__(self):
-        super(Manager, self).__init__(spec=[])
-
+class Manager(object):
     def all(self):
         return QuerySet()
 
-class Model(Mock):
+
+class Model(object):
     class DoesNotExist(ObjectDoesNotExist):
         pass
 
     objects = Manager()
 
     def __init__(self, **kwargs):
-        super(Model, self).__init__(spec=[])
         self.pk = None
 
         for key, value in kwargs.iteritems():
