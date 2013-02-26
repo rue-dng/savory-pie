@@ -74,7 +74,7 @@ class QuerySetResource(Resource):
         return related.prepare(queryset)
 
     def get(self, ctx, params):
-        complete_queryset = queryset = self.queryset.all()
+        complete_queryset = self.queryset.all()
 
         filtered_queryset = self.filter_queryset(complete_queryset, params)
         sliced_queryset = self.slice_queryset(filtered_queryset, params)
