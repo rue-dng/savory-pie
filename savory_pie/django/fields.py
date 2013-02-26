@@ -1,6 +1,7 @@
 from savory_pie import fields as base_fields
 from savory_pie.fields import URIResourceField
 
+
 class AttributeField(base_fields.AttributeField):
     """
     Django extension of the basic AttributeField that adds support for optimized select_related
@@ -69,7 +70,30 @@ class URIResourceField(base_fields.URIResourceField):
             related.sub_select(self._attribute)
 
 
-class SubModelResourceField(base_fields.SubModelResourceField):
+class SubModelResourceField(base_fields.SubObjectResourceField):
+    """
+    Django extension of the basic SubObjectResourceField that adds support for
+    optimized select_related or prefetch_related calls.
+
+        Parameters:
+            See SubObjectResourceField
+
+            ``use_prefetch``
+                optional -- tells the sub-model resource field to use
+                prefetch_related rather than a select_related.  Defaults to false.
+
+                There are two reasons you might need to do this...
+
+                - select_related will not work when the foreign key allows null.
+                - select_related will not work when the foreign key is a GenericForeignKey.
+
+                See https://docs.djangoproject.com/en/dev/ref/models/querysets/
+    """
+    def __init__(self, *args, **kwargs):
+        self._use_prefetch = kwargs.pop('use_prefetch', False)
+
+        super(SubModelResourceField, self).__init__(*args, **kwargs)
+
     def prepare(self, ctx, related):
         if self._use_prefetch:
             related.prefetch(self._attribute)
