@@ -2,7 +2,7 @@ import unittest
 from mock import Mock, MagicMock, call
 
 from savory_pie.django import resources, fields
-from savory_pie.tests import mock_orm
+from savory_pie.tests.django import mock_orm
 from savory_pie.tests.mock_context import mock_context
 
 class ResourceTest(unittest.TestCase):

@@ -5,8 +5,8 @@ from mock import Mock
 from savory_pie.resources import APIResource
 from savory_pie.django import resources, fields
 
-from savory_pie.tests import mock_orm
-from savory_pie.tests.mock_request import savory_dispatch
+from savory_pie.tests.django import mock_orm
+from savory_pie.tests.django.mock_request import savory_dispatch
 
 class User(mock_orm.Model):
     pass

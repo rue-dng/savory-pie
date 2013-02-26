@@ -9,7 +9,7 @@ from savory_pie.django.fields import (
     RelatedManagerField,
     URIResourceField
 )
-from savory_pie.tests import mock_orm
+from savory_pie.tests.django import mock_orm
 
 from savory_pie.tests.mock_context import mock_context
 
