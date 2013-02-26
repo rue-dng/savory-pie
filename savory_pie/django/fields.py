@@ -1,6 +1,5 @@
 from savory_pie import fields as base_fields
 
-
 class AttributeField(base_fields.AttributeField):
     """
     Django extension of the basic AttributeField that adds support for optimized select_related

@@ -1,5 +1,6 @@
 from savory_pie.resources import Resource
 from savory_pie.django.utils import Related
+from savory_pie.resources import EmptyParams
 
 class QuerySetResource(Resource):
     """
@@ -33,20 +34,17 @@ class QuerySetResource(Resource):
     def supports_paging(self):
         return self.page_size is not None
 
-    def filter_queryset(self, queryset, GET):
+    def filter_queryset(self, queryset, params):
         # TODO: Revisit filtering
-        return queryset.filter(**GET)
+        return queryset.filter()
 
-    def slice_queryset(self, queryset, GET):
+    def slice_queryset(self, queryset, params):
         if self.supports_paging:
-            page = self.get_page(GET)
+            page = params.get_as('page', int, 0)
             offset = page * self.page_size
             return queryset[offset: offset + self.page_size]
         else:
             return queryset
-
-    def get_page(self, GET):
-        return int(GET.get('page', '0'))
 
     def build_page_uri(self, ctx, page):
         return ctx.build_resource_uri(self) + '?' + urllib.urlencode({'page': page})
@@ -75,25 +73,27 @@ class QuerySetResource(Resource):
         self.prepare(ctx, related)
         return related.prepare(queryset)
 
-    def get(self, ctx, **GET):
+    def get(self, ctx, params):
         complete_queryset = queryset = self.queryset.all()
 
-        filtered_queryset = self.filter_queryset(complete_queryset, GET)
-        sliced_queryset = self.slice_queryset(filtered_queryset, GET)
+        filtered_queryset = self.filter_queryset(complete_queryset, params)
+        sliced_queryset = self.slice_queryset(filtered_queryset, params)
+
+        # prepare must be last for optimization to be respected by Django.
         final_queryset = self.prepare_queryset(ctx, sliced_queryset)
 
         objects = []
         for model in final_queryset:
-            objects.append(self.to_resource(model).get(ctx))
+            objects.append(self.to_resource(model).get(ctx, EmptyParams()))
 
         meta = dict()
         if self.supports_paging:
             # When paging the sliced_queryset will not contain all the objects,
             # so the count of the accumulated objects is insufficient.  In that case,
             # need to make a call queryset.count.
-            count = self.filter_queryset(complete_queryset, GET).count()
+            count = self.filter_queryset(complete_queryset, params).count()
 
-            page = self.get_page(GET)
+            page = params.get_as('page', int, 0)
             if page > 0:
                 meta['prev'] = self.build_page_uri(ctx, page - 1)
 
@@ -219,7 +219,7 @@ class ModelResource(Resource):
         # TODO: Sanity checks that path is bound properly
         self._resource_path = resource_path
 
-    def get(self, ctx, **kwargs):
+    def get(self, ctx, params):
         target_dict = dict()
 
         for field in self.fields:

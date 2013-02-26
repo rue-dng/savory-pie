@@ -2,6 +2,27 @@ import urllib
 from savory_pie.django_utils import Related
 
 
+#protocol Params:
+#   def get(key, default=None)
+#   def get_as(key, type, default=None)
+#   def get_list(key)
+#   def get_list_of(key, type)
+
+
+class EmptyParams(object):
+    def get(self, key, default=None):
+        return default
+
+    def get_as(self, key, type, default=None):
+        return default
+
+    def get_list(self, key):
+        return []
+
+    def get_list_of(self, key, type):
+        return []
+
+
 class Resource(object):
     """
     Base object for defining resources.
@@ -33,7 +54,7 @@ class Resource(object):
 
         return allowed_methods
 
-    # def get(self, ctx, **kwargs):
+    # def get(self, ctx, params):
         """
         Optional method that is called during a GET request.
 

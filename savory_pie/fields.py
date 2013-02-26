@@ -1,3 +1,5 @@
+from savory_pie.resources import EmptyParams
+
 class AttributeField(object):
     """
     Simple Field that translates an object attribute to/from a dict.
@@ -190,7 +192,8 @@ class SubObjectResourceField(object):
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
         sub_model = getattr(source_obj, self._attribute)
-        target_dict[self._compute_property(ctx)] = self._resource_class(sub_model).get(ctx)
+        target_dict[self._compute_property(ctx)] =\
+            self._resource_class(sub_model).get(ctx, EmptyParams())
 
 
 class IterableField(object):
@@ -239,5 +242,5 @@ class IterableField(object):
         manager = getattr(source_obj, self._attribute)
         objects = []
         for model in manager.all():
-            objects.append(self._resource_class(model).get(ctx))
+            objects.append(self._resource_class(model).get(ctx, EmptyParams()))
         target_dict[self._compute_property(ctx)] = objects
