@@ -1,4 +1,5 @@
 from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 
 from savory_pie.context import APIContext
 from savory_pie.formatters import JSONFormatter
@@ -14,6 +15,7 @@ def api_view(root_resource):
     if root_resource.resource_path is None:
         root_resource.resource_path = ''
 
+    @csrf_exempt
     def view(request, resource_path):
         full_path = _strip_query_string(request.get_full_path())
         if len(resource_path) == 0:
@@ -26,21 +28,26 @@ def api_view(root_resource):
             root_resource=root_resource,
             formatter=JSONFormatter()
         )
-        resource = ctx.resolve_resource_path(resource_path)
 
-        if resource is None:
-            return _not_found(ctx, request)
+        try:
+            resource = ctx.resolve_resource_path(resource_path)
 
-        if request.method == 'GET':
-            return _process_get(ctx, resource, request)
-        elif request.method == 'POST':
-            return _process_post(ctx, resource, request)
-        elif request.method == 'PUT':
-            return _process_put(ctx, resource, request)
-        elif request.method == 'DELETE':
-            return _process_delete(ctx, resource, request)
-        else:
-            return _not_allowed_method(ctx, resource, request)
+            if resource is None:
+                return _not_found(ctx, request)
+
+            if request.method == 'GET':
+                return _process_get(ctx, resource, request)
+            elif request.method == 'POST':
+                return _process_post(ctx, resource, request)
+            elif request.method == 'PUT':
+                return _process_put(ctx, resource, request)
+            elif request.method == 'DELETE':
+                return _process_delete(ctx, resource, request)
+            else:
+                return _not_allowed_method(ctx, resource, request)
+        except:
+            import traceback
+            return _internal_error(ctx, request, traceback.format_exc())
 
     return view
 
@@ -101,3 +108,9 @@ def _no_content_success(ctx, resource, request):
 
 def _success(ctx, resource, request, content_dict=None):
     return HttpResponse(status=200)
+
+def _internal_error(ctx, request, error):
+    response = HttpResponse(status=500, content_type=ctx.formatter.content_type)
+    error_body = { ctx.formatter.default_published_property('error'): error }
+    ctx.formatter.write_to(error_body, response)
+    return response

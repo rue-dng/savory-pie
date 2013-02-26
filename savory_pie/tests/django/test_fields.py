@@ -13,6 +13,7 @@ from savory_pie.tests.django import mock_orm
 
 from savory_pie.tests.mock_context import mock_context
 
+
 class AttributeFieldTest(unittest.TestCase):
     def test_simple_outgoing(self):
         source_object = Mock()
@@ -297,14 +298,13 @@ class RelatedManagerFieldTest(unittest.TestCase):
         source_object = mock_orm.Model()
         related_manager = mock_orm.Manager()
         related_manager.all = Mock(return_value=mock_orm.QuerySet(
-            mock_orm.Model(bar=14)
+            mock_orm.Model(pk=4, bar=14)
         ))
         source_object.foo = related_manager
 
         target_dict = {}
         field.handle_outgoing(mock_context(), source_object, target_dict)
-        self.assertEqual([{'bar': 14}], target_dict['foo'])
-
+        self.assertEqual([{'_id': '4', 'bar': 14}], target_dict['foo'])
 
     def test_prepare(self):
 
@@ -326,3 +326,110 @@ class RelatedManagerFieldTest(unittest.TestCase):
             'foo',
             'foo__bar'
         })
+
+    def test_incoming_no_id(self):
+        del mock_orm.Model._models[:]
+
+        class MockResource(ModelResource):
+            model_class = mock_orm.Model
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        field = RelatedManagerField(attribute='foo', resource_class=MockResource)
+
+        target_obj = mock_orm.Mock()
+        related_manager = mock_orm.Manager()
+        related_manager.all = Mock(return_value=mock_orm.QuerySet())
+        target_obj.foo = related_manager
+        source_dict = {
+            'foo': [{'bar': 4}],
+        }
+
+        model_index = len(mock_orm.Model._models)
+        field.handle_incoming(mock_context(), source_dict, target_obj)
+
+        model = mock_orm.Model._models[model_index]
+        self.assertEqual(4, model.bar)
+        related_manager.add.assert_called_with(model)
+
+    def test_incoming_delete(self):
+        del mock_orm.Model._models[:]
+
+        class MockResource(ModelResource):
+            model_class = mock_orm.Model
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        field = RelatedManagerField(attribute='foo', resource_class=MockResource)
+
+        target_obj = mock_orm.Mock()
+        related_manager = mock_orm.Manager()
+        related_manager.all = Mock(return_value=mock_orm.QuerySet(
+            mock_orm.Model(pk=4, bar=14)
+        ))
+        target_obj.foo = related_manager
+        source_dict = {
+            'foo': [],
+        }
+
+        field.handle_incoming(mock_context(), source_dict, target_obj)
+
+        model = mock_orm.Model._models[0]
+        related_manager.remove.assert_called_with(model)
+
+    def test_incoming_delete_non_null(self):
+        del mock_orm.Model._models[:]
+
+        class MockResource(ModelResource):
+            model_class = mock_orm.Model
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        field = RelatedManagerField(attribute='foo', resource_class=MockResource)
+
+        target_obj = mock_orm.Mock()
+        related_manager = mock_orm.Manager()
+        related_manager.mock_add_spec(['add'])
+        related_manager.all = Mock(return_value=mock_orm.QuerySet(
+            mock_orm.Model(pk=4, bar=14)
+        ))
+        target_obj.foo = related_manager
+        source_dict = {
+            'foo': [],
+        }
+
+        field.handle_incoming(mock_context(), source_dict, target_obj)
+
+        model = mock_orm.Model._models[0]
+        model.delete.assert_called_with()
+
+    def test_incoming_edit(self):
+        del mock_orm.Model._models[:]
+
+        class MockResource(ModelResource):
+            model_class = mock_orm.Model
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        field = RelatedManagerField(attribute='foo', resource_class=MockResource)
+
+        target_obj = mock_orm.Mock()
+        related_manager = mock_orm.Manager()
+        related_manager.all = Mock(return_value=mock_orm.QuerySet(
+            mock_orm.Model(pk=4, bar=14)
+        ))
+        target_obj.foo = related_manager
+        source_dict = {
+            'foo': [{'_id': '4', 'bar': 15}],
+        }
+
+        model_index = len(mock_orm.Model._models) + 1
+        field.handle_incoming(mock_context(), source_dict, target_obj)
+
+        model = mock_orm.Model._models[0]
+        self.assertEqual(15, model.bar)
+        model.save.assert_called()
