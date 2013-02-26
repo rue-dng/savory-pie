@@ -299,8 +299,6 @@ class RelatedManagerField(object):
             else:
                 model_resource = self._resource_class.create_resource()
                 model_resource.put(ctx, model_dict)
-                model_resource = self._resource_class.create_resource()
-                model_resource.put(ctx, model_dict)
                 new_models.append(model_resource.model)
 
         manager.add(*new_models)
