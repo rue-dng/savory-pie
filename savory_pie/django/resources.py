@@ -1,5 +1,5 @@
 from savory_pie.resources import Resource
-from savory_pie.django_utils import Related
+from savory_pie.django.utils import Related
 
 class QuerySetResource(Resource):
     """

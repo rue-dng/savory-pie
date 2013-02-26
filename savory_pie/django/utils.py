@@ -88,3 +88,4 @@ class Related(object):
             queryset = queryset.prefetch_related(*self._prefetch)
 
         return queryset
+
