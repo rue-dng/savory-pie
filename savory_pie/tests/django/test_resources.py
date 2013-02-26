@@ -4,6 +4,7 @@ from mock import Mock, MagicMock, call, patch
 from savory_pie.django import resources, fields
 from savory_pie.tests.django import mock_orm
 from savory_pie.tests.mock_context import mock_context
+from savory_pie.resources import EmptyParams
 
 import django.core.exceptions
 
@@ -61,7 +62,7 @@ class ModelResourceTest(unittest.TestCase):
         user = User(pk=1, name='Bob', age=20)
 
         resource = AddressableUserResource(user)
-        dict = resource.get(mock_context())
+        dict = resource.get(mock_context(), EmptyParams())
 
         self.assertEqual(dict, {
             'name': 'Bob',
@@ -149,7 +150,7 @@ class QuerySetResourceTest(unittest.TestCase):
             User(pk=1, name='Alice', age=31),
             User(pk=2, name='Bob', age=20)
         ))
-        data = resource.get(mock_context())
+        data = resource.get(mock_context(), EmptyParams())
 
         self.assertEqual(data['objects'], [
             {'resourceUri': 'uri://users/1', 'name': 'Alice', 'age': 31},
@@ -253,6 +254,6 @@ class ResourcePrepareTest(unittest.TestCase):
         queryset = MagicMock()
         queryset_resource = ComplexUserResourceQuerySetResource(queryset)
 
-        queryset_resource.get(mock_context())
+        queryset_resource.get(mock_context(), EmptyParams())
         calls = call.all().filter().select_related('manager').prefetch_related('reports').call_list()
         queryset.assert_has_calls(calls)
