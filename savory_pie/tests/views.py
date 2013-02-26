@@ -18,6 +18,7 @@ def mock_resource(name=None, resource_path=None, child_resource=None):
 
     return resource
 
+
 def call_args_sans_context(mock):
     return list(mock.call_args[0][1:])
 
