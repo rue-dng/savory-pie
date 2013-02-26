@@ -1,4 +1,5 @@
 from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 
 from savory_pie.context import APIContext
 from savory_pie.formatters import JSONFormatter
@@ -14,6 +15,7 @@ def api_view(root_resource):
     if root_resource.resource_path is None:
         root_resource.resource_path = ''
 
+    @csrf_exempt
     def view(request, resource_path):
         full_path = _strip_query_string(request.get_full_path())
         if len(resource_path) == 0:

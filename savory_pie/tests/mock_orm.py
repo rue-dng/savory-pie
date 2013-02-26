@@ -96,10 +96,12 @@ class Model(object):
     class DoesNotExist(ObjectDoesNotExist):
         pass
 
+    _models = []
     objects = Manager()
 
     def __init__(self, **kwargs):
         self.pk = None
+        self._models.append(self)
 
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
