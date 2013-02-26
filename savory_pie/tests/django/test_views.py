@@ -1,4 +1,5 @@
 import unittest
+import json
 
 from mock import Mock
 from savory_pie.tests.django.mock_request import savory_dispatch
@@ -122,3 +123,14 @@ class ViewTest(unittest.TestCase):
 
         response = savory_dispatch(root_resource, method='GET', resource_path='child/grandchild')
         self.assertEqual(response.status_code, 404)
+
+    def test_exception_handling(self):
+        root_resource = mock_resource(name='root')
+        root_resource.allowed_methods.add('GET')
+        root_resource.get.side_effect = Exception('Fail')
+
+        response = savory_dispatch(root_resource, method='GET')
+
+        response_json = json.loads(response.content)
+        self.assertIn('error', response_json)
+        self.assertEqual(response.status_code, 500)
