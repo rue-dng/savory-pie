@@ -1,4 +1,5 @@
 import functools
+from savory_pie.resources import EmptyParams
 
 
 def read_only_noop(func):
@@ -232,7 +233,8 @@ class SubObjectResourceField(object):
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
         sub_model = getattr(source_obj, self._attribute)
-        target_dict[self._compute_property(ctx)] = self._resource_class(sub_model).get(ctx)
+        target_dict[self._compute_property(ctx)] =\
+            self._resource_class(sub_model).get(ctx, EmptyParams())
 
 
 class IterableField(object):
@@ -324,7 +326,7 @@ class IterableField(object):
         objects = []
         for model in manager.all():
             model_resource = self._resource_class(model)
-            model_dict = model_resource.get(ctx)
+            model_dict = model_resource.get(ctx, EmptyParams())
             # TODO only add _id if there is not a resource_url
             model_dict['_id'] = model_resource.key
             objects.append(model_dict)
