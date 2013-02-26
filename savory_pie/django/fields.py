@@ -1,5 +1,4 @@
 from savory_pie import fields as base_fields
-from savory_pie.fields import URIResourceField
 
 
 class AttributeField(base_fields.AttributeField):
@@ -8,7 +7,7 @@ class AttributeField(base_fields.AttributeField):
     or prefetch_related calls.
 
     Parameters:
-            See AttributeField
+            :class:`savory_pie.fields.AttributeField`
 
             ``use_prefetch``
                 optional -- tells the attribute field to use
@@ -42,7 +41,7 @@ class URIResourceField(base_fields.URIResourceField):
     select_related or prefetch_related calls.
 
     Parameters:
-            See URIResourceField
+            :class:`savory_pie.fields.URIResourceField`
 
             ``use_prefetch``
                 optional -- tells the attribute field to use
@@ -76,7 +75,7 @@ class SubModelResourceField(base_fields.SubObjectResourceField):
     optimized select_related or prefetch_related calls.
 
         Parameters:
-            See SubObjectResourceField
+            :class:`savory_pie.fields.SubModelResourceField`
 
             ``use_prefetch``
                 optional -- tells the sub-model resource field to use
@@ -104,6 +103,14 @@ class SubModelResourceField(base_fields.SubObjectResourceField):
 
 
 class RelatedManagerField(base_fields.IterableField):
+    """
+    Django extension of the basic IterableField that adds support for
+    optimized select_related or prefetch_related calls.
+
+        Parameters:
+            :class:`savory_pie.fields.IterableField`
+    """
+
     def get_iterable(self, value):
         return value.all()
 
