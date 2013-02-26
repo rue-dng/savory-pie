@@ -344,7 +344,7 @@ class RelatedManagerFieldTest(unittest.TestCase):
             'foo': [{'bar': 4}],
         }
 
-        model_index = len(mock_orm.Model._models) + 1
+        model_index = len(mock_orm.Model._models)
         field.handle_incoming(mock_context(), source_dict, target_obj)
 
         model = mock_orm.Model._models[model_index]
