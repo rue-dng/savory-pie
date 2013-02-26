@@ -36,4 +36,7 @@ class JSONFormatter(object):
         return None if api_value is None else type_(api_value)
 
     def to_api_value(self, type_, python_value):
-        return python_value
+        if type(python_value) not in (int, float, dict, list, bool, str, unicode, type(None)):
+            return str(python_value)
+        else:
+            return python_value
