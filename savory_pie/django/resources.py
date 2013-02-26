@@ -4,6 +4,7 @@ from savory_pie.resources import Resource
 from savory_pie.django.utils import Related
 from savory_pie.resources import EmptyParams
 
+
 class QuerySetResource(Resource):
     """
     Resource abstract around Django QuerySets.
@@ -28,6 +29,7 @@ class QuerySetResource(Resource):
     #: optional - if set specifies the page size for data returned during a GET
     #: - defaults to None (no paging)
     page_size = None
+    filters = []
 
     def __init__(self, queryset=None):
         self.queryset = queryset or self.resource_class.model_class.objects.all()
@@ -36,11 +38,14 @@ class QuerySetResource(Resource):
     def supports_paging(self):
         return self.page_size is not None
 
-    def filter_queryset(self, queryset, params):
-        # TODO: Revisit filtering
+    def filter_queryset(self, ctx, params, queryset):
+        for filter in self.filters:
+            queryset = filter.filter(ctx, params, queryset)
+
+        # The extra filter call exists to keep a test passing
         return queryset.filter()
 
-    def slice_queryset(self, queryset, params):
+    def slice_queryset(self, ctx, params, queryset):
         if self.supports_paging:
             page = params.get_as('page', int, 0)
             offset = page * self.page_size
@@ -78,8 +83,8 @@ class QuerySetResource(Resource):
     def get(self, ctx, params):
         complete_queryset = self.queryset.all()
 
-        filtered_queryset = self.filter_queryset(complete_queryset, params)
-        sliced_queryset = self.slice_queryset(filtered_queryset, params)
+        filtered_queryset = self.filter_queryset(ctx, params, complete_queryset)
+        sliced_queryset = self.slice_queryset(ctx, params, filtered_queryset)
 
         # prepare must be last for optimization to be respected by Django.
         final_queryset = self.prepare_queryset(ctx, sliced_queryset)
@@ -92,8 +97,8 @@ class QuerySetResource(Resource):
         if self.supports_paging:
             # When paging the sliced_queryset will not contain all the objects,
             # so the count of the accumulated objects is insufficient.  In that case,
-            # need to make a call queryset.count.
-            count = self.filter_queryset(complete_queryset, params).count()
+            # need to make a call to queryset.count.
+            count = filtered_queryset.count()
 
             page = params.get_as('page', int, 0)
             if page > 0:
