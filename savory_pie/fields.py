@@ -319,6 +319,7 @@ class RelatedManagerField(object):
         for model in manager.all():
             model_resource = self._resource_class(model)
             model_dict = model_resource.get(ctx)
+            # TODO only add _id if there is not a resource_url
             model_dict['_id'] = model_resource.key
             objects.append(model_dict)
         target_dict[self._compute_property(ctx)] = objects
