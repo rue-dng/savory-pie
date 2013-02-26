@@ -22,8 +22,7 @@ def api_view(root_resource):
             base_path = full_path[:-len(resource_path)]
 
         ctx = APIContext(
-            http_request=request,
-            base_path=base_path,
+            base_uri=request.build_absolute_uri(base_path),
             root_resource=root_resource,
             formatter=JSONFormatter()
         )
