@@ -1,6 +1,6 @@
 class AttributeField(object):
     """
-    Simple Field that translates an object property to/from a dict.
+    Simple Field that translates an object attribute to/from a dict.
 
         Parameters:
 
@@ -13,19 +13,6 @@ class AttributeField(object):
 
             ``published_property``
                 optional -- name exposed in the API
-
-            ``use_prefetch``
-                optional -- tells the attribute field to use
-                prefetch_related rather than a select_related.  Defaults to false.
-
-                There are two reasons you might need to do this...
-
-                - select_related will not work when the foreign key allows null.
-                - select_related will not work when the foreign key is a GenericForeignKey.
-
-                See https://docs.djangoproject.com/en/dev/ref/models/querysets/
-
-                This parameter is meaningless for top-level attributes.
 
         .. code-block:: python
 
@@ -47,7 +34,6 @@ class AttributeField(object):
         self._full_attribute = attribute
         self._type = type
         self._published_property = published_property
-        self._use_prefetch = use_prefetch
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
