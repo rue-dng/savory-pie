@@ -304,8 +304,14 @@ class RelatedManagerField(object):
                 new_models.append(model_resource.model)
 
         manager.add(*new_models)
-        models_to_delete = [db_models[key] for key in db_keys - request_keys]
-        manager.delete(*models_to_delete)
+
+        models_to_remove = [db_models[key] for key in db_keys - request_keys]
+        # If the FK is not nullable the manager will not have a remove
+        if hasattr(manager, 'remove'):
+            manager.remove(*models_to_remove)
+        else:
+            for model in models_to_remove:
+                model.delete()
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
         manager = getattr(source_obj, self._attribute)

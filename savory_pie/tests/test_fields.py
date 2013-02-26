@@ -376,7 +376,34 @@ class RelatedManagerFieldTest(unittest.TestCase):
         field.handle_incoming(mock_context(), source_dict, target_obj)
 
         model = mock_orm.Model._models[0]
-        related_manager.delete.assert_called_with(model)
+        related_manager.remove.assert_called_with(model)
+
+    def test_incoming_delete_non_null(self):
+        del mock_orm.Model._models[:]
+
+        class MockResource(ModelResource):
+            model_class = mock_orm.Model
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        field = RelatedManagerField(attribute='foo', resource_class=MockResource)
+
+        target_obj = mock_orm.Mock()
+        related_manager = mock_orm.Manager()
+        related_manager.mock_add_spec(['add'])
+        related_manager.all = Mock(return_value=mock_orm.QuerySet(
+            mock_orm.Model(pk=4, bar=14)
+        ))
+        target_obj.foo = related_manager
+        source_dict = {
+            'foo': [],
+        }
+
+        field.handle_incoming(mock_context(), source_dict, target_obj)
+
+        model = mock_orm.Model._models[0]
+        model.delete.assert_called_with()
 
     def test_incoming_edit(self):
         del mock_orm.Model._models[:]
