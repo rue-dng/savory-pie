@@ -4,7 +4,7 @@ import json
 class JSONFormatter(object):
     """
     Formatter reads and writes json while converting properties to and from
-    javascript nameing conventions and pep8.
+    javascript naming conventions and pep8.
     """
 
     content_type = 'application/json'
