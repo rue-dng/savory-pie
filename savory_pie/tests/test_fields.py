@@ -338,8 +338,7 @@ class RelatedManagerFieldTest(unittest.TestCase):
 
         target_obj = mock_orm.Mock()
         related_manager = mock_orm.Manager()
-        related_manager.all = Mock(return_value=mock_orm.QuerySet(
-        ))
+        related_manager.all = Mock(return_value=mock_orm.QuerySet())
         target_obj.foo = related_manager
         source_dict = {
             'foo': [{'bar': 4}],
