@@ -1,3 +1,14 @@
+import functools
+
+
+def read_only_no_op(func):
+    @functools.wraps(func)
+    def inner(self, *args, **kwargs):
+        if not self._read_only:
+            return func(self, *args, **kwargs)
+    return inner
+
+
 class AttributeField(object):
     """
     Simple Field that translates an object property to/from a dict.
@@ -27,6 +38,9 @@ class AttributeField(object):
 
                 This parameter is meaningless for top-level attributes.
 
+            ``read_only``
+                optional -- this api will never try and set this value
+
         .. code-block:: python
 
             AttributeField('name', type=str)
@@ -43,11 +57,12 @@ class AttributeField(object):
 
            {'age': obj.other.age}
     """
-    def __init__(self, attribute, type, published_property=None, use_prefetch=False):
+    def __init__(self, attribute, type, published_property=None, use_prefetch=False, read_only=False):
         self._full_attribute = attribute
         self._type = type
         self._published_property = published_property
         self._use_prefetch = use_prefetch
+        self._read_only = read_only
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
@@ -83,6 +98,7 @@ class AttributeField(object):
         # TODO: handle None
         return setattr(obj, self._bare_attribute, value)
 
+    @read_only_no_op
     def handle_incoming(self, ctx, source_dict, target_obj):
         self._set(
             target_obj,

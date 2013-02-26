@@ -75,6 +75,18 @@ class AttributeFieldTest(unittest.TestCase):
 
         self.assertEqual(target_object.foo, 20)
 
+    def test_incoming_read_only(self):
+        source_dict = {
+            'foo': 20
+        }
+
+        target_object = Mock(name='target', spec=[])
+
+        field = AttributeField(attribute='foo', type=int, read_only=True)
+        field.handle_incoming(mock_context(), source_dict, target_object)
+
+        self.assertFalse(hasattr(target_object, 'foo'))
+
     def test_simple_none_incoming(self):
         source_dict = {
             'foo': None
