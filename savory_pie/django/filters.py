@@ -1,6 +1,13 @@
 #protocol QuerySetFilter:
 #   def filter(self, ctx, params, queryset)
+    """
+    Filters (or orders) the queryset according to the specified criteria
+    """
 #   def describe(self, ctx, schema_dict)
+    """
+    Fills in schema_dict with information about the set of valid filtering
+    criteria.
+    """
 
 class StandardFilter(object):
     def __init__(self, fields, order_by=None):
@@ -21,5 +28,3 @@ class StandardFilter(object):
     def describe(self, ctx, schema_dict):
         pass
 
-
-filter = StandardFilter().filter_by('first_name', 'last_name', type=str, ops=)
