@@ -1,3 +1,14 @@
+import functools
+
+
+def read_only_noop(func):
+    @functools.wraps(func)
+    def inner(self, *args, **kwargs):
+        if not self._read_only:
+            return func(self, *args, **kwargs)
+    return inner
+
+
 class AttributeField(object):
     """
     Simple Field that translates an object property to/from a dict.
@@ -27,6 +38,9 @@ class AttributeField(object):
 
                 This parameter is meaningless for top-level attributes.
 
+            ``read_only``
+                optional -- this api will never try and set this value
+
         .. code-block:: python
 
             AttributeField('name', type=str)
@@ -43,11 +57,17 @@ class AttributeField(object):
 
            {'age': obj.other.age}
     """
-    def __init__(self, attribute, type, published_property=None, use_prefetch=False):
+    def __init__(self,
+                 attribute,
+                 type,
+                 published_property=None,
+                 use_prefetch=False,
+                 read_only=False):
         self._full_attribute = attribute
         self._type = type
         self._published_property = published_property
         self._use_prefetch = use_prefetch
+        self._read_only = read_only
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
@@ -83,6 +103,7 @@ class AttributeField(object):
         # TODO: handle None
         return setattr(obj, self._bare_attribute, value)
 
+    @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
         self._set(
             target_obj,
@@ -128,6 +149,8 @@ class URIResourceField(object):
         ``published_property``
             optional -- name exposed in the API
 
+        ``read_only``
+            optional -- this api will never try and set this value
 
         .. code-block:: python
 
@@ -137,10 +160,19 @@ class URIResourceField(object):
 
             {'other': '/api/other/{pk}'}
     """
-    def __init__(self, attribute, resource_class, published_property=None):
+
+
+
+
+    def __init__(self,
+                 attribute,
+                 resource_class,
+                 published_property=None,
+                 read_only=False):
         self._attribute = attribute
         self._resource_class = resource_class
         self._published_property = published_property
+        self._read_only = read_only
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
@@ -148,6 +180,7 @@ class URIResourceField(object):
         else:
             return ctx.formatter.default_published_property(self._attribute)
 
+    @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
         uri = source_dict[self._compute_property(ctx)]
 
@@ -195,6 +228,9 @@ class SubModelResourceField(object):
 
             See https://docs.djangoproject.com/en/dev/ref/models/querysets/
 
+        ``read_only``
+            optional -- this api will never try and set this value
+
         .. code-block:: python
 
             SubModelResourceField('other', OtherResource)
@@ -203,11 +239,17 @@ class SubModelResourceField(object):
 
             {'other': {'age': 9}}
     """
-    def __init__(self, attribute, resource_class, published_property=None, use_prefetch=False):
+    def __init__(self,
+                 attribute,
+                 resource_class,
+                 published_property=None,
+                 use_prefetch=False,
+                 read_only=False):
         self._attribute = attribute
         self._resource_class = resource_class
         self._published_property = published_property
         self._use_prefetch = use_prefetch
+        self._read_only = read_only
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
@@ -215,6 +257,7 @@ class SubModelResourceField(object):
         else:
             return ctx.formatter.default_published_property(self._attribute)
 
+    @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
         sub_model = getattr(target_obj, self._attribute, None)
         if sub_model is None:
@@ -255,6 +298,9 @@ class RelatedManagerField(object):
         ``published_property``
             optional name exposed through the API
 
+        ``read_only``
+            optional -- this api will never try and set this value
+
         .. code-block:: python
 
             RelatedManagerField('others', OtherResource)
@@ -263,10 +309,15 @@ class RelatedManagerField(object):
 
             {'others': [{'age': 6}, {'age': 1}]}
     """
-    def __init__(self, attribute, resource_class, published_property=None):
+    def __init__(self,
+                 attribute,
+                 resource_class,
+                 published_property=None,
+                 read_only=False):
         self._attribute = attribute
         self._resource_class = resource_class
         self._published_property = published_property
+        self._read_only = read_only
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
@@ -274,6 +325,7 @@ class RelatedManagerField(object):
         else:
             return ctx.formatter.default_published_property(self._attribute)
 
+    @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
         manager = getattr(target_obj, self._attribute)
 

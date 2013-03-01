@@ -49,7 +49,6 @@ class AttributeFieldTest(unittest.TestCase):
 
         self.assertEqual(target_dict['bar'], 20)
 
-
     def test_multilevel_incoming(self):
         source_dict = {
             'bar': 20
@@ -74,6 +73,18 @@ class AttributeFieldTest(unittest.TestCase):
         field.handle_incoming(mock_context(), source_dict, target_object)
 
         self.assertEqual(target_object.foo, 20)
+
+    def test_incoming_read_only(self):
+        source_dict = {
+            'foo': 20
+        }
+
+        target_object = Mock(name='target', spec=[])
+
+        field = AttributeField(attribute='foo', type=int, read_only=True)
+        field.handle_incoming(mock_context(), source_dict, target_object)
+
+        self.assertFalse(hasattr(target_object, 'foo'))
 
     def test_simple_none_incoming(self):
         source_dict = {
@@ -180,6 +191,32 @@ class URIResourceFieldTest(unittest.TestCase):
         ctx.resolve_resource_uri.assert_called_with('uri://resources/2')
         self.assertEqual(target_object.foo, related_model)
 
+    def test_incoming_read_only(self):
+
+        class Resource(ModelResource):
+            pass
+
+        field = URIResourceField(
+            attribute='foo',
+             resource_class=Resource,
+             read_only=True,
+        )
+
+        source_dict = {
+            'foo': 'uri://resources/2'
+        }
+        target_object = Mock([])
+
+        related_model = mock_orm.Model(pk=2)
+
+        ctx = mock_context()
+        ctx.resolve_resource_uri = Mock(return_value=Resource(related_model))
+
+        field.handle_incoming(ctx, source_dict, target_object)
+
+        self.assertFalse(ctx.resolve_resource_uri.called)
+        self.assertFalse(hasattr(target_object, 'foo'))
+
 
 class SubModelResourceFieldTest(unittest.TestCase):
     def test_outgoing(self):
@@ -220,6 +257,32 @@ class SubModelResourceFieldTest(unittest.TestCase):
 
         self.assertEqual(20, target_object.foo.bar)
         target_object.foo.save.assert_called_with()
+
+    def test_incoming_read_only(self):
+
+        class Resource(ModelResource):
+            model_class = Mock(spec=[])
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        field = SubModelResourceField(
+            attribute='foo',
+            resource_class=Resource,
+            read_only=True,
+        )
+
+        source_dict = {
+            'foo': {'bar': 20},
+        }
+
+        target_object = Mock()
+        target_object.foo = Mock(['save'])
+
+        field.handle_incoming(mock_context(), source_dict, target_object)
+
+        self.assertFalse(hasattr(target_object.foo, 'bar'))
+        self.assertFalse(target_object.foo.save.called)
 
     def test_new_object_incoming(self):
 
@@ -364,8 +427,9 @@ class RelatedManagerFieldTest(unittest.TestCase):
 
         target_obj = mock_orm.Mock()
         related_manager = mock_orm.Manager()
+        related_model = mock_orm.Model(pk=4, bar=14)
         related_manager.all = Mock(return_value=mock_orm.QuerySet(
-            mock_orm.Model(pk=4, bar=14)
+            related_model
         ))
         target_obj.foo = related_manager
         source_dict = {
@@ -374,8 +438,7 @@ class RelatedManagerFieldTest(unittest.TestCase):
 
         field.handle_incoming(mock_context(), source_dict, target_obj)
 
-        model = mock_orm.Model._models[0]
-        related_manager.remove.assert_called_with(model)
+        related_manager.remove.assert_called_with(related_model)
 
     def test_incoming_delete_non_null(self):
         del mock_orm.Model._models[:]
@@ -417,8 +480,9 @@ class RelatedManagerFieldTest(unittest.TestCase):
 
         target_obj = mock_orm.Mock()
         related_manager = mock_orm.Manager()
+        related_model = mock_orm.Model(pk=4, bar=14)
         related_manager.all = Mock(return_value=mock_orm.QuerySet(
-            mock_orm.Model(pk=4, bar=14)
+            related_model
         ))
         target_obj.foo = related_manager
         source_dict = {
@@ -428,6 +492,37 @@ class RelatedManagerFieldTest(unittest.TestCase):
         model_index = len(mock_orm.Model._models) + 1
         field.handle_incoming(mock_context(), source_dict, target_obj)
 
-        model = mock_orm.Model._models[0]
-        self.assertEqual(15, model.bar)
-        model.save.assert_called()
+        self.assertEqual(15, related_model.bar)
+        related_model.save.assert_called()
+
+    def test_incoming_read_only(self):
+        del mock_orm.Model._models[:]
+
+        class MockResource(ModelResource):
+            model_class = mock_orm.Model
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        field = RelatedManagerField(
+            attribute='foo',
+            resource_class=MockResource,
+            read_only=True,
+        )
+
+        target_obj = mock_orm.Mock()
+        related_manager = mock_orm.Manager()
+        related_model = mock_orm.Model(pk=4, bar=14)
+        related_manager.all = Mock(return_value=mock_orm.QuerySet(
+            related_model
+        ))
+        target_obj.foo = related_manager
+        source_dict = {
+            'foo': [{'_id': '4', 'bar': 15}],
+        }
+
+        field.handle_incoming(mock_context(), source_dict, target_obj)
+
+        self.assertEqual(14, related_model.bar)
+        self.assertFalse(related_model.save.called)
+
