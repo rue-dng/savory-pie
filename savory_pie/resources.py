@@ -289,6 +289,19 @@ class ModelResource(Resource):
             field.prepare(ctx, related)
         return related
 
+    @classmethod
+    def get_by_source_dict(cls, ctx, source_dict):
+        filters = {}
+        for field in cls.fields:
+            try:
+                add_filter = field.add_filter
+            except AttributeError:
+                pass
+            else:
+                add_filter(ctx, filters, source_dict)
+
+        return cls(cls.model_class.objects.filter(**filters).get())
+
     def __init__(self, model):
         self.model = model
 

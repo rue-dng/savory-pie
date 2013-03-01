@@ -1,5 +1,5 @@
 import unittest
-from mock import Mock, MagicMock, call
+from mock import Mock, MagicMock, call, patch
 
 from savory_pie import resources, fields
 from savory_pie.tests import mock_orm
@@ -86,6 +86,28 @@ class ModelResourceTest(unittest.TestCase):
         resource.delete(mock_context())
 
         self.assertTrue(user.delete.called)
+
+    def test_get_by_source_dict(self):
+        source_dict = {
+            'name': 'Bob',
+            'age': 15,
+        }
+
+        with patch.object(AddressableUserResource.model_class, 'objects') as objects:
+            AddressableUserResource.get_by_source_dict(mock_context(), source_dict)
+
+        objects.filter.assert_called_with(name='Bob', age=15)
+
+    def test_get_by_source_dict_add_filter_optional(self):
+        source_dict = {
+            'name': 'Bob',
+            'age': 15,
+        }
+
+        with patch.object(ComplexUserResource.model_class, 'objects') as objects:
+            ComplexUserResource.get_by_source_dict(mock_context(), source_dict)
+
+        objects.filter.assert_called_with()
 
 
 class AddressableUserQuerySetResource(resources.QuerySetResource):

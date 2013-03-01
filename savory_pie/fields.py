@@ -83,6 +83,9 @@ class AttributeField(object):
     def _attrs(self):
         return self._full_attribute.split('.')
 
+    def add_filter(self, ctx, filter_args, source_dict):
+        filter_args[self._full_attribute] = source_dict[self._compute_property(ctx)]
+
     def _get_object(self, root_obj):
         obj = root_obj
         for attr in self._attrs[:-1]:
@@ -259,15 +262,22 @@ class SubModelResourceField(object):
 
     @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
-        sub_model = getattr(target_obj, self._attribute, None)
+        try:
+            sub_model = getattr(target_obj, self._attribute, None)
+        except django.core.exceptions.ObjectDoesNotExist:
+            sub_model = None
+
         if sub_model is None:
-            sub_resource = self._resource_class.create_resource()
-            # I am not 100% happy with this
-            setattr(target_obj, self._attribute, sub_resource.model)
+            sub_source_dict = source_dict[self._compute_property(ctx)]
+            sub_resource = self._resource_class.get_by_source_dict(ctx, sub_source_dict)
+            if not sub_resource:
+                sub_resource = self._resource_class.create_resource()
         else:
             sub_resource = self._resource_class(sub_model)
 
         sub_resource.put(ctx, source_dict[self._compute_property(ctx)])
+        # Must be after the save on the sub_model
+        setattr(target_obj, self._attribute, sub_resource.model)
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
         sub_model = getattr(source_obj, self._attribute)
