@@ -1,3 +1,5 @@
+import urllib
+
 from savory_pie.resources import Resource
 from savory_pie.django.utils import Related
 
