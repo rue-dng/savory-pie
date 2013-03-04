@@ -3,15 +3,15 @@ from mock import Mock, MagicMock
 
 from django.core.exceptions import ObjectDoesNotExist
 
-from savory_pie.django_utils import Related
-from savory_pie.resources import ModelResource, QuerySetResource
-from savory_pie.fields import (
+from savory_pie.django.utils import Related
+from savory_pie.django.resources import ModelResource, QuerySetResource
+from savory_pie.django.fields import (
     AttributeField,
     SubModelResourceField,
     RelatedManagerField,
     URIResourceField
 )
-from savory_pie.tests import mock_orm
+from savory_pie.tests.django import mock_orm
 
 from savory_pie.tests.mock_context import mock_context
 
@@ -365,6 +365,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
         target_object.foo.save.assert_called()
 
     def test_prepare(self):
+
         class MockResource(ModelResource):
             model_class = Mock()
             fields = [
@@ -382,6 +383,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
         })
 
     def test_prepare_with_use_prefetch(self):
+
         class MockResource(ModelResource):
             model_class = Mock()
             fields = [

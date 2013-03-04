@@ -1,5 +1,4 @@
 from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
 
 from savory_pie.context import APIContext
 from savory_pie.formatters import JSONFormatter
@@ -12,24 +11,27 @@ def api_view(root_resource):
 
     The produced function needs to be bound into URLs as r'^some/base/path/(.*)$'
     """
+    # Hide this import from sphinx
+    from django.views.decorators.csrf import csrf_exempt
+
     if root_resource.resource_path is None:
         root_resource.resource_path = ''
 
     @csrf_exempt
     def view(request, resource_path):
-        try:
-            full_path = _strip_query_string(request.get_full_path())
-            if len(resource_path) == 0:
-                base_path = full_path
-            else:
-                base_path = full_path[:-len(resource_path)]
+        full_path = _strip_query_string(request.get_full_path())
+        if len(resource_path) == 0:
+            base_path = full_path
+        else:
+            base_path = full_path[:-len(resource_path)]
 
-            ctx = APIContext(
-                http_request=request,
-                base_path=base_path,
-                root_resource=root_resource,
-                formatter=JSONFormatter()
-            )
+        ctx = APIContext(
+            base_uri=request.build_absolute_uri(base_path),
+            root_resource=root_resource,
+            formatter=JSONFormatter()
+        )
+
+        try:
             resource = ctx.resolve_resource_path(resource_path)
 
             if resource is None:

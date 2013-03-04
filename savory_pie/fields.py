@@ -1,7 +1,5 @@
 import functools
 
-import django.core.exceptions
-
 
 def read_only_noop(func):
     @functools.wraps(func)
@@ -13,7 +11,7 @@ def read_only_noop(func):
 
 class AttributeField(object):
     """
-    Simple Field that translates an object property to/from a dict.
+    Simple Field that translates an object attribute to/from a dict.
 
         Parameters:
 
@@ -26,19 +24,6 @@ class AttributeField(object):
 
             ``published_property``
                 optional -- name exposed in the API
-
-            ``use_prefetch``
-                optional -- tells the attribute field to use
-                prefetch_related rather than a select_related.  Defaults to false.
-
-                There are two reasons you might need to do this...
-
-                - select_related will not work when the foreign key allows null.
-                - select_related will not work when the foreign key is a GenericForeignKey.
-
-                See https://docs.djangoproject.com/en/dev/ref/models/querysets/
-
-                This parameter is meaningless for top-level attributes.
 
             ``read_only``
                 optional -- this api will never try and set this value
@@ -68,7 +53,6 @@ class AttributeField(object):
         self._full_attribute = attribute
         self._type = type
         self._published_property = published_property
-        self._use_prefetch = use_prefetch
         self._read_only = read_only
 
     def _compute_property(self, ctx):
@@ -84,9 +68,6 @@ class AttributeField(object):
     @property
     def _attrs(self):
         return self._full_attribute.split('.')
-
-    def filter_by_item(self, ctx, filter_args, source_dict):
-        filter_args[self._full_attribute] = source_dict[self._compute_property(ctx)]
 
     def _get_object(self, root_obj):
         obj = root_obj
@@ -126,14 +107,6 @@ class AttributeField(object):
 
     def to_api_value(self, ctx, python_value):
         return ctx.formatter.to_api_value(self._type, python_value)
-
-    def prepare(self, ctx, related):
-        related_attr = '__'.join(self._attrs[:-1])
-        if related_attr:
-            if self._use_prefetch:
-                related.prefetch(related_attr)
-            else:
-                related.select(related_attr)
 
 
 class URIResourceField(object):
@@ -201,12 +174,8 @@ class URIResourceField(object):
 
         target_dict[self._compute_property(ctx)] = ctx.build_resource_uri(resource)
 
-    def prepare(self, ctx, related):
-        related.select(self._attribute)
-        self._resource_class.prepare(ctx, related.sub_select(self._attribute))
 
-
-class SubModelResourceField(object):
+class SubObjectResourceField(object):
     """
     Field that embeds a single related resource into the parent object
 
@@ -222,23 +191,12 @@ class SubModelResourceField(object):
         ``published_property``
             optional -- name exposed in the API
 
-        ``use_prefetch``
-            optional -- tells the sub-model resource field to use
-            prefetch_related rather than a select_related.  Defaults to false.
-
-            There are two reasons you might need to do this...
-
-            - select_related will not work when the foreign key allows null.
-            - select_related will not work when the foreign key is a GenericForeignKey.
-
-            See https://docs.djangoproject.com/en/dev/ref/models/querysets/
-
         ``read_only``
             optional -- this api will never try and set this value
 
         .. code-block:: python
 
-            SubModelResourceField('other', OtherResource)
+            SubObjectResourceField('other', OtherResource)
 
         .. code-block:: javascript
 
@@ -248,12 +206,10 @@ class SubModelResourceField(object):
                  attribute,
                  resource_class,
                  published_property=None,
-                 use_prefetch=False,
                  read_only=False):
         self._attribute = attribute
         self._resource_class = resource_class
         self._published_property = published_property
-        self._use_prefetch = use_prefetch
         self._read_only = read_only
 
     def _compute_property(self, ctx):
@@ -264,17 +220,11 @@ class SubModelResourceField(object):
 
     @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
-        try:
-            sub_model = getattr(target_obj, self._attribute)
-        except django.core.exceptions.ObjectDoesNotExist:
-            sub_model = None
-
+        sub_model = getattr(target_obj, self._attribute, None)
         sub_source_dict = source_dict[self._compute_property(ctx)]
 
         if sub_model is None:
-            sub_resource = self._resource_class.get_by_source_dict(ctx, sub_source_dict)
-            if not sub_resource:
-                sub_resource = self._resource_class.create_resource()
+            sub_resource = self._resource_class.create_resource()
         else:
             sub_resource = self._resource_class(sub_model)
 
@@ -286,16 +236,8 @@ class SubModelResourceField(object):
         sub_model = getattr(source_obj, self._attribute)
         target_dict[self._compute_property(ctx)] = self._resource_class(sub_model).get(ctx)
 
-    def prepare(self, ctx, related):
-        if self._use_prefetch:
-            related.prefetch(self._attribute)
-            self._resource_class.prepare(ctx, related.sub_prefetch(self._attribute))
-        else:
-            related.select(self._attribute)
-            self._resource_class.prepare(ctx, related.sub_select(self._attribute))
 
-
-class RelatedManagerField(object):
+class IterableField(object):
     """
     Field that embeds a many relationship into the parent object
 
@@ -337,6 +279,9 @@ class RelatedManagerField(object):
             return self._published_property
         else:
             return ctx.formatter.default_published_property(self._attribute)
+
+    def get_iterable(self, value):
+        return value
 
     @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
@@ -386,7 +331,3 @@ class RelatedManagerField(object):
             model_dict['_id'] = model_resource.key
             objects.append(model_dict)
         target_dict[self._compute_property(ctx)] = objects
-
-    def prepare(self, ctx, related):
-        related.prefetch(self._attribute)
-        self._resource_class.prepare(ctx, related.sub_prefetch(self._attribute))
