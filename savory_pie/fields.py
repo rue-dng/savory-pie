@@ -85,7 +85,7 @@ class AttributeField(object):
     def _attrs(self):
         return self._full_attribute.split('.')
 
-    def add_filter(self, ctx, filter_args, source_dict):
+    def filter_by_item(self, ctx, filter_args, source_dict):
         filter_args[self._full_attribute] = source_dict[self._compute_property(ctx)]
 
     def _get_object(self, root_obj):

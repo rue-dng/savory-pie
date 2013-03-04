@@ -296,11 +296,11 @@ class ModelResource(Resource):
         filters = {}
         for field in cls.fields:
             try:
-                add_filter = field.add_filter
+                filter_by_item = field.filter_by_item
             except AttributeError:
                 pass
             else:
-                add_filter(ctx, filters, source_dict)
+                filter_by_item(ctx, filters, source_dict)
 
         try:
             model = cls.model_class.objects.filter(**filters).get()

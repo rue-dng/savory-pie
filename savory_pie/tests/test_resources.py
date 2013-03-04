@@ -113,7 +113,7 @@ class ModelResourceTest(unittest.TestCase):
 
         objects.filter.assert_called_with(name='Bob', age=15)
 
-    def test_get_by_source_dict_add_filter_optional(self):
+    def test_get_by_source_dict_filter_by_item_optional(self):
         source_dict = {
             'name': 'Bob',
             'age': 15,

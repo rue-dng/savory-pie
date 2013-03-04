@@ -159,7 +159,7 @@ class AttributeFieldTest(unittest.TestCase):
         source_dict = {'foo': 3}
         filter_args = {}
 
-        field.add_filter(mock_context(), filter_args, source_dict)
+        field.filter_by_item(mock_context(), filter_args, source_dict)
 
         self.assertEqual({'foo': 3}, filter_args)
 
