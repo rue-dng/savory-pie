@@ -5,11 +5,10 @@ This section documents the public API of `Savory Pie`. The documentation
 is order alphabetically by module.
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
 
     api/context
-    api/django_utils
+    api/django
     api/fields
     api/formatters
     api/resources
-    api/views

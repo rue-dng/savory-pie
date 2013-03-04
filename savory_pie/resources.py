@@ -1,5 +1,4 @@
 import urllib
-from savory_pie.django_utils import Related
 
 
 class Resource(object):

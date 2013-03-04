@@ -42,6 +42,8 @@ Field protocol
 
     .. method:: prepare(ctx, related)
 
+        Optional method
+
         Parameters:
 
             ``ctx`` -- :class:`~savory_pie.context.APIContext`
@@ -62,6 +64,6 @@ Field protocol
 
     .. autoclass:: URIResourceField
 
-    .. autoclass:: SubModelResourceField
+    .. autoclass:: SubObjectResourceField
 
-    .. autoclass:: RelatedManagerField
+    .. autoclass:: IterableField
