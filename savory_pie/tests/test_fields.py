@@ -1,5 +1,7 @@
 import unittest
-from mock import Mock
+from mock import Mock, MagicMock
+
+from django.core.exceptions import ObjectDoesNotExist
 
 from savory_pie.django_utils import Related
 from savory_pie.resources import ModelResource, QuerySetResource
@@ -152,6 +154,16 @@ class AttributeFieldTest(unittest.TestCase):
             'foo__bar'
         })
 
+    def test_add_field(self):
+        field = AttributeField(attribute='foo', type=int)
+        source_dict = {'foo': 3}
+        filter_args = {}
+
+        field.add_filter(mock_context(), filter_args, source_dict)
+
+        self.assertEqual({'foo': 3}, filter_args)
+
+
 
 class URIResourceFieldTest(unittest.TestCase):
     def test_outgoing(self):
@@ -237,7 +249,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
 
         self.assertEqual(target_dict['foo'], {'bar': 20})
 
-    def test_incoming(self):
+    def test_incoming_update_existing(self):
 
         class Resource(ModelResource):
             model_class = Mock()
@@ -292,20 +304,65 @@ class SubModelResourceFieldTest(unittest.TestCase):
                 AttributeField(attribute='bar', type=int),
             ]
 
+            @classmethod
+            def get_by_source_dict(cls, ctx, sub_source_dict):
+                return None
+
         field = SubModelResourceField(attribute='foo', resource_class=MockResource)
 
         source_dict = {
             'foo': {'bar': 20},
         }
 
-        target_object = Mock()
-        target_object.foo = None
+        # The django ORM makes me sad that this is not a None or AttributeError
+        class MockFailsOnFooAccess(Mock):
+            def __getattr__(self, name):
+                if name == 'foo':
+                    raise ObjectDoesNotExist
+                else:
+                    return super(Mock, self).__getattr__(name)
 
+        target_object = MockFailsOnFooAccess()
         field.handle_incoming(mock_context(), source_dict, target_object)
 
         self.assertEqual(20, target_object.foo.bar)
         self.assertEqual(MockResource.model_class.return_value, target_object.foo)
-        target_object.foo.save.assert_called_with()
+        target_object.foo.save.assert_called()
+
+    def test_find_existing_incoming(self):
+
+        mock_model = Mock()
+
+        class MockResource(ModelResource):
+            model_class = Mock()
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+            @classmethod
+            def get_by_source_dict(cls, ctx, sub_source_dict):
+                return cls(mock_model)
+
+        field = SubModelResourceField(attribute='foo', resource_class=MockResource)
+
+        source_dict = {
+            'foo': {'bar': 20},
+        }
+
+        # The django ORM makes me sad that this is not a None or AttributeError
+        class MockFailsOnFooAccess(Mock):
+            def __getattr__(self, name):
+                if name == 'foo':
+                    raise ObjectDoesNotExist
+                else:
+                    return super(Mock, self).__getattr__(name)
+
+        target_object = MockFailsOnFooAccess()
+        field.handle_incoming(mock_context(), source_dict, target_object)
+
+        self.assertEqual(20, target_object.foo.bar)
+        self.assertEqual(mock_model, target_object.foo)
+        target_object.foo.save.assert_called()
 
     def test_prepare(self):
         class MockResource(ModelResource):

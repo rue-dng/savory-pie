@@ -5,6 +5,9 @@ from savory_pie import resources, fields
 from savory_pie.tests import mock_orm
 from savory_pie.tests.mock_context import mock_context
 
+import django.core.exceptions
+
+
 class ResourceTest(unittest.TestCase):
     def test_no_allowed_methods(self):
         resource = resources.Resource()
@@ -94,6 +97,18 @@ class ModelResourceTest(unittest.TestCase):
         }
 
         with patch.object(AddressableUserResource.model_class, 'objects') as objects:
+            AddressableUserResource.get_by_source_dict(mock_context(), source_dict)
+
+        objects.filter.assert_called_with(name='Bob', age=15)
+
+    def test_get_by_source_dict_not_found(self):
+        source_dict = {
+            'name': 'Bob',
+            'age': 15,
+        }
+
+        with patch.object(AddressableUserResource.model_class, 'objects') as objects:
+            objects.filter.get.return_value = django.core.exceptions.ObjectDoesNotExist
             AddressableUserResource.get_by_source_dict(mock_context(), source_dict)
 
         objects.filter.assert_called_with(name='Bob', age=15)

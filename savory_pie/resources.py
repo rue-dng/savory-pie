@@ -1,6 +1,8 @@
 import urllib
 from savory_pie.django_utils import Related
 
+import django.core.exceptions
+
 
 class Resource(object):
     """
@@ -300,7 +302,12 @@ class ModelResource(Resource):
             else:
                 add_filter(ctx, filters, source_dict)
 
-        return cls(cls.model_class.objects.filter(**filters).get())
+        try:
+            model = cls.model_class.objects.filter(**filters).get()
+        except django.core.exceptions.ObjectDoesNotExist:
+            return None
+        else:
+            return cls(model)
 
     def __init__(self, model):
         self.model = model
@@ -340,6 +347,7 @@ class ModelResource(Resource):
         return target_dict
 
     def put(self, ctx, source_dict):
+        print '$$$', self.model
         for field in self.fields:
             field.handle_incoming(ctx, source_dict, self.model)
 

@@ -1,5 +1,7 @@
 import functools
 
+import django.core.exceptions
+
 
 def read_only_noop(func):
     @functools.wraps(func)
@@ -263,19 +265,20 @@ class SubModelResourceField(object):
     @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
         try:
-            sub_model = getattr(target_obj, self._attribute, None)
+            sub_model = getattr(target_obj, self._attribute)
         except django.core.exceptions.ObjectDoesNotExist:
             sub_model = None
 
+        sub_source_dict = source_dict[self._compute_property(ctx)]
+
         if sub_model is None:
-            sub_source_dict = source_dict[self._compute_property(ctx)]
             sub_resource = self._resource_class.get_by_source_dict(ctx, sub_source_dict)
             if not sub_resource:
                 sub_resource = self._resource_class.create_resource()
         else:
             sub_resource = self._resource_class(sub_model)
 
-        sub_resource.put(ctx, source_dict[self._compute_property(ctx)])
+        sub_resource.put(ctx, sub_source_dict)
         # Must be after the save on the sub_model
         setattr(target_obj, self._attribute, sub_resource.model)
 
