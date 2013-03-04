@@ -17,19 +17,19 @@ def api_view(root_resource):
 
     @csrf_exempt
     def view(request, resource_path):
-        try:
-            full_path = _strip_query_string(request.get_full_path())
-            if len(resource_path) == 0:
-                base_path = full_path
-            else:
-                base_path = full_path[:-len(resource_path)]
+        full_path = _strip_query_string(request.get_full_path())
+        if len(resource_path) == 0:
+            base_path = full_path
+        else:
+            base_path = full_path[:-len(resource_path)]
 
-            ctx = APIContext(
-                http_request=request,
-                base_path=base_path,
-                root_resource=root_resource,
-                formatter=JSONFormatter()
-            )
+        ctx = APIContext(
+            base_uri=request.build_absolute_uri(base_path),
+            root_resource=root_resource,
+            formatter=JSONFormatter()
+        )
+
+        try:
             resource = ctx.resolve_resource_path(resource_path)
 
             if resource is None:

@@ -2,7 +2,7 @@ import unittest
 import json
 
 from mock import Mock
-from savory_pie.tests.mock_request import savory_dispatch
+from savory_pie.tests.django.mock_request import savory_dispatch
 
 
 def mock_resource(name=None, resource_path=None, child_resource=None):
@@ -18,6 +18,7 @@ def mock_resource(name=None, resource_path=None, child_resource=None):
     resource.get_child_resource = Mock(return_value=child_resource)
 
     return resource
+
 
 def call_args_sans_context(mock):
     return list(mock.call_args[0][1:])
