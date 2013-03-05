@@ -1,6 +1,5 @@
 import functools
 
-
 def read_only_noop(func):
     @functools.wraps(func)
     def inner(self, *args, **kwargs):
@@ -8,8 +7,11 @@ def read_only_noop(func):
             return func(self, *args, **kwargs)
     return inner
 
+class Field(object):
+    def schema(self):
+        return {'type': self._type.__name__}
 
-class AttributeField(object):
+class AttributeField(Field):
     """
     Simple Field that translates an object property to/from a dict.
 
@@ -131,7 +133,7 @@ class AttributeField(object):
                 related.select(related_attr)
 
 
-class URIResourceField(object):
+class URIResourceField(Field):
     """
     Field that exposes just the URI of related entity
 
@@ -201,7 +203,7 @@ class URIResourceField(object):
         self._resource_class.prepare(ctx, related.sub_select(self._attribute))
 
 
-class SubModelResourceField(object):
+class SubModelResourceField(Field):
     """
     Field that embeds a single related resource into the parent object
 
@@ -282,7 +284,7 @@ class SubModelResourceField(object):
             self._resource_class.prepare(ctx, related.sub_select(self._attribute))
 
 
-class RelatedManagerField(object):
+class RelatedManagerField(Field):
     """
     Field that embeds a many relationship into the parent object
 

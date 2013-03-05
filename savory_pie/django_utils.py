@@ -1,16 +1,36 @@
+from django.db.models.fields import Field as DjangoField
+from django.utils.functional import Promise
+
+class Field(object):
+    def __init__(self, DjangoField):
+        self._field = DjangoField
+
+    def schema(self):
+        _field = {
+            'blank': self._field.blank,
+            'default': self._field.get_default(),
+            'helpText': self._field.help_text,
+            'nullable': self._field.null,
+            'readonly': not self._field.editable,
+            'unique': self._field.unique
+        }
+        if isinstance(_field['helpText'], Promise):
+            _field['helpText'] = unicode(_field['helpText'])
+        return _field
+
 class Related(object):
     """
     Helper object that helps build related select-s and prefetch-es.
     Originally created to work around Django silliness - https://code.djangoproject.com/ticket/16855,
     but later extended to help track the related path from the root Model being selected.
     """
-    def __init__(self, prefix=None, select=None, prefetch=None, force_prefetch=False):
-        self._prefix = prefix
+    def __init__(self, **kwargs):
+        self._prefix = kwargs.pop('prefix', None)
 
         # or-s don't work want to continue to use the same empty set
-        self._select = select if select is not None else set()
-        self._prefetch = prefetch if prefetch is not None else set()
-        self._force_prefetch = force_prefetch
+        self._select = kwargs.pop('select', set())
+        self._prefetch = kwargs.pop('prefetch', set())
+        self._force_prefetch = kwargs.pop('force_prefetch', False)
 
     def translate(self, attribute):
         if self._prefix is None:

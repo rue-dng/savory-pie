@@ -1,5 +1,5 @@
 import urllib
-from savory_pie.django_utils import Related
+from savory_pie.django_utils import Field, Related
 
 
 class Resource(object):
@@ -221,6 +221,10 @@ class QuerySetResource(Resource):
         return resource
 
     def get_child_resource(self, ctx, path_fragment):
+        if path_fragment == 'schema':
+            ctx.schema_request = True
+            return self.to_resource(self.resource_class.model_class)
+
         # No need to filter or slice here, does not make sense as part of get_child_resource
         queryset = self.prepare_queryset(ctx, self.queryset)
         try:
@@ -316,6 +320,9 @@ class ModelResource(Resource):
         self._resource_path = resource_path
 
     def get(self, ctx, **kwargs):
+        if getattr(ctx, 'schema_request', None):
+            return self.schema(ctx, **kwargs)
+
         target_dict = dict()
 
         for field in self.fields:
@@ -334,3 +341,16 @@ class ModelResource(Resource):
 
     def delete(self, ctx):
         self.model.delete()
+
+    def schema(self, ctx, **kwargs):
+        schema = {'fields': {}}
+        for resource_field in self.fields:
+            field_name = getattr(resource_field, '_attribute', getattr(resource_field, '_full_attribute', None))
+            field_schema = resource_field.schema()
+            try:
+                django_field = Field(self.model._meta.get_field(field_name))
+                field_schema = dict(field_schema.items() + django_field.schema().items())
+            except:
+                pass
+            schema['fields'][field_name] = field_schema
+        return schema
