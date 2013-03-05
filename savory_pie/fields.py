@@ -8,6 +8,10 @@ def read_only_noop(func):
     return inner
 
 class Field(object):
+    @property
+    def name(self):
+        return getattr(self, '_attribute', getattr(self, '_full_attribute', '__unknown_field_name__'))
+
     def schema(self):
         return {'type': self._type.__name__}
 

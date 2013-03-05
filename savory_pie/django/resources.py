@@ -247,14 +247,21 @@ class ModelResource(Resource):
         self.model.delete()
 
     def schema(self, ctx, **kwargs):
-        schema = {'fields': {}}
+        schema = {
+            'allowedDetailHttpMethods': [m.lower() for m in self.allowed_methods],
+            'allowedListHttpMethods': [m.lower() for m in self.allowed_methods],
+            'defaultFormat': 'application/json',
+            'defaultLimit': '',
+            'filtering': {},
+            'ordeering': [],
+            'fields': {}
+        }
         for resource_field in self.fields:
-            field_name = getattr(resource_field, '_attribute', getattr(resource_field, '_full_attribute', None))
             field_schema = resource_field.schema()
             try:
-                django_field = Field(self.model._meta.get_field(field_name))
+                django_field = Field(self.model._meta.get_field(resource_field.name))
                 field_schema = dict(field_schema.items() + django_field.schema().items())
             except:
                 pass
-            schema['fields'][field_name] = field_schema
+            schema['fields'][resource_field.name] = field_schema
         return schema
