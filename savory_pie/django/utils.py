@@ -1,9 +1,8 @@
-from django.db.models.fields import Field as DjangoField
 from django.utils.functional import Promise
 
 class Field(object):
-    def __init__(self, DjangoField):
-        self._field = DjangoField
+    def __init__(self, django_field):
+        self._field = django_field
 
     def schema(self):
         _field = {
@@ -14,6 +13,7 @@ class Field(object):
             'readonly': not self._field.editable,
             'unique': self._field.unique
         }
+
         if isinstance(_field['helpText'], Promise):
             _field['helpText'] = unicode(_field['helpText'])
         return _field

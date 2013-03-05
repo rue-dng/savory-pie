@@ -13,7 +13,9 @@ class Field(object):
         return getattr(self, '_attribute', getattr(self, '_full_attribute', '__unknown_field_name__'))
 
     def schema(self):
-        return {'type': self._type.__name__}
+        if getattr(self, '_type', None):
+            return {'type': self._type.__name__}
+        return {}
 
 class AttributeField(Field):
     """

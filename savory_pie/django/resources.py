@@ -1,4 +1,5 @@
 from savory_pie.resources import Resource
+from savory_pie.django.fields import RelatedManagerField, SubModelResourceField
 from savory_pie.django.utils import Field, Related
 
 class QuerySetResource(Resource):
@@ -253,11 +254,19 @@ class ModelResource(Resource):
             'defaultFormat': 'application/json',
             'defaultLimit': '',
             'filtering': {},
-            'ordeering': [],
+            'ordering': [],
             'fields': {}
         }
         for resource_field in self.fields:
-            field_schema = resource_field.schema()
+            #TODO resource_field needs to inspect itself here
+            if isinstance(resource_field, SubModelResourceField):
+                #model_resource = resource_field._resource_class(resource_field._resource_class.model_class)
+                #schema['fields'][resource_field.name] = model_resource.schema(ctx, **kwargs)
+                field_schema = {'type': 'related', 'relatedType': 'to_one'}
+            elif isinstance(resource_field, RelatedManagerField):
+                field_schema = {'type': 'related', 'relatedType': 'to_many'}
+            else:
+                field_schema = resource_field.schema()
             try:
                 django_field = Field(self.model._meta.get_field(resource_field.name))
                 field_schema = dict(field_schema.items() + django_field.schema().items())
