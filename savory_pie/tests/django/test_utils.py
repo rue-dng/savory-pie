@@ -1,6 +1,6 @@
 import unittest
-from savory_pie.tests import mock_orm
-from savory_pie.django_utils import Related
+from savory_pie.django.utils import Related
+from savory_pie.tests.django import mock_orm
 
 class RelatedTest(unittest.TestCase):
     def test_select(self):
