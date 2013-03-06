@@ -60,7 +60,7 @@ class JSONFormatter(object):
         return None if api_value is None else type_(api_value)
 
     def to_api_value(self, type_, python_value):
-        if type(python_value) is datetime.datetime:
+        if isinstance(python_value, datetime.datetime):
             return python_value.strftime("%Y-%m-%dT%H:%M:%S")
         elif type(python_value) not in (int, float, dict, list,
                                         bool, str, unicode, type(None)):
