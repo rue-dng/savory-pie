@@ -61,6 +61,7 @@ Narrative documentation
    :maxdepth: 2
 
    narr/getting_started
+   narr/running_tests
    narr/resources
    narr/fields
    narr/extending
