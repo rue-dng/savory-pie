@@ -106,26 +106,16 @@ class SubModelResourceField(base_fields.SubObjectResourceField):
             related.select(self._attribute)
             self._resource_class.prepare(ctx, related.sub_select(self._attribute))
 
-    @base_fields.read_only_noop
-    def handle_incoming(self, ctx, source_dict, target_obj):
-        # CLEAN ME UP
-        try:
-            sub_model = getattr(target_obj, self._attribute)
-        except django.core.exceptions.ObjectDoesNotExist:
-            sub_model = None
-
+    def get_subresource(self, ctx, source_dict, target_obj):
         sub_source_dict = source_dict[self._compute_property(ctx)]
-
-        if sub_model is None:
+        try:
+            # Look at non-null FK
+            sub_resource = self._resource_class(getattr(target_obj, self._attribute))
+        except django.core.exceptions.ObjectDoesNotExist:
+            # Search by the source dict
             sub_resource = self._resource_class.get_by_source_dict(ctx, sub_source_dict)
-            if not sub_resource:
-                sub_resource = self._resource_class.create_resource()
-        else:
-            sub_resource = self._resource_class(sub_model)
 
-        sub_resource.put(ctx, sub_source_dict)
-        # Must be after the save on the sub_model
-        setattr(target_obj, self._attribute, sub_resource.model)
+        return sub_resource
 
 
 class RelatedManagerField(base_fields.IterableField):

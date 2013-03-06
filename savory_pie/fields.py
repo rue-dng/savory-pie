@@ -218,16 +218,22 @@ class SubObjectResourceField(object):
         else:
             return ctx.formatter.default_published_property(self._attribute)
 
+    def get_subresource(self, ctx, source_dict, target_obj):
+        """
+        Extention point called by :meth:~`savory_pie.fields.handle_incoming` to
+        build a resource class around the target attribute or return None if it
+        is not found. Can try looking by ResourceURI etc.
+        """
+        return getattr(target_obj, self._attribute, None)
+
     @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
-        sub_model = getattr(target_obj, self._attribute, None)
-        sub_source_dict = source_dict[self._compute_property(ctx)]
+        sub_resource = self.get_subresource(ctx, source_dict, target_obj)
 
-        if sub_model is None:
+        if not sub_resource: # creating a new resource
             sub_resource = self._resource_class.create_resource()
-        else:
-            sub_resource = self._resource_class(sub_model)
 
+        sub_source_dict = source_dict[self._compute_property(ctx)]
         sub_resource.put(ctx, sub_source_dict)
         # Must be after the save on the sub_model
         setattr(target_obj, self._attribute, sub_resource.model)
