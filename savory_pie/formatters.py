@@ -10,26 +10,17 @@ class JSONFormatter(object):
     javascript naming conventions and pep8.
     """
 
-    class DateCapableEncoder(json.JSONEncoder):
-
-        def default(self, obj):
-            if isinstance(obj, datetime.datetime):
-                return obj.strftime("%Y-%m-%dT%H:%M:%S")
-            return json.JSONEncoder.default(self, obj)
-
-    class DateCapableDecoder(json.JSONDecoder):
-
-        dateRegex = re.compile('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})')
-
-        def decode(self, s):
-            m = self.dateRegex.match(s)
-            if m is not None:
-                year, month, date, hour, minute, second = \
-                    map(string.atoi, [m.group(i) for i in range(1, 7)])
-                return datetime.datetime(year, month, date, hour, minute, second)
-            return json.JSONDecoder.decode(self, s)
-
     content_type = 'application/json'
+
+    dateRegex = re.compile('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})')
+
+    def parse_datetime(self, s):
+        m = self.dateRegex.match(s)
+        if m is not None:
+            year, month, date, hour, minute, second = \
+                map(string.atoi, [m.group(i) for i in range(1, 7)])
+            return datetime.datetime(year, month, date, hour, minute, second)
+        return s
 
     def default_published_property(self, bare_attribute):
         js_name = []
@@ -49,18 +40,20 @@ class JSONFormatter(object):
         return ''.join(js_name)
 
     def read_from(self, request):
-        return json.load(request, cls=self.DateCapableDecoder)
+        return json.load(request)
 
     def write_to(self, body_dict, response):
-        json.dump(body_dict, response, cls=self.DateCapableEncoder)
+        json.dump(body_dict, response)
 
+    # Not 100% happy with this API review pre 1.0
     def to_python_value(self, type_, api_value):
-        if type_ is datetime.datetime:
-            return json.loads(api_value, cls=self.DateCapableDecoder)
+        if issubclass(type_, datetime.datetime):
+            return self.parse_datetime(api_value)
         return None if api_value is None else type_(api_value)
 
+    # Not 100% happy with this API review pre 1.0
     def to_api_value(self, type_, python_value):
-        if isinstance(python_value, datetime.datetime):
+        if issubclass(type_, datetime.datetime):
             return python_value.strftime("%Y-%m-%dT%H:%M:%S")
         elif type(python_value) not in (int, float, dict, list,
                                         bool, str, unicode, type(None)):

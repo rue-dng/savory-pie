@@ -11,6 +11,8 @@ class JSONToAPITest(unittest.TestCase):
 
     def setUp(self):
         self.json_formatter = savory_pie.formatters.JSONFormatter()
+        self.now = datetime.datetime(2013, 3, 5, 14, 50, 39)
+        self.json_now = '2013-03-05T14:50:39'
 
     def test_int(self):
         result = self.json_formatter.to_api_value(int, 15)
@@ -48,46 +50,17 @@ class JSONToAPITest(unittest.TestCase):
         result = self.json_formatter.to_api_value(decimal.Decimal, decimal.Decimal('5.10'))
         self.assertEqual('5.10', result)
 
-
-class JSONDatesDecimals(unittest.TestCase):
-
-    def setUp(self):
-        self.json_formatter = savory_pie.formatters.JSONFormatter()
-        self.now = datetime.datetime(2013, 3, 5, 14, 50, 39)
-        self.json_now = '2013-03-05T14:50:39'
-
-    def test_read_decimals(self):
-        for x in ['15.5', '1.550000e1', '0.000155e5', '1550e-2',
-                  '1550000000000000000.0e-017',
-                  '0.000000000000000155e+017']:
-            mock = Mock()
-            mock.read = lambda: x
-            result = self.json_formatter.read_from(mock)
-            self.assertEqual(15.5, result)
-            self.assertEqual(15.5, self.json_formatter.to_python_value(float, x))
-
-    def test_write_dates(self):
-        mock = Mock()
-        self.json_formatter.write_to(self.now, mock)
-        write_args = tuple(mock.mock_calls[0])[1]
-        self.assertEqual('"' + self.json_now + '"', write_args[0])
-        self.assertEqual(self.json_now,
-                         self.json_formatter.to_api_value(datetime.datetime,
-                                                          self.now))
-
-    def test_read_dates(self):
-        mock = Mock()
-        mock.read = lambda: self.json_now
-        self.assertEqual(self.now, self.json_formatter.read_from(mock))
-        self.assertEqual(self.now,
-                         self.json_formatter.to_python_value(datetime.datetime,
-                                                             self.json_now))
+    def test_datetime(self):
+        result = self.json_formatter.to_api_value(datetime.datetime, self.now)
+        self.assertEqual(self.json_now, result)
 
 
 class JSONToPython(unittest.TestCase):
 
     def setUp(self):
         self.json_formatter = savory_pie.formatters.JSONFormatter()
+        self.now = datetime.datetime(2013, 3, 5, 14, 50, 39)
+        self.json_now = '2013-03-05T14:50:39'
 
     def test_int(self):
         result = self.json_formatter.to_python_value(int, 15)
@@ -124,3 +97,13 @@ class JSONToPython(unittest.TestCase):
     def test_decimal(self):
         result = self.json_formatter.to_python_value(decimal.Decimal, '5.10')
         self.assertEqual(decimal.Decimal('5.10'), result)
+
+    def test_more_decimal(self):
+        for x in ['15.5', '1.550000e1', '0.000155e5', '1550e-2',
+                  '1550000000000000000.0e-017',
+                  '0.000000000000000155e+017']:
+            result = self.json_formatter.to_python_value(decimal.Decimal, x)
+            self.assertEqual(15.5, result)
+
+    def test_datetime(self):
+        result = self.json_formatter.to_python_value(datetime.datetime, self.json_now)
