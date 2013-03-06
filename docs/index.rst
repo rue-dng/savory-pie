@@ -13,7 +13,7 @@ A Basic API might look something like this:
 
 .. code-block:: python
 
-   class UserResource(savory_pie.resources.ModelResource):
+   class UserResource(savory_pie.django.resources.ModelResource):
        parent_resource_path = 'users'
        model_class = User
 
@@ -23,7 +23,7 @@ A Basic API might look something like this:
         ]
 
 
-    class UserQuerySetResource(savory_pie.resources.QuerySetResource):
+    class UserQuerySetResource(savory_pie.django.resources.QuerySetResource):
         resource_path = 'users'
         resource_class = UserResource
 
@@ -34,7 +34,7 @@ A Basic API might look something like this:
     api_resource = resources.APIResource()
     api_resource.register_class(UserQuerySetResource)
 
-    url(r'^api/v1/(.*)$', savory_pie.views.api_view(api_resource))
+    url(r'^api/v1/(.*)$', savory_pie.django.views.api_view(api_resource))
 
 
 **Request**::
