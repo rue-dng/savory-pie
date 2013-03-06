@@ -1,7 +1,7 @@
 .. _djang-_fields_module:
 
 :mod:`savory_pie.django.fields`
-------------------------
+-------------------------------
 
 .. automodule:: savory_pie.django.fields
 
