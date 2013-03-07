@@ -1,7 +1,10 @@
 import urllib
 
+import django.core.exceptions
+
 from savory_pie.resources import Resource
 from savory_pie.django.utils import Related
+
 
 class QuerySetResource(Resource):
     """
