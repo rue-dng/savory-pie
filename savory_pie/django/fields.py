@@ -24,6 +24,8 @@ class DjangoField(base_fields.Field):
                 'readonly': not self._field.editable,
                 'unique': self._field.unique
             }
+            if self._field.choices:
+                _schema['choices'] = self._field.choices
             if isinstance(_schema['helpText'], Promise):
                 _schema['helpText'] = unicode(_schema['helpText'])
         else:
