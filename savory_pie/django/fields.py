@@ -29,7 +29,7 @@ class DjangoField(base_fields.Field):
         else:
             _schema = {}
 
-        return dict(_schema.items() + schema.items())
+        return dict(schema.items() + _schema.items())
 
 
 class AttributeField(base_fields.AttributeField, DjangoField):
