@@ -195,6 +195,24 @@ class ModelResource(Resource):
             field.prepare(ctx, related)
         return related
 
+    @classmethod
+    def get_by_source_dict(cls, ctx, source_dict):
+        filters = {}
+        for field in cls.fields:
+            try:
+                filter_by_item = field.filter_by_item
+            except AttributeError:
+                pass
+            else:
+                filter_by_item(ctx, filters, source_dict)
+
+        try:
+            model = cls.model_class.objects.filter(**filters).get()
+        except django.core.exceptions.ObjectDoesNotExist:
+            return None
+        else:
+            return cls(model)
+
     def __init__(self, model):
         self.model = model
 

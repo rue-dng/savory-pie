@@ -1,3 +1,5 @@
+import django.core.exceptions
+
 from savory_pie import fields as base_fields
 
 
@@ -33,6 +35,9 @@ class AttributeField(base_fields.AttributeField):
                 related.prefetch(related_attr)
             else:
                 related.select(related_attr)
+
+    def filter_by_item(self, ctx, filter_args, source_dict):
+        filter_args[self._full_attribute] = source_dict[self._compute_property(ctx)]
 
 
 class URIResourceField(base_fields.URIResourceField):
@@ -100,6 +105,17 @@ class SubModelResourceField(base_fields.SubObjectResourceField):
         else:
             related.select(self._attribute)
             self._resource_class.prepare(ctx, related.sub_select(self._attribute))
+
+    def get_subresource(self, ctx, source_dict, target_obj):
+        sub_source_dict = source_dict[self._compute_property(ctx)]
+        try:
+            # Look at non-null FK
+            sub_resource = self._resource_class(getattr(target_obj, self._attribute))
+        except django.core.exceptions.ObjectDoesNotExist:
+            # Search by the source dict
+            sub_resource = self._resource_class.get_by_source_dict(ctx, sub_source_dict)
+
+        return sub_resource
 
 
 class RelatedManagerField(base_fields.IterableField):

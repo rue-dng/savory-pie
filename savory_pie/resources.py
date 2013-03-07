@@ -94,4 +94,3 @@ class APIResource(Resource):
 
     def get_child_resource(self, ctx, path_fragment):
         return self._child_resources.get(path_fragment, None)
-
