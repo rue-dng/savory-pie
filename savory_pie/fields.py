@@ -1,5 +1,6 @@
 import functools
 
+
 def read_only_noop(func):
     @functools.wraps(func)
     def inner(self, *args, **kwargs):
@@ -7,15 +8,18 @@ def read_only_noop(func):
             return func(self, *args, **kwargs)
     return inner
 
+
 class Field(object):
     @property
     def name(self):
         return getattr(self, '_attribute', getattr(self, '_full_attribute', '__unknown_field_name__'))
 
-    def schema(self):
+    def schema(self, **kwargs):
+        schema = kwargs.pop('schema', {})
         if getattr(self, '_type', None):
-            return {'type': self._type.__name__}
-        return {}
+            return dict({'type': self._type.__name__}.items() + schema.items())
+        return schema
+
 
 class AttributeField(Field):
     """

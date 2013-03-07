@@ -1,6 +1,6 @@
 from savory_pie.resources import Resource
-from savory_pie.django.fields import RelatedManagerField, SubModelResourceField
-from savory_pie.django.utils import Field, Related
+from savory_pie.django.fields import DjangoField
+from savory_pie.django.utils import Related
 
 class QuerySetResource(Resource):
     """
@@ -126,9 +126,8 @@ class QuerySetResource(Resource):
         return resource
 
     def get_child_resource(self, ctx, path_fragment):
-        if path_fragment == 'schema':
-            ctx.schema_request = True
-            return self.to_resource(self.resource_class.model_class)
+        if path_fragment == 'schema' and getattr(self, 'schema_class', None):
+            return self.schema_class(self.resource_class)
 
         # No need to filter or slice here, does not make sense as part of get_child_resource
         queryset = self.prepare_queryset(ctx, self.queryset)
@@ -225,9 +224,6 @@ class ModelResource(Resource):
         self._resource_path = resource_path
 
     def get(self, ctx, **kwargs):
-        if getattr(ctx, 'schema_request', None):
-            return self.schema(ctx, **kwargs)
-
         target_dict = dict()
 
         for field in self.fields:
@@ -247,7 +243,13 @@ class ModelResource(Resource):
     def delete(self, ctx):
         self.model.delete()
 
-    def schema(self, ctx, **kwargs):
+
+class SchemaResource(QuerySetResource):
+    def __init__(self, model_resource):
+        self.model = model_resource.model_class
+        self.fields = model_resource.fields
+
+    def get(self, ctx, **kwargs):
         schema = {
             'allowedDetailHttpMethods': [m.lower() for m in self.allowed_methods],
             'allowedListHttpMethods': [m.lower() for m in self.allowed_methods],
@@ -258,19 +260,6 @@ class ModelResource(Resource):
             'fields': {}
         }
         for resource_field in self.fields:
-            #TODO resource_field needs to inspect itself here
-            if isinstance(resource_field, SubModelResourceField):
-                #model_resource = resource_field._resource_class(resource_field._resource_class.model_class)
-                #schema['fields'][resource_field.name] = model_resource.schema(ctx, **kwargs)
-                field_schema = {'type': 'related', 'relatedType': 'to_one'}
-            elif isinstance(resource_field, RelatedManagerField):
-                field_schema = {'type': 'related', 'relatedType': 'to_many'}
-            else:
-                field_schema = resource_field.schema()
-            try:
-                django_field = Field(self.model._meta.get_field(resource_field.name))
-                field_schema = dict(field_schema.items() + django_field.schema().items())
-            except:
-                pass
-            schema['fields'][resource_field.name] = field_schema
+            resource_field.init(self.model)
+            schema['fields'][resource_field.name] = resource_field.schema()
         return schema

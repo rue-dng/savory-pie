@@ -1,23 +1,3 @@
-from django.utils.functional import Promise
-
-class Field(object):
-    def __init__(self, django_field):
-        self._field = django_field
-
-    def schema(self):
-        _field = {
-            'blank': self._field.blank,
-            'default': self._field.get_default(),
-            'helpText': self._field.help_text,
-            'nullable': self._field.null,
-            'readonly': not self._field.editable,
-            'unique': self._field.unique
-        }
-
-        if isinstance(_field['helpText'], Promise):
-            _field['helpText'] = unicode(_field['helpText'])
-        return _field
-
 class Related(object):
     """
     Helper object that helps build related select-s and prefetch-es.
@@ -108,4 +88,3 @@ class Related(object):
             queryset = queryset.prefetch_related(*self._prefetch)
 
         return queryset
-
