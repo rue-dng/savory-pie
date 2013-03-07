@@ -1,5 +1,5 @@
 :mod:`savorypie.django`
-=================
+=======================
 
 This section documents the API for dealing Django in Savory Pie.
 
