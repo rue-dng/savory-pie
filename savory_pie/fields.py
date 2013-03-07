@@ -222,9 +222,15 @@ class SubObjectResourceField(object):
         """
         Extention point called by :meth:~`savory_pie.fields.handle_incoming` to
         build a resource class around the target attribute or return None if it
-        is not found. Can try looking by ResourceURI etc.
+        is not found. Can try looking by resource_uri etc.
         """
-        return getattr(target_obj, self._attribute, None)
+        sub_source_dict = source_dict[self._compute_property(ctx)]
+        resource = None
+        if 'resource_uri' in sub_source_dict:
+            resource = ctx.resolve_resource_uri(sub_source_dict['resource_uri'])
+        else:
+            resource = self._resource_class(getattr(target_obj, self._attribute, None))
+        return resource
 
     @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
