@@ -5,10 +5,12 @@ from savory_pie import fields as base_fields
 
 class DjangoField(base_fields.Field):
     def init(self, model):
+        self._field = None
         try:
             self._field = model._meta.get_field(self.name)
         except:
-            self._field = None
+            # probably only for m2m fields
+            self._field = model._meta.get_field_by_name(self.name)[0].field
 
     def schema(self, **kwargs):
         schema = super(DjangoField, self).schema(**kwargs)
