@@ -261,5 +261,5 @@ class SchemaResource(QuerySetResource):
         }
         for resource_field in self.fields:
             resource_field.init(self.model)
-            schema['fields'][resource_field.name] = resource_field.schema()
+            schema['fields'][resource_field.display_name] = resource_field.schema()
         return schema

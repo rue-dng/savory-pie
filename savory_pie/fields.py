@@ -1,5 +1,7 @@
 import functools
 
+from savory_pie.utils import camel_case
+
 
 def read_only_noop(func):
     @functools.wraps(func)
@@ -11,8 +13,15 @@ def read_only_noop(func):
 
 class Field(object):
     @property
+    def display_name(self):
+        return camel_case(self.name)
+
+    @property
     def name(self):
-        return getattr(self, '_attribute', getattr(self, '_full_attribute', '__unknown_field_name__'))
+        name = getattr(self, '_attribute', getattr(self, '_full_attribute', None))
+        if not name:
+            raise Exception, u'Unable to determine name for field: {0}'.format(self)
+        return name
 
     def schema(self, **kwargs):
         schema = kwargs.pop('schema', {})
