@@ -253,10 +253,10 @@ class SchemaResource(QuerySetResource):
         schema = {
             'allowedDetailHttpMethods': [m.lower() for m in self.allowed_methods],
             'allowedListHttpMethods': [m.lower() for m in self.allowed_methods],
-            'defaultFormat': 'application/json',
-            'defaultLimit': '',
-            'filtering': {},
-            'ordering': [],
+            'defaultFormat': getattr(self, 'defaultFormat', 'application/json'),
+            'defaultLimit': getattr(self, 'defaultLimit', 0),
+            'filtering': getattr(self, 'filtering', {}),
+            'ordering': getattr(self, 'ordering', []),
             'fields': {}
         }
         for resource_field in self.fields:
