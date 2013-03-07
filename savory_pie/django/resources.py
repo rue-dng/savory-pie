@@ -1,8 +1,11 @@
 import urllib
 
+import django.core.exceptions
+
 from savory_pie.resources import Resource
 from savory_pie.django.fields import DjangoField
 from savory_pie.django.utils import Related
+
 
 class QuerySetResource(Resource):
     """
@@ -198,6 +201,24 @@ class ModelResource(Resource):
         for field in cls.fields:
             field.prepare(ctx, related)
         return related
+
+    @classmethod
+    def get_by_source_dict(cls, ctx, source_dict):
+        filters = {}
+        for field in cls.fields:
+            try:
+                filter_by_item = field.filter_by_item
+            except AttributeError:
+                pass
+            else:
+                filter_by_item(ctx, filters, source_dict)
+
+        try:
+            model = cls.model_class.objects.filter(**filters).get()
+        except django.core.exceptions.ObjectDoesNotExist:
+            return None
+        else:
+            return cls(model)
 
     def __init__(self, model):
         self.model = model

@@ -1,9 +1,12 @@
 import unittest
-from mock import Mock, MagicMock, call
+from mock import Mock, MagicMock, call, patch
 
 from savory_pie.django import resources, fields
 from savory_pie.tests.django import mock_orm
 from savory_pie.tests.mock_context import mock_context
+
+import django.core.exceptions
+
 
 class ResourceTest(unittest.TestCase):
     def test_no_allowed_methods(self):
@@ -86,6 +89,40 @@ class ModelResourceTest(unittest.TestCase):
         resource.delete(mock_context())
 
         self.assertTrue(user.delete.called)
+
+    def test_get_by_source_dict(self):
+        source_dict = {
+            'name': 'Bob',
+            'age': 15,
+        }
+
+        with patch.object(AddressableUserResource.model_class, 'objects') as objects:
+            AddressableUserResource.get_by_source_dict(mock_context(), source_dict)
+
+        objects.filter.assert_called_with(name='Bob', age=15)
+
+    def test_get_by_source_dict_not_found(self):
+        source_dict = {
+            'name': 'Bob',
+            'age': 15,
+        }
+
+        with patch.object(AddressableUserResource.model_class, 'objects') as objects:
+            objects.filter.get.return_value = django.core.exceptions.ObjectDoesNotExist
+            AddressableUserResource.get_by_source_dict(mock_context(), source_dict)
+
+        objects.filter.assert_called_with(name='Bob', age=15)
+
+    def test_get_by_source_dict_filter_by_item_optional(self):
+        source_dict = {
+            'name': 'Bob',
+            'age': 15,
+        }
+
+        with patch.object(ComplexUserResource.model_class, 'objects') as objects:
+            ComplexUserResource.get_by_source_dict(mock_context(), source_dict)
+
+        objects.filter.assert_called_with()
 
 
 class AddressableUserQuerySetResource(resources.QuerySetResource):

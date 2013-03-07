@@ -18,6 +18,10 @@ class JSONToAPITest(unittest.TestCase):
         result = self.json_formatter.to_api_value(int, 15)
         self.assertEqual(15, result)
 
+    def test_long(self):
+        result = self.json_formatter.to_api_value(long, 15L)
+        self.assertEqual(15L, result)
+
     def test_float(self):
         result = self.json_formatter.to_api_value(float, 15.5)
         self.assertEqual(15.5, result)
@@ -65,6 +69,10 @@ class JSONToPython(unittest.TestCase):
     def test_int(self):
         result = self.json_formatter.to_python_value(int, 15)
         self.assertEqual(15, result)
+
+    def test_long(self):
+        result = self.json_formatter.to_python_value(long, 15)
+        self.assertEqual(15L, result)
 
     def test_float(self):
         result = self.json_formatter.to_python_value(float, 15.5)

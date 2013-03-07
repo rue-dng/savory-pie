@@ -55,7 +55,7 @@ class JSONFormatter(object):
     def to_api_value(self, type_, python_value):
         if issubclass(type_, datetime.datetime):
             return python_value.strftime("%Y-%m-%dT%H:%M:%S")
-        elif type(python_value) not in (int, float, dict, list,
+        elif type(python_value) not in (int, long, float, dict, list,
                                         bool, str, unicode, type(None)):
             return str(python_value)
         else:
