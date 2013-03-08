@@ -11,22 +11,19 @@
 
 class StandardFilter(object):
 
-    def __init__(self, fields, order_by=None):
+    def __init__(self, name, fields, order_by=None):
+        self.name = name
         self.fields = fields
-        self._order_by = order_by
+        self._order_by = [] if order_by is None else order_by
 
-    def filter_by(self, attribute, type, ops, published_property=None):
-        pass   # TODO
-
-    def order_by(self, attribute, published_property=None):
-        pass   # TODO
-
-    def default_order_by(self, attribute, desc=False):
-        pass   # TODO
+    def __repr__(self):
+        return '<' + self.__class__.__name__ + ': ' + self.name + '>'
 
     def filter(self, ctx, params, queryset):
-        # ignore ctx and params
-        return queryset.filter(**self.fields)
+        queryset = queryset.filter(**self.fields)
+        if self._order_by is not None:
+            queryset = queryset.order_by(*self._order_by)
+        return queryset
 
     def describe(self, ctx, schema_dict):
         schema_dict.update(self.fields)
