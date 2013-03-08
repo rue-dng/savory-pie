@@ -124,6 +124,17 @@ class SubModelResourceField(base_fields.SubObjectResourceField):
             setattr(target_obj, self._attribute, sub_resource.model)
         return sub_resource
 
+    def get_submodel(self, ctx, source_object):
+        try:
+            sub_model = super(SubModelResourceField, self).get_submodel(
+                ctx,
+                source_object
+            )
+        except django.core.exceptions.ObjectDoesNotExist:
+            sub_model = None
+
+        return sub_model
+
 
 class RelatedManagerField(base_fields.IterableField):
     """

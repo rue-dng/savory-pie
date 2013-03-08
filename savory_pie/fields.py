@@ -232,6 +232,9 @@ class SubObjectResourceField(object):
             resource = self._resource_class(getattr(target_obj, self._attribute, None))
         return resource
 
+    def get_submodel(self, ctx, source_object):
+        return getattr(source_object, self._attribute)
+
     @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
         sub_resource = self.get_subresource(ctx, source_dict, target_obj)
@@ -245,8 +248,11 @@ class SubObjectResourceField(object):
         setattr(target_obj, self._attribute, sub_resource.model)
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
-        sub_model = getattr(source_obj, self._attribute)
-        target_dict[self._compute_property(ctx)] = self._resource_class(sub_model).get(ctx)
+        sub_model = self.get_submodel(ctx, source_obj)
+        if sub_model is None:
+            target_dict[self._compute_property(ctx)] = None
+        else:
+            target_dict[self._compute_property(ctx)] = self._resource_class(sub_model).get(ctx)
 
 
 class IterableField(object):

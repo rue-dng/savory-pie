@@ -40,7 +40,7 @@ class QuerySetResource(Resource):
 
     def filter_queryset(self, queryset, GET):
         # TODO: Revisit filtering
-        return queryset.filter(**GET)
+        return queryset
 
     def slice_queryset(self, queryset, GET):
         if self.supports_paging:
