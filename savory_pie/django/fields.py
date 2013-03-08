@@ -5,7 +5,8 @@ from savory_pie import fields as base_fields
 
 
 class DjangoField(base_fields.Field):
-    def init(self, model):
+    def schema(self, **kwargs):
+        model = kwargs['model']
         field_name = (model._meta.pk.name if self.name == 'pk' else self.name)
         self._field = None
         try:
@@ -14,7 +15,6 @@ class DjangoField(base_fields.Field):
             # probably only for m2m fields
             self._field = model._meta.get_field_by_name(field_name)[0].field
 
-    def schema(self, **kwargs):
         schema = super(DjangoField, self).schema(**kwargs)
 
         if self._field:
@@ -139,7 +139,8 @@ class SubModelResourceField(base_fields.SubObjectResourceField, DjangoField):
             self._resource_class.prepare(ctx, related.sub_select(self._attribute))
 
     def schema(self, **kwargs):
-        return super(SubModelResourceField, self).schema(schema={'type': 'related', 'relatedType': 'to_one'})
+        kwargs = dict(kwargs.items() + {'schema': {'type': 'related', 'relatedType': 'to_one'}}.items())
+        return super(SubModelResourceField, self).schema(**kwargs)
 
     def get_subresource(self, ctx, source_dict, target_obj):
         sub_source_dict = source_dict[self._compute_property(ctx)]
@@ -170,4 +171,5 @@ class RelatedManagerField(base_fields.IterableField, DjangoField):
         self._resource_class.prepare(ctx, related.sub_prefetch(self._attribute))
 
     def schema(self, **kwargs):
-        return super(RelatedManagerField, self).schema(schema={'type': 'related', 'relatedType': 'to_many'})
+        kwargs = dict(kwargs.items() + {'schema': {'type': 'related', 'relatedType': 'to_many'}}.items())
+        return super(RelatedManagerField, self).schema(**kwargs)

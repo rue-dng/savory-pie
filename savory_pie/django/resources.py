@@ -272,6 +272,10 @@ class SchemaResource(QuerySetResource):
         self.model = model_resource.model_class
         self.fields = model_resource.fields
 
+    @property
+    def allowed_methods(self):
+        return ['GET']
+
     def get(self, ctx, **kwargs):
         schema = {
             'allowedDetailHttpMethods': [m.lower() for m in self.allowed_methods],
@@ -283,6 +287,6 @@ class SchemaResource(QuerySetResource):
             'fields': {}
         }
         for resource_field in self.fields:
-            resource_field.init(self.model)
-            schema['fields'][resource_field.display_name] = resource_field.schema()
+            field_name = ctx.formatter.default_published_property(resource_field.name)
+            schema['fields'][field_name] = resource_field.schema(model=self.model)
         return schema

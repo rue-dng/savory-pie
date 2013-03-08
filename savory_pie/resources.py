@@ -1,5 +1,6 @@
 import urllib
 
+
 class Resource(object):
     """
     Base object for defining resources.

@@ -4,7 +4,7 @@ class Related(object):
     Originally created to work around Django silliness - https://code.djangoproject.com/ticket/16855,
     but later extended to help track the related path from the root Model being selected.
     """
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         self._prefix = kwargs.pop('prefix', None)
 
         # or-s don't work want to continue to use the same empty set

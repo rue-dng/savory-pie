@@ -1,7 +1,5 @@
 import functools
 
-from savory_pie.utils import camel_case
-
 
 def read_only_noop(func):
     @functools.wraps(func)
@@ -12,10 +10,6 @@ def read_only_noop(func):
 
 
 class Field(object):
-    @property
-    def display_name(self):
-        return camel_case(self.name)
-
     @property
     def name(self):
         name = getattr(self, '_attribute', getattr(self, '_full_attribute', None))
