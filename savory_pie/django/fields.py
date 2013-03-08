@@ -1,9 +1,42 @@
 import django.core.exceptions
+from django.utils.functional import Promise
 
 from savory_pie import fields as base_fields
 
 
-class AttributeField(base_fields.AttributeField):
+class DjangoField(base_fields.Field):
+    def init(self, model):
+        field_name = (model._meta.pk.name if self.name == 'pk' else self.name)
+        self._field = None
+        try:
+            self._field = model._meta.get_field(field_name)
+        except:
+            # probably only for m2m fields
+            self._field = model._meta.get_field_by_name(field_name)[0].field
+
+    def schema(self, **kwargs):
+        schema = super(DjangoField, self).schema(**kwargs)
+
+        if self._field:
+            _schema = {
+                'blank': self._field.blank,
+                'default': self._field.get_default(),
+                'helpText': self._field.help_text,
+                'nullable': self._field.null,
+                'readonly': not self._field.editable,
+                'unique': self._field.unique
+            }
+            if self._field.choices:
+                _schema['choices'] = self._field.choices
+            if isinstance(_schema['helpText'], Promise):
+                _schema['helpText'] = unicode(_schema['helpText'])
+        else:
+            _schema = {}
+
+        return dict(schema.items() + _schema.items())
+
+
+class AttributeField(base_fields.AttributeField, DjangoField):
     """
     Django extension of the basic AttributeField that adds support for optimized select_related
     or prefetch_related calls.
@@ -40,7 +73,7 @@ class AttributeField(base_fields.AttributeField):
         filter_args[self._full_attribute] = source_dict[self._compute_property(ctx)]
 
 
-class URIResourceField(base_fields.URIResourceField):
+class URIResourceField(base_fields.URIResourceField, DjangoField):
     """
     Django extension of the basic URIResourceField that adds support for optimized
     select_related or prefetch_related calls.
@@ -74,7 +107,7 @@ class URIResourceField(base_fields.URIResourceField):
             related.sub_select(self._attribute)
 
 
-class SubModelResourceField(base_fields.SubObjectResourceField):
+class SubModelResourceField(base_fields.SubObjectResourceField, DjangoField):
     """
     Django extension of the basic SubObjectResourceField that adds support for
     optimized select_related or prefetch_related calls.
@@ -95,7 +128,6 @@ class SubModelResourceField(base_fields.SubObjectResourceField):
     """
     def __init__(self, *args, **kwargs):
         self._use_prefetch = kwargs.pop('use_prefetch', False)
-
         super(SubModelResourceField, self).__init__(*args, **kwargs)
 
     def prepare(self, ctx, related):
@@ -135,8 +167,11 @@ class SubModelResourceField(base_fields.SubObjectResourceField):
 
         return sub_model
 
+    def schema(self, **kwargs):
+        return super(SubModelResourceField, self).schema(schema={'type': 'related', 'relatedType': 'to_one'})
 
-class RelatedManagerField(base_fields.IterableField):
+
+class RelatedManagerField(base_fields.IterableField, DjangoField):
     """
     Django extension of the basic IterableField that adds support for
     optimized select_related or prefetch_related calls.
@@ -152,3 +187,5 @@ class RelatedManagerField(base_fields.IterableField):
         related.prefetch(self._attribute)
         self._resource_class.prepare(ctx, related.sub_prefetch(self._attribute))
 
+    def schema(self, **kwargs):
+        return super(RelatedManagerField, self).schema(schema={'type': 'related', 'relatedType': 'to_many'})

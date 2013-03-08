@@ -3,6 +3,7 @@ import urllib
 import django.core.exceptions
 
 from savory_pie.resources import Resource
+from savory_pie.django.fields import DjangoField
 from savory_pie.django.utils import Related
 
 
@@ -130,6 +131,9 @@ class QuerySetResource(Resource):
         return resource
 
     def get_child_resource(self, ctx, path_fragment):
+        if path_fragment == 'schema' and getattr(self, 'schema_class', None):
+            return self.schema_class(self.resource_class)
+
         # No need to filter or slice here, does not make sense as part of get_child_resource
         queryset = self.prepare_queryset(ctx, self.queryset)
         try:
@@ -261,3 +265,24 @@ class ModelResource(Resource):
 
     def delete(self, ctx):
         self.model.delete()
+
+
+class SchemaResource(QuerySetResource):
+    def __init__(self, model_resource):
+        self.model = model_resource.model_class
+        self.fields = model_resource.fields
+
+    def get(self, ctx, **kwargs):
+        schema = {
+            'allowedDetailHttpMethods': [m.lower() for m in self.allowed_methods],
+            'allowedListHttpMethods': [m.lower() for m in self.allowed_methods],
+            'defaultFormat': getattr(self, 'defaultFormat', 'application/json'),
+            'defaultLimit': getattr(self, 'defaultLimit', 0),
+            'filtering': getattr(self, 'filtering', {}),
+            'ordering': getattr(self, 'ordering', []),
+            'fields': {}
+        }
+        for resource_field in self.fields:
+            resource_field.init(self.model)
+            schema['fields'][resource_field.display_name] = resource_field.schema()
+        return schema

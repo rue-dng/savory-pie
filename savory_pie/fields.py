@@ -1,5 +1,7 @@
 import functools
 
+from savory_pie.utils import camel_case
+
 
 def read_only_noop(func):
     @functools.wraps(func)
@@ -9,7 +11,26 @@ def read_only_noop(func):
     return inner
 
 
-class AttributeField(object):
+class Field(object):
+    @property
+    def display_name(self):
+        return camel_case(self.name)
+
+    @property
+    def name(self):
+        name = getattr(self, '_attribute', getattr(self, '_full_attribute', None))
+        if not name:
+            raise Exception, u'Unable to determine name for field: {0}'.format(self)
+        return name
+
+    def schema(self, **kwargs):
+        schema = kwargs.pop('schema', {})
+        if getattr(self, '_type', None):
+            return dict({'type': self._type.__name__}.items() + schema.items())
+        return schema
+
+
+class AttributeField(Field):
     """
     Simple Field that translates an object attribute to/from a dict.
 
@@ -109,7 +130,7 @@ class AttributeField(object):
         return ctx.formatter.to_api_value(self._type, python_value)
 
 
-class URIResourceField(object):
+class URIResourceField(Field):
     """
     Field that exposes just the URI of related entity
 
@@ -175,7 +196,7 @@ class URIResourceField(object):
         target_dict[self._compute_property(ctx)] = ctx.build_resource_uri(resource)
 
 
-class SubObjectResourceField(object):
+class SubObjectResourceField(Field):
     """
     Field that embeds a single related resource into the parent object
 
@@ -255,7 +276,7 @@ class SubObjectResourceField(object):
             target_dict[self._compute_property(ctx)] = self._resource_class(sub_model).get(ctx)
 
 
-class IterableField(object):
+class IterableField(Field):
     """
     Field that embeds a many relationship into the parent object
 
