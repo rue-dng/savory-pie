@@ -284,6 +284,7 @@ class SchemaResource(QuerySetResource):
             'defaultLimit': getattr(self, 'defaultLimit', 0),
             'filtering': getattr(self, 'filtering', {}),
             'ordering': getattr(self, 'ordering', []),
+            'resourceUri': ctx.build_resource_uri(self),
             'fields': {}
         }
         for resource_field in self.fields:
