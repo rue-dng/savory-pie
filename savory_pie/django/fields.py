@@ -146,11 +146,18 @@ class SubModelResourceField(base_fields.SubObjectResourceField, DjangoField):
         sub_source_dict = source_dict[self._compute_property(ctx)]
         try:
             # Look at non-null FK
-            sub_resource = self._resource_class(getattr(target_obj, self._attribute))
+            sub_resource = super(SubModelResourceField, self).get_subresource(
+                ctx,
+                source_dict,
+                target_obj
+            )
         except django.core.exceptions.ObjectDoesNotExist:
             # Search by the source dict
             sub_resource = self._resource_class.get_by_source_dict(ctx, sub_source_dict)
 
+        # Make sure the new model is attached
+        if hasattr(sub_resource, 'model'):
+            setattr(target_obj, self._attribute, sub_resource.model)
         return sub_resource
 
 
