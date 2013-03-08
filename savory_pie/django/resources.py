@@ -32,6 +32,7 @@ class QuerySetResource(Resource):
     #: optional - if set specifies the page size for data returned during a GET
     #: - defaults to None (no paging)
     page_size = None
+    filters = []
 
     def __init__(self, queryset=None):
         self.queryset = queryset or self.resource_class.model_class.objects.all()
@@ -39,11 +40,6 @@ class QuerySetResource(Resource):
     @property
     def supports_paging(self):
         return self.page_size is not None
-
-    def filter_queryset(self, ctx, params, queryset):
-        for filter in self.filters:
-            queryset = filter.filter(ctx, params, queryset)
-        return queryset
 
     def slice_queryset(self, ctx, params, queryset):
         if self.supports_paging:
@@ -82,14 +78,14 @@ class QuerySetResource(Resource):
 
     def get(self, ctx, params):
         complete_queryset = self.queryset.all()
+        filtered_queryset = complete_queryset
 
-        # We can't make filters a class variable because we don't know what filters
-        # will be in effect until we get the params from the URI.
-        self.filters = []
-        for key, values in params._GET.lists():
-            self.filters.append(StandardFilter({key: values[0]}))
+        filtername = params._GET.get('filter', None)
+        if filtername is not None:
+            _filters = filter(lambda filt: filt.name == filtername, self.filters)
+            assert len(_filters) > 0, 'cannot find filter ' + filtername
+            filtered_queryset = _filters[0].filter(ctx, params, filtered_queryset)
 
-        filtered_queryset = self.filter_queryset(ctx, params, complete_queryset)
         sliced_queryset = self.slice_queryset(ctx, params, filtered_queryset)
 
         # prepare must be last for optimization to be respected by Django.

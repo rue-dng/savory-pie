@@ -122,6 +122,12 @@ class _ParamsImpl(object):
     def __init__(self, GET):
         self._GET = GET
 
+    def keys(self):
+        return self._GET.keys()
+
+    def __getitem__(self, key):
+        return self._GET.get(key, None)
+
     def get(self, key, default=None):
         return self._GET.get(key, default)
 

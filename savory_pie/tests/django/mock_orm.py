@@ -35,6 +35,25 @@ class QuerySet(Mock):
         queryset._prefetched = set(queryset._prefetched)
         return queryset
 
+    def order_by(self, *attributes):
+        def compare(x, y, attributes=attributes):
+            for attr in attributes:
+                if attr[:1] == '-':
+                    attr = attr[1:]
+                    if getattr(x, attr) > getattr(y, attr):
+                        return -1
+                    if getattr(x, attr) < getattr(y, attr):
+                        return 1
+                else:
+                    if getattr(x, attr) < getattr(y, attr):
+                        return -1
+                    if getattr(x, attr) > getattr(y, attr):
+                        return 1
+            return 0
+        elements = list(self._elements[:])
+        elements.sort(compare)
+        return QuerySet(*elements)
+
     def get(self, **kwargs):
         filtered_elements = self._filter_elements(**kwargs)
         count = len(filtered_elements)
@@ -82,8 +101,18 @@ class QuerySet(Mock):
     def _filter_elements(self, **kwargs):
         filtered_elements = self._elements
         for attr, value in kwargs.iteritems():
-            filtered_elements =\
-                [element for element in self._elements if getattr(element, attr) == value]
+            if attr.endswith('__lt'):
+                filtered_elements =\
+                    [element for element in self._elements if
+                        getattr(element, attr[:-4]) < value]
+            elif attr.endswith('__gt'):
+                filtered_elements =\
+                    [element for element in self._elements if
+                        getattr(element, attr[:-4]) > value]
+            else:
+                filtered_elements =\
+                    [element for element in self._elements if
+                        getattr(element, attr) == value]
         return filtered_elements
 
 
