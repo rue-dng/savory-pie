@@ -131,8 +131,8 @@ class QuerySetResource(Resource):
         return resource
 
     def get_child_resource(self, ctx, path_fragment):
-        if path_fragment == 'schema' and getattr(self, 'schema_class', None):
-            return self.schema_class(self.resource_class)
+        if path_fragment == 'schema':
+            return SchemaResource(self.resource_class)
 
         # No need to filter or slice here, does not make sense as part of get_child_resource
         queryset = self.prepare_queryset(ctx, self.queryset)
@@ -267,7 +267,7 @@ class ModelResource(Resource):
         self.model.delete()
 
 
-class SchemaResource(QuerySetResource):
+class SchemaResource(Resource):
     def __init__(self, model_resource):
         self.model = model_resource.model_class
         self.fields = model_resource.fields
