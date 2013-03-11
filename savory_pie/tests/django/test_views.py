@@ -4,7 +4,6 @@ import json
 from mock import Mock
 from savory_pie.tests.django.mock_request import savory_dispatch
 
-
 def mock_resource(name=None, resource_path=None, child_resource=None):
     resource = Mock(name=name, spec=[])
     resource.resource_path = resource_path
@@ -25,15 +24,17 @@ def call_args_sans_context(mock):
 
 
 class ViewTest(unittest.TestCase):
+
     def test_get_success(self):
         root_resource = mock_resource(name='root')
         root_resource.allowed_methods.add('GET')
         root_resource.get = Mock(return_value={'foo': 'bar'})
 
         response = savory_dispatch(root_resource, method='GET')
-        self.assertEqual(response.content, '{"foo": "bar"}')
 
+        self.assertEqual(response.content, '{"foo": "bar"}')
         self.assertTrue(root_resource.get.called)
+        self.assertIsNotNone(root_resource.get.call_args_list[0].request)
 
     def test_get_not_supported(self):
         root_resource = mock_resource(name='root')
@@ -51,6 +52,7 @@ class ViewTest(unittest.TestCase):
             'foo': 'bar'
         }])
         self.assertEqual(response.status_code, 204)
+        self.assertIsNotNone(root_resource.put.call_args_list[0].request)
 
     def test_put_not_supported(self):
         root_resource = mock_resource(name='root')
@@ -71,6 +73,7 @@ class ViewTest(unittest.TestCase):
              'foo': 'bar'
         }])
         self.assertEqual(response['Location'], 'http://localhost/api/foo')
+        self.assertIsNotNone(root_resource.post.call_args_list[0].request)
 
     def test_post_not_supported(self):
         root_resource = mock_resource(name='root')
@@ -84,6 +87,7 @@ class ViewTest(unittest.TestCase):
 
         savory_dispatch(root_resource, method='DELETE')
         self.assertTrue(root_resource.delete.called)
+        self.assertIsNotNone(root_resource.delete.call_args_list[0].request)
 
     def test_delete_not_supported(self):
         root_resource = mock_resource(name='root')
@@ -102,6 +106,7 @@ class ViewTest(unittest.TestCase):
 
         self.assertEqual(call_args_sans_context(root_resource.get_child_resource), ['child'])
         self.assertTrue(child_resource.get.called)
+        self.assertIsNotNone(child_resource.get.call_args_list[0].request)
 
     def test_grandchild_resolution(self):
         grand_child_resource = mock_resource(name='grandchild')
@@ -117,6 +122,7 @@ class ViewTest(unittest.TestCase):
         self.assertEqual(call_args_sans_context(root_resource.get_child_resource), ['child'])
         self.assertEqual(call_args_sans_context(child_resource.get_child_resource), ['grandchild'])
         self.assertTrue(grand_child_resource.get.called)
+        self.assertIsNotNone(grand_child_resource.get.call_args_list[0].request)
 
     def test_child_resolution_fail(self):
         root_resource = mock_resource(name='root')
