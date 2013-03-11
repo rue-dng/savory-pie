@@ -27,14 +27,15 @@ _filters = [
 	filters.StandardFilter('younger_only', {'age__lt': 25}),
 	filters.StandardFilter('older_only', {'age__gt': 25}),
 	filters.StandardFilter('alphabetical', {}, order_by=['name']),
-	filters.StandardFilter('reverse_alphabetical', {}, order_by=['-name'])
+	filters.StandardFilter('reverse_alphabetical', {}, order_by=['-name']),
+	filters.ParameterizedFilter('name_exact', 'name'),
 	]
 
 class StandardFilterTest(unittest.TestCase):
 
     class Params:
         def __init__(self, *filternames):
-            querystring = "&".join(map(lambda x: "filter=" + x, filternames))
+            querystring = "&".join(filternames)
             self._GET = QueryDict(querystring)
 
     def apply_filters(self, *filternames):
@@ -51,43 +52,58 @@ class StandardFilterTest(unittest.TestCase):
         self.assertEqual(['Alice', 'Charlie', 'Bob'], [x.name for x in results])
 
     def test_good_filter(self):
-        results = self.apply_filters('official_test_user')
+        results = self.apply_filters('official_test_user=')
         self.assertEqual(1, results.count())
         self.assertEqual(['Alice'], [x.name for x in results])
 
     def test_bad_filter(self):
-        results = self.apply_filters('bogus_test_user')
+        results = self.apply_filters('bogus_test_user=')
         self.assertEqual(0, results.count())
         self.assertEqual([], [x.name for x in results])
 
     def test_multiple_filters(self):
-        results = self.apply_filters('official_test_user', 'early_name')
+        results = self.apply_filters('official_test_user=', 'early_name=')
         # older_only: Alice,Charlie,Bob -> Alice,Charlie
         # early_name: Alice,Charlie -> Alice
         self.assertEqual(1, results.count())
         self.assertEqual(['Alice'], [x.name for x in results])
 
     def test_gt_filter(self):
-        results = self.apply_filters('older_only')
+        results = self.apply_filters('older_only=')
         self.assertEqual(2, results.count())
         self.assertEqual(['Alice','Charlie'], [x.name for x in results])
 
     def test_lt_filter(self):
-        results = self.apply_filters('younger_only')
+        results = self.apply_filters('younger_only=')
         self.assertEqual(1, results.count())
         self.assertEqual(['Bob'], [x.name for x in results])
 
     def test_lt_filter_alphabetical(self):
-        results = self.apply_filters('early_name')
+        results = self.apply_filters('early_name=')
         self.assertEqual(2, results.count())
         self.assertEqual(['Alice', 'Bob'], [x.name for x in results])
 
     def test_ascending_order(self):
-        results = self.apply_filters('alphabetical')
+        results = self.apply_filters('alphabetical=')
         self.assertEqual(3, results.count())
         self.assertEqual(['Alice', 'Bob', 'Charlie'], [x.name for x in results])
 
     def test_descending_order(self):
-        results = self.apply_filters('reverse_alphabetical')
+        results = self.apply_filters('reverse_alphabetical=')
         self.assertEqual(3, results.count())
         self.assertEqual(['Charlie', 'Bob', 'Alice'], [x.name for x in results])
+
+    def test_name_exact_alice(self):
+        results = self.apply_filters('name_exact=Alice')
+        self.assertEqual(1, results.count())
+        self.assertEqual(['Alice'], [x.name for x in results])
+
+    def test_name_exact_bob(self):
+        results = self.apply_filters('name_exact=Bob')
+        self.assertEqual(1, results.count())
+        self.assertEqual(['Bob'], [x.name for x in results])
+
+    def test_name_exact_charlie(self):
+        results = self.apply_filters('name_exact=Charlie')
+        self.assertEqual(1, results.count())
+        self.assertEqual(['Charlie'], [x.name for x in results])
