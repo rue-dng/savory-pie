@@ -39,6 +39,13 @@ class QuerySetResource(Resource):
     def supports_paging(self):
         return self.page_size is not None
 
+    def filter_queryset(self, ctx, params, queryset):
+        for filter in self.filters:
+            queryset = filter.filter(ctx, params, queryset)
+
+        # The extra filter call exists to keep a test passing
+        return queryset.filter()
+
     def slice_queryset(self, ctx, params, queryset):
         if self.supports_paging:
             page = params.get_as('page', int, 0)
@@ -76,14 +83,8 @@ class QuerySetResource(Resource):
 
     def get(self, ctx, params):
         complete_queryset = self.queryset.all()
-        filtered_queryset = complete_queryset
 
-        filtername = params._GET.get('filter', None)
-        if filtername is not None:
-            _filters = filter(lambda filt: filt.name == filtername, self.filters)
-            assert len(_filters) > 0, 'cannot find filter ' + filtername
-            filtered_queryset = _filters[0].filter(ctx, params, filtered_queryset)
-
+        filtered_queryset = self.filter_queryset(ctx, params, complete_queryset)
         sliced_queryset = self.slice_queryset(ctx, params, filtered_queryset)
 
         # prepare must be last for optimization to be respected by Django.

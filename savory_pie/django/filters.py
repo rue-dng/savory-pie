@@ -20,11 +20,11 @@ class StandardFilter(object):
         return '<' + self.__class__.__name__ + ': ' + self.name + '>'
 
     def filter(self, ctx, params, queryset):
-        queryset = queryset.filter(**self.fields)
-        if self._order_by is not None:
-            queryset = queryset.order_by(*self._order_by)
+        if self.name in params._GET.getlist('filter'):
+            queryset = queryset.filter(**self.fields)
+            if self._order_by is not None:
+                queryset = queryset.order_by(*self._order_by)
         return queryset
 
     def describe(self, ctx, schema_dict):
         schema_dict.update(self.fields)
-
