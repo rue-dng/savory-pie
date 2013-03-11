@@ -23,7 +23,8 @@ class JSONFormatter(object):
         return s
 
     def default_published_property(self, bare_attribute):
-        return ''.join([bare_attribute.split('_')[0], ''.join(x.capitalize() for x in bare_attribute.split('_')[1:])])
+        parts = bare_attribute.split('_')
+        return ''.join([parts[0], ''.join(x.capitalize() for x in parts[1:])])
 
     def read_from(self, request):
         return json.load(request)

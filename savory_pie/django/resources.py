@@ -289,5 +289,5 @@ class SchemaResource(Resource):
         }
         for resource_field in self.fields:
             field_name = ctx.formatter.default_published_property(resource_field.name)
-            schema['fields'][field_name] = resource_field.schema(model=self.model)
+            schema['fields'][field_name] = resource_field.schema(ctx, model=self.model)
         return schema

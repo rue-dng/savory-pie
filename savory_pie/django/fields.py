@@ -5,7 +5,7 @@ from savory_pie import fields as base_fields
 
 
 class DjangoField(base_fields.Field):
-    def schema(self, **kwargs):
+    def schema(self, ctx, **kwargs):
         model = kwargs['model']
         field_name = (model._meta.pk.name if self.name == 'pk' else self.name)
         self._field = None
@@ -20,7 +20,7 @@ class DjangoField(base_fields.Field):
         if self._field:
             _schema = {
                 'blank': self._field.blank,
-                'default': self._field.get_default(),
+                'default': ctx.formatter.to_api_value(type(self._field.get_default()), self._field.get_default()),
                 'helpText': self._field.help_text,
                 'nullable': self._field.null,
                 'readonly': not self._field.editable,
@@ -138,9 +138,9 @@ class SubModelResourceField(base_fields.SubObjectResourceField, DjangoField):
             related.select(self._attribute)
             self._resource_class.prepare(ctx, related.sub_select(self._attribute))
 
-    def schema(self, **kwargs):
+    def schema(self, ctx, **kwargs):
         kwargs = dict(kwargs.items() + {'schema': {'type': 'related', 'relatedType': 'to_one'}}.items())
-        return super(SubModelResourceField, self).schema(**kwargs)
+        return super(SubModelResourceField, self).schema(ctx, **kwargs)
 
     def get_subresource(self, ctx, source_dict, target_obj):
         sub_source_dict = source_dict[self._compute_property(ctx)]
@@ -177,6 +177,6 @@ class RelatedManagerField(base_fields.IterableField, DjangoField):
         related.prefetch(self._attribute)
         self._resource_class.prepare(ctx, related.sub_prefetch(self._attribute))
 
-    def schema(self, **kwargs):
+    def schema(self, ctx, **kwargs):
         kwargs = dict(kwargs.items() + {'schema': {'type': 'related', 'relatedType': 'to_many'}}.items())
-        return super(RelatedManagerField, self).schema(**kwargs)
+        return super(RelatedManagerField, self).schema(ctx, **kwargs)
