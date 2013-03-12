@@ -28,7 +28,8 @@ def api_view(root_resource):
         ctx = APIContext(
             base_uri=request.build_absolute_uri(base_path),
             root_resource=root_resource,
-            formatter=JSONFormatter()
+            formatter=JSONFormatter(),
+            request=request
         )
 
         try:
