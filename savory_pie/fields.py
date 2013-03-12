@@ -290,10 +290,14 @@ class IterableField(object):
         if self._published_property is not None:
             return self._published_property
         else:
-            return ctx.formatter.default_published_property(self._attribute)
+            return ctx.formatter.default_published_property(self._bare_attribute)
 
     def get_iterable(self, value):
         return value
+
+    @property
+    def _bare_attribute(self):
+        return self._attribute.split('.')[-1]
 
     @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
@@ -334,7 +338,14 @@ class IterableField(object):
                 model.delete()
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
-        manager = getattr(source_obj, self._attribute)
+        attrs = self._attribute.split('.')
+        manager = source_obj
+
+        for attr in attrs:
+            manager = getattr(manager, attr)
+            if manager is None:
+                return None
+
         objects = []
         for model in manager.all():
             model_resource = self._resource_class(model)
