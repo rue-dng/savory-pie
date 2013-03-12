@@ -2,7 +2,7 @@ import unittest
 from mock import Mock, MagicMock, call, patch
 
 from savory_pie.django import resources, fields
-from savory_pie.tests.django import mock_orm
+from savory_pie.tests.django import user_resource_schema, mock_orm
 from savory_pie.tests.mock_context import mock_context
 
 from datetime import datetime
@@ -267,148 +267,88 @@ class DjangoUserResource(resources.ModelResource):
 
 
 class SchemaResourceTest(unittest.TestCase):
-    def test_get(self):
-        """
-        Test GET request(s) for a model schema
-        """
-        self.maxDiff = None
+    maxDiff = None
+    
+    def do_assert_equal(self, key, assert_type=''):
+        getattr(self, 'assert{}Equal'.format(assert_type))(self.do_get()[key], user_resource_schema[key])
 
+    def do_assert_field_equal(self, key):
+        self.assertDictEqual(self.do_get()['fields'][key], user_resource_schema['fields'][key])
+
+    def do_get(self):
+        """
+        Make GET request, return response
+        """
         resource = resources.SchemaResource(DjangoUserResource)
         ctx = mock_context()
         ctx.build_resource_uri = lambda resource: 'uri://user/schema/'
-        data = resource.get(ctx)
+        return resource.get(ctx)
 
-        #TODO add filtering and sort order
-        expected = {
-            'allowedDetailHttpMethods': ['get'],
-            'allowedListHttpMethods': ['get'],
-            'defaultFormat': 'application/json',
-            'defaultLimit': 0,
-            'filtering': {},
-            'ordering': [],
-            'resourceUri': 'uri://user/schema/',
-            'fields': {
-                'username': {
-                    'nullable': False,
-                    'default': u'',
-                    'readonly': False,
-                    'helpText': u'Required. 30 characters or fewer. Letters, numbers and @/./+/-/_ characters',
-                    'blank': False,
-                    'unique': True,
-                    'type': 'str'
-                },
-                'lastLogin': {
-                    'nullable': False,
-                    'default': datetime.today().strftime("%Y-%m-%dT%H:%M:%S"),
-                    'readonly': False,
-                    'helpText': u'',
-                    'blank': False,
-                    'unique': False,
-                    'type': 'datetime'
-                },
-                'firstName': {
-                    'nullable': False,
-                    'default': u'',
-                    'readonly': False,
-                    'helpText': u'',
-                    'blank': True,
-                    'unique': False,
-                    'type': 'str'
-                },
-                'userPermissions': {
-                    'nullable': False,
-                    'default': u'',
-                    'relatedType': 'to_many',
-                    'readonly': False,
-                    'helpText': u'Specific permissions for this user. Hold down "Control", or "Command" on a Mac, to select more than one.',
-                    'blank': True,
-                    'unique': False,
-                    'type': 'related'
-                },
-                'lastName': {
-                    'nullable': False,
-                    'default': u'',
-                    'readonly': False,
-                    'helpText': u'',
-                    'blank': True,
-                    'unique': False,
-                    'type': 'str'
-                },
-                'isSuperuser': {
-                    'nullable': False,
-                    'default': False,
-                    'readonly': False,
-                    'helpText': u'Designates that this user has all permissions without explicitly assigning them.',
-                    'blank': True,
-                    'unique': False,
-                    'type': 'bool'
-                },
-                'dateJoined': {
-                    'nullable': False,
-                    'default': datetime.today().strftime("%Y-%m-%dT%H:%M:%S"),
-                    'readonly': False,
-                    'helpText': u'',
-                    'blank': False,
-                    'unique': False,
-                    'type': 'datetime'
-                },
-                'isStaff': {
-                    'nullable': False,
-                    'default': False,
-                    'readonly': False,
-                    'helpText': u'Designates whether the user can log into this admin site.',
-                    'blank': True,
-                    'unique': False,
-                    'type': 'bool'
-                },
-                'groups': {
-                    'nullable': False,
-                    'default': u'',
-                    'relatedType': 'to_many',
-                    'readonly': False,
-                    'helpText': u'The groups this user belongs to. A user will get all permissions granted to each of his/her group. Hold down "Control", or "Command" on a Mac, to select more than one.',
-                    'blank': True,
-                    'unique': False,
-                    'type': 'related'
-                },
-                'pk': {
-                    'nullable': False,
-                    'default': None,
-                    'readonly': False,
-                    'helpText': u'',
-                    'blank': True,
-                    'unique': True,
-                    'type': 'int'
-                },
-                'password': {
-                    'nullable': False,
-                    'default': u'',
-                    'readonly': False,
-                    'helpText': u'',
-                    'blank': False,
-                    'unique': False,
-                    'type': 'str'
-                },
-                'email': {
-                    'nullable': False,
-                    'default': u'',
-                    'readonly': False,
-                    'helpText': u'',
-                    'blank': True,
-                    'unique': False,
-                    'type':
-                    'str'
-                },
-                'isActive': {
-                    'nullable': False,
-                    'default': True,
-                    'readonly': False,
-                    'helpText': u'Designates whether this user should be treated as active. Unselect this instead of deleting accounts.',
-                    'blank': True,
-                    'unique': False,
-                    'type': 'bool'
-                }
-            }
-        }
+    def test_get(self):
+        """
+        Test basic GET request for a SchemaResource
+        """
+        self.assertIsInstance(self.do_get(), dict)
 
-        self.assertDictEqual(data, expected)
+    def test_allowed_detail_http_methods(self):
+        self.do_assert_equal('allowedDetailHttpMethods', assert_type='List')
+
+    def test_allowed_list_http_methods(self):
+        self.do_assert_equal('allowedListHttpMethods', assert_type='List')
+
+    def test_default_format(self):
+        self.do_assert_equal('defaultFormat')
+
+    def test_default_limit(self):
+        self.do_assert_equal('defaultLimit')
+
+    def test_filtering(self):
+        self.do_assert_equal('filtering', assert_type='Dict')
+
+    def test_ordering(self):
+        self.do_assert_equal('ordering', assert_type='List')
+
+    def test_resource_uri(self):
+        self.do_assert_equal('resourceUri')
+
+    def test_fields_length(self):
+        self.assertEqual(len(self.do_get()['fields']), len(user_resource_schema['fields']))
+
+    def test_field_date_joined(self):
+        self.do_assert_field_equal('dateJoined')
+
+    def test_field_email(self):
+        self.do_assert_field_equal('email')
+
+    def test_field_first_name(self):
+        self.do_assert_field_equal('firstName')
+
+    def test_field_groups(self):
+        self.do_assert_field_equal('groups')
+
+    def test_field_is_active(self):
+        self.do_assert_field_equal('isActive')
+
+    def test_field_is_staff(self):
+        self.do_assert_field_equal('isStaff')
+
+    def test_field_is_superuser(self):
+        self.do_assert_field_equal('isSuperuser')
+
+    def test_field_last_login(self):
+        self.do_assert_field_equal('lastLogin')
+
+    def test_field_last_name(self):
+        self.do_assert_field_equal('lastName')
+
+    def test_field_password(self):
+        self.do_assert_field_equal('password')
+
+    def test_field_pk(self):
+        self.do_assert_field_equal('pk')
+
+    def test_field_username(self):
+        self.do_assert_field_equal('username')
+
+    def test_field_user_permissions(self):
+        self.do_assert_field_equal('userPermissions')
