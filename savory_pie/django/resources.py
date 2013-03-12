@@ -195,7 +195,12 @@ class ModelResource(Resource):
         calls to the QuerySet.
         """
         for field in cls.fields:
-            field.prepare(ctx, related)
+            try:
+                prepare = field.prepare
+            except AttributeError:
+                pass
+            else:
+                prepare(ctx, related)
         return related
 
     @classmethod
