@@ -271,6 +271,10 @@ class SchemaResource(Resource):
     def __init__(self, model_resource):
         self.model = model_resource.model_class
         self.fields = model_resource.fields
+        self.default_format = getattr(model_resource, 'default_format', 'application/json')
+        self.default_limit = getattr(model_resource, 'default_limit', 0)
+        self.filtering = getattr(model_resource, 'filtering', {})
+        self.ordering = getattr(model_resource, 'ordering', [])
 
     @property
     def allowed_methods(self):
@@ -280,10 +284,10 @@ class SchemaResource(Resource):
         schema = {
             'allowedDetailHttpMethods': [m.lower() for m in self.allowed_methods],
             'allowedListHttpMethods': [m.lower() for m in self.allowed_methods],
-            'defaultFormat': getattr(self, 'defaultFormat', 'application/json'),
-            'defaultLimit': getattr(self, 'defaultLimit', 0),
-            'filtering': getattr(self, 'filtering', {}),
-            'ordering': getattr(self, 'ordering', []),
+            'defaultFormat': self.default_format,
+            'defaultLimit': self.default_limit,
+            'filtering': self.filtering,
+            'ordering': self.ordering,
             'resourceUri': ctx.build_resource_uri(self),
             'fields': {}
         }
