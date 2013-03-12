@@ -258,10 +258,22 @@ class ModelResource(Resource):
         return target_dict
 
     def put(self, ctx, source_dict):
+        '''
+        This is where we respect the 'pre_save' flag on each field.
+        If pre_save is true, then we set the field value, before calling save.
+        If not, call save first, before setting the field value, this is for the
+        many-to-many relationship.
+        '''
         for field in self.fields:
-            field.handle_incoming(ctx, source_dict, self.model)
+            if field.pre_save:
+                field.handle_incoming(ctx, source_dict, self.model)
 
-        self.model.save()
+        if source_dict:
+            self.model.save()
+
+        for field in self.fields:
+            if not field.pre_save:
+                field.handle_incoming(ctx, source_dict, self.model)
 
     def delete(self, ctx):
         self.model.delete()

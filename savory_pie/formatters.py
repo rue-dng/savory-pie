@@ -15,11 +15,12 @@ class JSONFormatter(object):
     dateRegex = re.compile('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})')
 
     def parse_datetime(self, s):
-        m = self.dateRegex.match(s)
-        if m is not None:
-            year, month, date, hour, minute, second = \
-                map(string.atoi, [m.group(i) for i in range(1, 7)])
-            return datetime.datetime(year, month, date, hour, minute, second)
+        if s is not None:
+            m = self.dateRegex.match(s)
+            if m is not None:
+                year, month, date, hour, minute, second = \
+                    map(string.atoi, [m.group(i) for i in range(1, 7)])
+                return datetime.datetime(year, month, date, hour, minute, second)
         return s
 
     def default_published_property(self, bare_attribute):

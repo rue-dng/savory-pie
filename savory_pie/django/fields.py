@@ -1,18 +1,22 @@
 import django.core.exceptions
 from django.utils.functional import Promise
-
+from django.db.models.fields import FieldDoesNotExist
 from savory_pie import fields as base_fields
 
 
 class DjangoField(base_fields.Field):
-    def init(self, model):
+    def init(self, model, pre_save=True):
         field_name = (model._meta.pk.name if self.name == 'pk' else self.name)
         self._field = None
+        self._pre_save = pre_save
         try:
             self._field = model._meta.get_field(field_name)
         except:
             # probably only for m2m fields
-            self._field = model._meta.get_field_by_name(field_name)[0].field
+            try:
+                self._field = model._meta.get_field_by_name(field_name)[0].field
+            except FieldDoesNotExist:
+                self._field = None
 
     def schema(self, **kwargs):
         schema = super(DjangoField, self).schema(**kwargs)
@@ -34,6 +38,16 @@ class DjangoField(base_fields.Field):
             _schema = {}
 
         return dict(schema.items() + _schema.items())
+
+
+    @property
+    def pre_save(self):
+        '''
+        A property to determine if this field's value can be set first, then calling save afterwards.
+        This is particularly useful for a many-to-many relationship, where the related field needs to
+        be saved first, before setting the value on this field.
+        '''
+        return self._pre_save
 
 
 class AttributeField(base_fields.AttributeField, DjangoField):
@@ -58,6 +72,7 @@ class AttributeField(base_fields.AttributeField, DjangoField):
                 This parameter is meaningless for top-level attributes.
     """
     def __init__(self, *args, **kwargs):
+        self._pre_save = True
         self._use_prefetch = kwargs.pop('use_prefetch', False)
         super(AttributeField, self).__init__(*args, **kwargs)
 
@@ -96,7 +111,7 @@ class URIResourceField(base_fields.URIResourceField, DjangoField):
     """
     def __init__(self, *args, **kwargs):
         self._use_prefetch = kwargs.pop('use_prefetch', False)
-
+        self._pre_save = True
         super(URIResourceField, self).__init__(*args, **kwargs)
 
 
@@ -128,6 +143,7 @@ class SubModelResourceField(base_fields.SubObjectResourceField, DjangoField):
     """
     def __init__(self, *args, **kwargs):
         self._use_prefetch = kwargs.pop('use_prefetch', False)
+        self._pre_save = True
         super(SubModelResourceField, self).__init__(*args, **kwargs)
 
     def prepare(self, ctx, related):
@@ -189,3 +205,9 @@ class RelatedManagerField(base_fields.IterableField, DjangoField):
 
     def schema(self, **kwargs):
         return super(RelatedManagerField, self).schema(schema={'type': 'related', 'relatedType': 'to_many'})
+
+    @property
+    def pre_save(self):
+        # if this field is a many-to-many, we need to save it first, so set pre_save to false.
+        return not isinstance(self._field, django.db.models.fields.related.ManyToManyField)
+
