@@ -115,3 +115,8 @@ class JSONToPython(unittest.TestCase):
 
     def test_datetime(self):
         result = self.json_formatter.to_python_value(datetime.datetime, self.json_now)
+        self.assertEqual(self.now, result)
+
+    def test_empty_datetime(self):
+        result = self.json_formatter.to_python_value(datetime.datetime, None)
+        self.assertEqual(None, result)
