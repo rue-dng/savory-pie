@@ -31,6 +31,7 @@ _filters = [
 	filters.ParameterizedFilter('name_exact', 'name'),
 	]
 
+
 class StandardFilterTest(unittest.TestCase):
 
     class Params:
@@ -102,6 +103,9 @@ class StandardFilterTest(unittest.TestCase):
         results = self.apply_filters('name_exact=Bob')
         self.assertEqual(1, results.count())
         self.assertEqual(['Bob'], [x.name for x in results])
+
+
+class ParameterizedFilterTest(unittest.TestCase):
 
     def test_name_exact_charlie(self):
         results = self.apply_filters('name_exact=Charlie')
