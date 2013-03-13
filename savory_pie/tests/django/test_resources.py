@@ -232,7 +232,25 @@ class ResourcePrepareTest(unittest.TestCase):
             'domain'
         })
 
-    def test_prepare_after_filter(self):
+    def test_prepare_optional(self):
+        class NoopField(object):
+            def handle_incoming(self, ctx, source_dict, target_obj):
+                pass
+
+            def handle_outgoing(self, ctx, source_obj, target_dict):
+                pass
+
+        class TestResource(resources.ModelResource):
+            model_class = User
+            fields = [
+                NoopField(),
+            ]
+
+        related = resources.Related()
+        # Will not raise an error
+        TestResource.prepare(mock_context(), related)
+
+    def test_prepere_after_filter(self):
         """
         Django will reset related selects when a filter is added
         """

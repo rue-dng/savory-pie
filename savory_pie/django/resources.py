@@ -9,7 +9,6 @@ from savory_pie.resources import EmptyParams
 from savory_pie.django.filters import StandardFilter
 
 
-
 class QuerySetResource(Resource):
     """
     Resource abstract around Django QuerySets.
@@ -205,7 +204,12 @@ class ModelResource(Resource):
         calls to the QuerySet.
         """
         for field in cls.fields:
-            field.prepare(ctx, related)
+            try:
+                prepare = field.prepare
+            except AttributeError:
+                pass
+            else:
+                prepare(ctx, related)
         return related
 
     @classmethod
