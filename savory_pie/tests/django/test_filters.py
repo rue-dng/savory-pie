@@ -32,20 +32,24 @@ _filters = [
 	]
 
 
-class StandardFilterTest(unittest.TestCase):
+class TestParams:
+	def __init__(self, *filternames):
+		querystring = "&".join(filternames)
+		self._GET = QueryDict(querystring)
 
-    class Params:
-        def __init__(self, *filternames):
-            querystring = "&".join(filternames)
-            self._GET = QueryDict(querystring)
+
+class FilterTest(unittest.TestCase):
 
     def apply_filters(self, *filternames):
         ctx = None
         queryset = _users
-        params = self.Params(*filternames)
+        params = TestParams(*filternames)
         for filter in _filters:
             queryset = filter.filter(ctx, params, queryset)
         return queryset
+
+
+class StandardFilterTest(FilterTest):
 
     def test_without_filtering(self):
         results = self.apply_filters()
@@ -104,8 +108,13 @@ class StandardFilterTest(unittest.TestCase):
         self.assertEqual(1, results.count())
         self.assertEqual(['Bob'], [x.name for x in results])
 
+    def test_missing_key(self):
+        # when presented with invalid filter names, ignore them
+        results = self.apply_filters('foo=&bar=')
+        self.assertEqual(3, results.count())
 
-class ParameterizedFilterTest(unittest.TestCase):
+
+class ParameterizedFilterTest(FilterTest):
 
     def test_name_exact_charlie(self):
         results = self.apply_filters('name_exact=Charlie')

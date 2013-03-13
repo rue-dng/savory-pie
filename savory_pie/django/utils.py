@@ -4,7 +4,9 @@ class Related(object):
     Originally created to work around Django silliness - https://code.djangoproject.com/ticket/16855,
     but later extended to help track the related path from the root Model being selected.
     """
-    def __init__(self, prefix=None, select=set(), prefetch=set(), force_prefetch=False):
+    def __init__(self, prefix=None, select=None, prefetch=None, force_prefetch=False):
+        select = set() if select is None else select
+        prefetch = set() if prefetch is None else prefetch
         args = locals()
         for field in ['prefix', 'select', 'prefetch', 'force_prefetch']:
             setattr(self, '_{}'.format(field), args[field])
