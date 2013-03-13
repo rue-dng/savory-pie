@@ -286,7 +286,7 @@ class SchemaResource(Resource):
     def allowed_methods(self):
         return ['GET']
 
-    def get(self, ctx, **kwargs):
+    def get(self, ctx, params, **kwargs):
         schema = {
             'allowedDetailHttpMethods': [m.lower() for m in self.allowed_methods],
             'allowedListHttpMethods': [m.lower() for m in self.allowed_methods],
