@@ -142,7 +142,6 @@ class SubModelResourceField(base_fields.SubObjectResourceField, DjangoField):
     """
     def __init__(self, *args, **kwargs):
         self._use_prefetch = kwargs.pop('use_prefetch', False)
-        self._pre_save = True
         super(SubModelResourceField, self).__init__(*args, **kwargs)
 
     def prepare(self, ctx, related):
@@ -177,6 +176,7 @@ class SubModelResourceField(base_fields.SubObjectResourceField, DjangoField):
 
     def get_submodel(self, ctx, source_object):
         try:
+            # Look at non-null FK
             sub_model = super(SubModelResourceField, self).get_submodel(
                 ctx,
                 source_object
@@ -186,6 +186,22 @@ class SubModelResourceField(base_fields.SubObjectResourceField, DjangoField):
 
         return sub_model
 
+    @property
+    def pre_save(self):
+        '''
+        This is to figure if we need to pre_save the foreign key or not.
+        If Model A has foreign key to Model B, do everything normal
+        If Model B has foreign key to Model A, you need to save Model A first before setting value on Model B
+        @return:
+        '''
+        if hasattr(self, '_field'):
+            attribute_name = self._field.related.field.name
+            if hasattr(self._resource_class.model_class, attribute_name):
+                attribute = getattr(self._resource_class.model_class, attribute_name)
+                if isinstance(attribute, django.db.models.fields.related.ReverseSingleRelatedObjectDescriptor):
+                    return False
+
+        return True
 
 class RelatedManagerField(base_fields.IterableField, DjangoField):
     """
@@ -209,6 +225,7 @@ class RelatedManagerField(base_fields.IterableField, DjangoField):
 
     @property
     def pre_save(self):
+        # TODO: do what's above
         # if this field is a many-to-many, we need to save it first, so set pre_save to false.
         return not isinstance(self._field, django.db.models.fields.related.ManyToManyField)
 
