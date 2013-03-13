@@ -4,13 +4,10 @@ class Related(object):
     Originally created to work around Django silliness - https://code.djangoproject.com/ticket/16855,
     but later extended to help track the related path from the root Model being selected.
     """
-    def __init__(self, **kwargs):
-        self._prefix = kwargs.pop('prefix', None)
-
-        # or-s don't work want to continue to use the same empty set
-        self._select = kwargs.pop('select', set())
-        self._prefetch = kwargs.pop('prefetch', set())
-        self._force_prefetch = kwargs.pop('force_prefetch', False)
+    def __init__(self, prefix=None, select=set(), prefetch=set(), force_prefetch=False):
+        args = locals()
+        for field in ['prefix', 'select', 'prefetch', 'force_prefetch']:
+            setattr(self, '_{}'.format(field), args[field])
 
     def translate(self, attribute):
         if self._prefix is None:

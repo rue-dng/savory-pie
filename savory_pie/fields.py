@@ -1,6 +1,5 @@
 import functools
-
-from savory_pie.utils import camel_case
+from savory_pie.resources import EmptyParams
 
 
 def read_only_noop(func):
@@ -12,10 +11,6 @@ def read_only_noop(func):
 
 
 class Field(object):
-    @property
-    def display_name(self):
-        return camel_case(self.name)
-
     @property
     def name(self):
         name = getattr(self, '_attribute', getattr(self, '_full_attribute', None))
@@ -281,7 +276,8 @@ class SubObjectResourceField(Field):
         if sub_model is None:
             target_dict[self._compute_property(ctx)] = None
         else:
-            target_dict[self._compute_property(ctx)] = self._resource_class(sub_model).get(ctx)
+            target_dict[self._compute_property(ctx)] =\
+                self._resource_class(sub_model).get(ctx, EmptyParams())
 
 
 class IterableField(Field):
@@ -373,7 +369,7 @@ class IterableField(Field):
         objects = []
         for model in manager.all():
             model_resource = self._resource_class(model)
-            model_dict = model_resource.get(ctx)
+            model_dict = model_resource.get(ctx, EmptyParams())
             # TODO only add _id if there is not a resource_url
             model_dict['_id'] = model_resource.key
             objects.append(model_dict)

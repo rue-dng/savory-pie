@@ -5,6 +5,8 @@ import django.core.exceptions
 from savory_pie.resources import Resource
 from savory_pie.django.fields import DjangoField
 from savory_pie.django.utils import Related
+from savory_pie.resources import EmptyParams
+from savory_pie.django.filters import StandardFilter
 
 
 class QuerySetResource(Resource):
@@ -31,6 +33,7 @@ class QuerySetResource(Resource):
     #: optional - if set specifies the page size for data returned during a GET
     #: - defaults to None (no paging)
     page_size = None
+    filters = []
 
     def __init__(self, queryset=None):
         self.queryset = queryset or self.resource_class.model_class.objects.all()
@@ -39,20 +42,20 @@ class QuerySetResource(Resource):
     def supports_paging(self):
         return self.page_size is not None
 
-    def filter_queryset(self, queryset, GET):
-        # TODO: Revisit filtering
-        return queryset
+    def filter_queryset(self, ctx, params, queryset):
+        for filter in self.filters:
+            queryset = filter.filter(ctx, params, queryset)
 
-    def slice_queryset(self, queryset, GET):
+        # The extra filter call exists to keep a test passing
+        return queryset.filter()
+
+    def slice_queryset(self, ctx, params, queryset):
         if self.supports_paging:
-            page = self.get_page(GET)
+            page = params.get_as('page', int, 0)
             offset = page * self.page_size
             return queryset[offset: offset + self.page_size]
         else:
             return queryset
-
-    def get_page(self, GET):
-        return int(GET.get('page', '0'))
 
     def build_page_uri(self, ctx, page):
         return ctx.build_resource_uri(self) + '?' + urllib.urlencode({'page': page})
@@ -81,25 +84,27 @@ class QuerySetResource(Resource):
         self.prepare(ctx, related)
         return related.prepare(queryset)
 
-    def get(self, ctx, **GET):
-        complete_queryset = queryset = self.queryset.all()
+    def get(self, ctx, params):
+        complete_queryset = self.queryset.all()
 
-        filtered_queryset = self.filter_queryset(complete_queryset, GET)
-        sliced_queryset = self.slice_queryset(filtered_queryset, GET)
+        filtered_queryset = self.filter_queryset(ctx, params, complete_queryset)
+        sliced_queryset = self.slice_queryset(ctx, params, filtered_queryset)
+
+        # prepare must be last for optimization to be respected by Django.
         final_queryset = self.prepare_queryset(ctx, sliced_queryset)
 
         objects = []
         for model in final_queryset:
-            objects.append(self.to_resource(model).get(ctx))
+            objects.append(self.to_resource(model).get(ctx, EmptyParams()))
 
         meta = dict()
         if self.supports_paging:
             # When paging the sliced_queryset will not contain all the objects,
             # so the count of the accumulated objects is insufficient.  In that case,
-            # need to make a call queryset.count.
-            count = self.filter_queryset(complete_queryset, GET).count()
+            # need to make a call to queryset.count.
+            count = filtered_queryset.count()
 
-            page = self.get_page(GET)
+            page = params.get_as('page', int, 0)
             if page > 0:
                 meta['prev'] = self.build_page_uri(ctx, page - 1)
 
@@ -131,8 +136,8 @@ class QuerySetResource(Resource):
         return resource
 
     def get_child_resource(self, ctx, path_fragment):
-        if path_fragment == 'schema' and getattr(self, 'schema_class', None):
-            return self.schema_class(self.resource_class)
+        if path_fragment == 'schema':
+            return SchemaResource(self.resource_class)
 
         # No need to filter or slice here, does not make sense as part of get_child_resource
         queryset = self.prepare_queryset(ctx, self.queryset)
@@ -199,7 +204,12 @@ class ModelResource(Resource):
         calls to the QuerySet.
         """
         for field in cls.fields:
-            field.prepare(ctx, related)
+            try:
+                prepare = field.prepare
+            except AttributeError:
+                pass
+            else:
+                prepare(ctx, related)
         return related
 
     @classmethod
@@ -246,7 +256,7 @@ class ModelResource(Resource):
         # TODO: Sanity checks that path is bound properly
         self._resource_path = resource_path
 
-    def get(self, ctx, **kwargs):
+    def get(self, ctx, params):
         target_dict = dict()
 
         for field in self.fields:
@@ -279,12 +289,16 @@ class ModelResource(Resource):
         self.model.delete()
 
 
-class SchemaResource(QuerySetResource):
+class SchemaResource(Resource):
     def __init__(self, model_resource):
         self.model = model_resource.model_class
         self.fields = model_resource.fields
 
-    def get(self, ctx, **kwargs):
+    @property
+    def allowed_methods(self):
+        return ['GET']
+
+    def get(self, ctx, params=None, **kwargs):
         schema = {
             'allowedDetailHttpMethods': [m.lower() for m in self.allowed_methods],
             'allowedListHttpMethods': [m.lower() for m in self.allowed_methods],
@@ -292,9 +306,10 @@ class SchemaResource(QuerySetResource):
             'defaultLimit': getattr(self, 'defaultLimit', 0),
             'filtering': getattr(self, 'filtering', {}),
             'ordering': getattr(self, 'ordering', []),
+            'resourceUri': ctx.build_resource_uri(self),
             'fields': {}
         }
         for resource_field in self.fields:
-            resource_field.init(self.model)
-            schema['fields'][resource_field.display_name] = resource_field.schema()
+            field_name = ctx.formatter.default_published_property(resource_field.name)
+            schema['fields'][field_name] = resource_field.schema(ctx, model=self.model)
         return schema
