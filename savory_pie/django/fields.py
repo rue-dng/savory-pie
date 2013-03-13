@@ -18,6 +18,16 @@ class DjangoField(base_fields.Field):
         schema = super(DjangoField, self).schema(**kwargs)
 
         if self._field:
+            #import pdb; pdb.set_trace()
+            # Why is self._field.get_default() giving me times an hour old?
+            # b virt1/lib/python2.7/site-packages/django/db/models/fields/__init__.py:684
+
+            # virt1/lib/python2.7/site-packages/django/contrib/auth/models.py:392:
+            #   date_joined = models.DateTimeField(_('date joined'), default=timezone.now)
+            # timezone.now is the source of the off-by-one hour, from
+            # virt1/lib/python2.7/site-packages/django/utils/timezone.py line 243
+            # maybe fix this by using datetime.datetime.now()???
+
             _schema = {
                 'blank': self._field.blank,
                 'default': ctx.formatter.to_api_value(type(self._field.get_default()), self._field.get_default()),

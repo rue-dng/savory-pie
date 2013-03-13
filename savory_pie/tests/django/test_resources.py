@@ -292,6 +292,8 @@ class SchemaResourceTest(unittest.TestCase):
         getattr(self, 'assert{}Equal'.format(assert_type))(self.do_get()[key], user_resource_schema[key])
 
     def do_assert_field_equal(self, key):
+        # user_resource_schema is created above, and is a little older, where do_get()
+        # is run right here.
         self.assertDictEqual(self.do_get()['fields'][key], user_resource_schema['fields'][key])
 
     def do_get(self):
