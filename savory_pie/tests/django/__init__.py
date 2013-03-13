@@ -1,4 +1,7 @@
 from datetime import datetime
+from django.utils.timezone import UTC
+
+_utc = UTC()
 
 #TODO add filtering and sort order
 user_resource_schema = {
@@ -21,7 +24,7 @@ user_resource_schema = {
         },
         'lastLogin': {
             'nullable': False,
-            'default': datetime.today().strftime("%Y-%m-%dT%H:%M:%S"),
+            'default': datetime.now(_utc).strftime("%Y-%m-%dT%H:%M:%S"),
             'readonly': False,
             'helpText': u'',
             'blank': False,
@@ -67,7 +70,7 @@ user_resource_schema = {
         },
         'dateJoined': {
             'nullable': False,
-            'default': datetime.today().strftime("%Y-%m-%dT%H:%M:%S"),
+            'default': datetime.now(_utc).strftime("%Y-%m-%dT%H:%M:%S"),
             'readonly': False,
             'helpText': u'',
             'blank': False,
