@@ -5,11 +5,10 @@ class Related(object):
     but later extended to help track the related path from the root Model being selected.
     """
     def __init__(self, prefix=None, select=None, prefetch=None, force_prefetch=False):
-        select = set() if select is None else select
-        prefetch = set() if prefetch is None else prefetch
-        args = locals()
-        for field in ['prefix', 'select', 'prefetch', 'force_prefetch']:
-            setattr(self, '_{}'.format(field), args[field])
+        self._prefix = prefix
+        self._select = select or set()
+        self._prefetch = prefetch or set()
+        self._force_prefetch = force_prefetch
 
     def translate(self, attribute):
         if self._prefix is None:
