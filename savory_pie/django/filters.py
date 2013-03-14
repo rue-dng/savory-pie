@@ -23,7 +23,7 @@ class StandardFilter(object):
     def filter(self, ctx, params, queryset):
         if params._GET.__contains__(self.name):
             criteria = self.criteria.copy()
-            if self.paramkey is not None and self.paramkey in self.criteria:
+            if self.paramkey is not None:
                 criteria[self.paramkey] = params._GET.get(self.name)
             queryset = queryset.filter(**criteria)
             if self._order_by is not None:
