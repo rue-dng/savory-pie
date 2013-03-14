@@ -6,8 +6,8 @@ class Related(object):
     """
     def __init__(self, prefix=None, select=None, prefetch=None, force_prefetch=False):
         self._prefix = prefix
-        self._select = select or set()
-        self._prefetch = prefetch or set()
+        self._select = select if select is not None else set()
+        self._prefetch = prefetch if prefetch is not None else set()
         self._force_prefetch = force_prefetch
 
     def translate(self, attribute):
