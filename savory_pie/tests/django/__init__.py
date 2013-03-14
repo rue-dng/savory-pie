@@ -24,7 +24,7 @@ user_resource_schema = {
         },
         'lastLogin': {
             'nullable': False,
-            'default': datetime.now(_utc).strftime("%Y-%m-%dT%H:%M:%S"),
+            'default': datetime.now(_utc).strftime("%Y-%m-%dT%H:%M"),
             'readonly': False,
             'helpText': u'',
             'blank': False,
@@ -70,7 +70,7 @@ user_resource_schema = {
         },
         'dateJoined': {
             'nullable': False,
-            'default': datetime.now(_utc).strftime("%Y-%m-%dT%H:%M:%S"),
+            'default': datetime.now(_utc).strftime("%Y-%m-%dT%H:%M"),
             'readonly': False,
             'helpText': u'',
             'blank': False,
