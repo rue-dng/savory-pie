@@ -5,8 +5,8 @@ _utc = UTC()
 
 #TODO add filtering and sort order
 user_resource_schema = {
-    'allowedDetailHttpMethods': ['get'],
-    'allowedListHttpMethods': ['get'],
+    'allowedDetailHttpMethods': ['put', 'delete', 'get'],
+    'allowedListHttpMethods': ['put', 'delete', 'get'],
     'defaultFormat': 'application/json',
     'defaultLimit': 0,
     'filtering': {},
