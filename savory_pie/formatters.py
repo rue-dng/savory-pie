@@ -23,21 +23,8 @@ class JSONFormatter(object):
         return s
 
     def default_published_property(self, bare_attribute):
-        js_name = []
-        last_was_underscore = False
-
-        for char in bare_attribute:
-            if char == '_':
-                last_was_underscore = True
-            else:
-                if last_was_underscore:
-                    js_name.append(char.upper())
-                else:
-                    js_name.append(char)
-
-                last_was_underscore = False
-
-        return ''.join(js_name)
+        parts = bare_attribute.split('_')
+        return ''.join([parts[0], ''.join(x.capitalize() for x in parts[1:])])
 
     def read_from(self, request):
         return json.load(request)

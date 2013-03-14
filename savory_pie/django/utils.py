@@ -6,8 +6,6 @@ class Related(object):
     """
     def __init__(self, prefix=None, select=None, prefetch=None, force_prefetch=False):
         self._prefix = prefix
-
-        # or-s don't work want to continue to use the same empty set
         self._select = select if select is not None else set()
         self._prefetch = prefetch if prefetch is not None else set()
         self._force_prefetch = force_prefetch
@@ -88,4 +86,3 @@ class Related(object):
             queryset = queryset.prefetch_related(*self._prefetch)
 
         return queryset
-

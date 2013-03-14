@@ -61,7 +61,7 @@ def _strip_query_string(path):
 
 def _process_get(ctx, resource, request):
     if 'GET' in resource.allowed_methods:
-        content_dict = resource.get(ctx, **request.GET)
+        content_dict = resource.get(ctx, _ParamsImpl(request.GET))
         return _content_success(ctx, resource, request, content_dict)
     else:
         return _not_allowed_method(ctx, resource, request)
@@ -117,3 +117,31 @@ def _internal_error(ctx, request, error):
     error_body = { ctx.formatter.default_published_property('error'): error }
     ctx.formatter.write_to(error_body, response)
     return response
+
+class _ParamsImpl(object):
+    def __init__(self, GET):
+        self._GET = GET
+
+    def keys(self):
+        return self._GET.keys()
+
+    def __getitem__(self, key):
+        return self._GET.get(key, None)
+
+    def get(self, key, default=None):
+        return self._GET.get(key, default)
+
+    def get_as(self, key, type, default=None):
+        value = self._GET.get(key, None)
+        return default if value is None else type(value)
+
+    def get_list(self, key):
+        list = self._GET.get(key, None)
+        return [] if list is None else list
+
+    def get_list_of(self, key, type):
+        list = self._GET.get(key, None)
+        if list is None:
+            return []
+        else:
+            return [type(x) for x in list]
