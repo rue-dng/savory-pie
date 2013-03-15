@@ -261,9 +261,16 @@ class SubObjectResourceField(Field):
         setattr(target_obj, self._attribute, sub_resource.model)
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
-        sub_model = getattr(source_obj, self._attribute)
-        target_dict[self._compute_property(ctx)] =\
-            self._resource_class(sub_model).get(ctx, EmptyParams())
+        # this is to catch the following, but may not be ideal approach
+        # django/db/models/fields/related.py, line 279, in __get__
+        #    raise self.related.model.DoesNotExist
+        try:
+            sub_model = getattr(source_obj, self._attribute)
+            result = self._resource_class(sub_model).get(ctx, EmptyParams())
+        except:
+            # should result be empty dict or list instead?
+            result = None
+        target_dict[self._compute_property(ctx)] = result
 
 
 class IterableField(Field):
