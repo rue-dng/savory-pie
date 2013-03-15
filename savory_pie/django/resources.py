@@ -279,25 +279,24 @@ class ModelResource(Resource):
 
 class SchemaResource(Resource):
     def __init__(self, model_resource):
-        self.model = model_resource.model_class
-        self.fields = model_resource.fields
+        self.__resource = model_resource
 
     @property
     def allowed_methods(self):
-        return ['GET']
+        return self.__resource(self.__resource.model_class).allowed_methods
 
     def get(self, ctx, params=None, **kwargs):
         schema = {
             'allowedDetailHttpMethods': [m.lower() for m in self.allowed_methods],
             'allowedListHttpMethods': [m.lower() for m in self.allowed_methods],
-            'defaultFormat': getattr(self, 'defaultFormat', 'application/json'),
-            'defaultLimit': getattr(self, 'defaultLimit', 0),
-            'filtering': getattr(self, 'filtering', {}),
-            'ordering': getattr(self, 'ordering', []),
+            'defaultFormat': getattr(self.__resource, 'default_format', 'application/json'),
+            'defaultLimit': getattr(self.__resource, 'default_limit', 0),
+            'filtering': getattr(self.__resource, 'filtering', {}),
+            'ordering': getattr(self.__resource, 'ordering', []),
             'resourceUri': ctx.build_resource_uri(self),
             'fields': {}
         }
-        for resource_field in self.fields:
+        for resource_field in self.__resource.fields:
             field_name = ctx.formatter.default_published_property(resource_field.name)
-            schema['fields'][field_name] = resource_field.schema(ctx, model=self.model)
+            schema['fields'][field_name] = resource_field.schema(ctx, model=self.__resource.model_class)
         return schema
