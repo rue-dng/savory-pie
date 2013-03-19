@@ -39,16 +39,6 @@ class DjangoField(base_fields.Field):
         return dict(schema.items() + _schema.items())
 
 
-    @property
-    def pre_save(self):
-        '''
-        A property to determine if this field's value can be set first, then calling save afterwards.
-        This is particularly useful for a many-to-many relationship, where the related field needs to
-        be saved first, before setting the value on this field.
-        '''
-        return self._pre_save
-
-
 class AttributeField(base_fields.AttributeField, DjangoField):
     """
     Django extension of the basic AttributeField that adds support for optimized select_related
@@ -71,7 +61,7 @@ class AttributeField(base_fields.AttributeField, DjangoField):
                 This parameter is meaningless for top-level attributes.
     """
     def __init__(self, *args, **kwargs):
-        self._pre_save = True
+        self.pre_save = True
         self._use_prefetch = kwargs.pop('use_prefetch', False)
         super(AttributeField, self).__init__(*args, **kwargs)
 
@@ -110,7 +100,7 @@ class URIResourceField(base_fields.URIResourceField, DjangoField):
     """
     def __init__(self, *args, **kwargs):
         self._use_prefetch = kwargs.pop('use_prefetch', False)
-        self._pre_save = True
+        self.pre_save = True
         super(URIResourceField, self).__init__(*args, **kwargs)
 
 
@@ -192,16 +182,17 @@ class SubModelResourceField(base_fields.SubObjectResourceField, DjangoField):
         This is to figure if we need to pre_save the foreign key or not.
         If Model A has foreign key to Model B, do everything normal
         If Model B has foreign key to Model A, you need to save Model A first before setting value on Model B
-        @return:
+        @return: a Boolean variable used in ModelResources' put
         '''
-        if hasattr(self, '_field'):
-            attribute_name = self._field.related.field.name
-            if hasattr(self._resource_class.model_class, attribute_name):
-                attribute = getattr(self._resource_class.model_class, attribute_name)
-                if isinstance(attribute, django.db.models.fields.related.ReverseSingleRelatedObjectDescriptor):
-                    return False
 
-        return True
+        try:
+            attribute_name = self._field.related.field.name
+            attribute = getattr(self._resource_class.model_class, attribute_name)
+            if isinstance(attribute, django.db.models.fields.related.ReverseSingleRelatedObjectDescriptor):
+                return False
+        except AttributeError:
+            return True
+
 
 class RelatedManagerField(base_fields.IterableField, DjangoField):
     """
@@ -225,8 +216,11 @@ class RelatedManagerField(base_fields.IterableField, DjangoField):
 
     @property
     def pre_save(self):
-        # TODO: do what's above
-        # if this field is a many-to-many, we need to save it first, so set pre_save to false.
+        '''
+        This is to figure out if w eneed to pre_save the many to many field or not.
+        If Model A has a ManyToManyField to Model B, save Model A first, then save Model B.
+        @return: a Boolean variable used in ModelResources' put
+        '''
         return not isinstance(self._field, django.db.models.fields.related.ManyToManyField)
 
 

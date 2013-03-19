@@ -274,12 +274,14 @@ class ModelResource(Resource):
         If not, call save first, before setting the field value, this is for the
         many-to-many relationship.
         '''
+        if not source_dict:
+            return
+
         for field in self.fields:
             if field.pre_save:
                 field.handle_incoming(ctx, source_dict, self.model)
 
-        if source_dict:
-            self.model.save()
+        self.model.save()
 
         for field in self.fields:
             if not field.pre_save:
