@@ -37,8 +37,8 @@ class StandardFilter(object):
 
 class ParameterizedFilter(StandardFilter):
 
-    def __init__(self, name, paramkey, criteria={}, order_by=None):
+    def __init__(self, name, paramkey, criteria=None, order_by=None):
         self.name = name
         self.paramkey = paramkey
-        self.criteria = criteria
-        self._order_by = [] if order_by is None else order_by
+        self.criteria = criteria or {}
+        self._order_by = order_by or []

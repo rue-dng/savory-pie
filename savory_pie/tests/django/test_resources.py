@@ -288,6 +288,11 @@ class DjangoUserResource(resources.ModelResource):
 class SchemaResourceTest(unittest.TestCase):
     maxDiff = None
     
+    def do_assert_date_equal(self, key):
+        field = self.do_get()['fields'][key]
+        field['default'] = datetime.strptime(field['default'], "%Y-%m-%dT%H:%M:%S").strftime("%Y-%m-%dT%H:%M")
+        self.assertDictEqual(field, user_resource_schema['fields'][key])
+
     def do_assert_equal(self, key, assert_type=''):
         getattr(self, 'assert{}Equal'.format(assert_type))(self.do_get()[key], user_resource_schema[key])
 
@@ -334,7 +339,7 @@ class SchemaResourceTest(unittest.TestCase):
         self.assertEqual(len(self.do_get()['fields']), len(user_resource_schema['fields']))
 
     def test_field_date_joined(self):
-        self.do_assert_field_equal('dateJoined')
+        self.do_assert_date_equal('dateJoined')
 
     def test_field_email(self):
         self.do_assert_field_equal('email')
@@ -355,7 +360,7 @@ class SchemaResourceTest(unittest.TestCase):
         self.do_assert_field_equal('isSuperuser')
 
     def test_field_last_login(self):
-        self.do_assert_field_equal('lastLogin')
+        self.do_assert_date_equal('lastLogin')
 
     def test_field_last_name(self):
         self.do_assert_field_equal('lastName')
