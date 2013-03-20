@@ -217,7 +217,7 @@ class RelatedManagerField(base_fields.IterableField, DjangoField):
     @property
     def pre_save(self):
         '''
-        This is to figure out if w eneed to pre_save the many to many field or not.
+        This is to figure out if we need to pre_save the many to many field or not.
         If Model A has a ManyToManyField to Model B, save Model A first, then save Model B.
         @return: a Boolean variable used in ModelResources' put
         '''
