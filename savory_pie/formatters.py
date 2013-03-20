@@ -41,10 +41,10 @@ class JSONFormatter(object):
 
     # Not 100% happy with this API review pre 1.0
     def to_api_value(self, type_, python_value):
-        if issubclass(type_, datetime.datetime):
-            return python_value.strftime("%Y-%m-%dT%H:%M:%S")
-        elif type(python_value) not in (int, long, float, dict, list,
-                                        bool, str, unicode, type(None)):
-            return str(python_value)
-        else:
-            return python_value
+        if python_value is not None:
+            if issubclass(type_, datetime.datetime):
+                return python_value.strftime("%Y-%m-%dT%H:%M:%S")
+            elif type(python_value) not in (int, long, float, dict, list,
+                                            bool, str, unicode, type(None)):
+                return str(python_value)
+        return python_value
