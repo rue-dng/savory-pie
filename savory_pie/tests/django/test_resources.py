@@ -65,10 +65,10 @@ class UserOwnerResource(resources.ModelResource):
 
     fields = [
         fields.AttributeField(attribute='name', type=str),
-        ]
+    ]
 
 
-class ComplexUserOwnerResource(resources.ModelResource):
+class ComplexUserRelationResource(resources.ModelResource):
     model_class = User
 
     owner_field = fields.SubModelResourceField(attribute='owner', resource_class=UserOwnerResource)
@@ -77,11 +77,11 @@ class ComplexUserOwnerResource(resources.ModelResource):
     owner_field._field.related = Mock()
     owner_field._field.related.field = Mock()
     owner_field._field.related.field.name = 'user'
-
+    
     fields = [
         fields.AttributeField(attribute='name', type=str),
         fields.AttributeField(attribute='age', type=int),
-        owner_field
+        owner_field,
     ]
 
 
@@ -121,7 +121,7 @@ class ModelResourceTest(unittest.TestCase):
         user = User()
         user.owner = UserOwner()
 
-        resource = ComplexUserOwnerResource(user)
+        resource = ComplexUserRelationResource(user)
         resource.put(mock_context(), {
             'name': 'Bob',
             'age': 20,
@@ -130,19 +130,25 @@ class ModelResourceTest(unittest.TestCase):
 
         self.assertTrue(user.save.called)
         self.assertTrue(user.owner.save.called)
+        self.assertEqual(user.name, 'Bob')
+        self.assertEqual(user.age, 20)
+        self.assertEqual(user.owner.name, 'bob owner')
 
     def test_put_with_foreign_key_none_resource(self):
         user = User()
 
-        resource = ComplexUserOwnerResource(user)
+        resource = ComplexUserRelationResource(user)
         resource.put(mock_context(), {
             'name': 'Bob',
             'age': 20,
             'owner': {'name': 'bob owner'},
-            })
+        })
 
         self.assertTrue(user.save.called)
         self.assertTrue(user.owner.save.called)
+        self.assertEqual(user.name, 'Bob')
+        self.assertEqual(user.age, 20)
+        self.assertEqual(user.owner.name, 'bob owner')
 
     def test_delete(self):
         user = User()

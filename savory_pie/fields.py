@@ -268,12 +268,12 @@ class SubObjectResourceField(Field):
 
             sub_source_dict = source_dict[self._compute_property(ctx)]
 
-            if sub_source_dict:
+            if sub_source_dict is None:
+                setattr(target_obj, self._attribute, None)
+            else:
                 sub_resource.put(ctx, sub_source_dict)
                 # Must be after the save on the sub_model
                 setattr(target_obj, self._attribute, sub_resource.model)
-            else:
-                setattr(target_obj, self._attribute, None)
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
         sub_model = self.get_submodel(ctx, source_obj)

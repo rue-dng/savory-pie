@@ -320,7 +320,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
             model_class = Mock()
             fields = [
                 AttributeField(attribute='bar', type=int),
-                ]
+            ]
 
         field = SubModelResourceField(attribute='foo', resource_class=Resource)
 
@@ -349,8 +349,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
         target_object = Mock()
 
         field.handle_incoming(mock_context(), source_dict, target_object)
-
-        self.assertEqual(target_object.foo, None)
+        self.assertIsNotNone(target_object.foo)
 
     def test_incoming_read_only(self):
 
