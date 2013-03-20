@@ -245,7 +245,12 @@ class SubObjectResourceField(Field):
         if sub_source_dict is not None and 'resource_uri' in sub_source_dict:
             resource = ctx.resolve_resource_uri(sub_source_dict['resource_uri'])
         else:
-            resource = self._resource_class(getattr(target_obj, self._attribute, None))
+            try:
+                attribute = getattr(target_obj, self._attribute)
+                resource = self._resource_class(attribute)
+            except AttributeError:
+                return None
+
         return resource
 
     def get_submodel(self, ctx, source_object):
