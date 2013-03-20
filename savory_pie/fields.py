@@ -247,9 +247,10 @@ class SubObjectResourceField(Field):
         else:
             try:
                 attribute = getattr(target_obj, self._attribute)
-                resource = self._resource_class(attribute)
             except AttributeError:
                 return None
+
+            resource = self._resource_class(attribute)
 
         return resource
 
