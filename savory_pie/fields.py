@@ -263,9 +263,8 @@ class SubObjectResourceField(Field):
 
             sub_source_dict = source_dict[self._compute_property(ctx)]
 
-            if sub_source_dict is not None:
+            if sub_source_dict:
                 sub_resource.put(ctx, sub_source_dict)
-
                 # Must be after the save on the sub_model
                 setattr(target_obj, self._attribute, sub_resource.model)
             else:
