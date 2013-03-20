@@ -242,28 +242,41 @@ class SubObjectResourceField(Field):
         """
         sub_source_dict = source_dict[self._compute_property(ctx)]
         resource = None
-        if 'resource_uri' in sub_source_dict:
+        if sub_source_dict is not None and 'resource_uri' in sub_source_dict:
             resource = ctx.resolve_resource_uri(sub_source_dict['resource_uri'])
         else:
             resource = self._resource_class(getattr(target_obj, self._attribute, None))
         return resource
 
+    def get_submodel(self, ctx, source_object):
+        return getattr(source_object, self._attribute, None)
+
     @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
-        sub_resource = self.get_subresource(ctx, source_dict, target_obj)
+        if not source_dict:
+            setattr(target_obj, self._attribute, None)
+        else:
+            sub_resource = self.get_subresource(ctx, source_dict, target_obj)
 
-        if not sub_resource: # creating a new resource
-            sub_resource = self._resource_class.create_resource()
+            if not sub_resource: # creating a new resource
+                sub_resource = self._resource_class.create_resource()
 
-        sub_source_dict = source_dict[self._compute_property(ctx)]
-        sub_resource.put(ctx, sub_source_dict)
-        # Must be after the save on the sub_model
-        setattr(target_obj, self._attribute, sub_resource.model)
+            sub_source_dict = source_dict[self._compute_property(ctx)]
+
+            if sub_source_dict:
+                sub_resource.put(ctx, sub_source_dict)
+                # Must be after the save on the sub_model
+                setattr(target_obj, self._attribute, sub_resource.model)
+            else:
+                setattr(target_obj, self._attribute, None)
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
-        sub_model = getattr(source_obj, self._attribute)
-        target_dict[self._compute_property(ctx)] =\
-            self._resource_class(sub_model).get(ctx, EmptyParams())
+        sub_model = self.get_submodel(ctx, source_obj)
+        if sub_model is None:
+            target_dict[self._compute_property(ctx)] = None
+        else:
+            target_dict[self._compute_property(ctx)] =\
+                self._resource_class(sub_model).get(ctx, EmptyParams())
 
 
 class IterableField(Field):

@@ -249,6 +249,50 @@ class SubModelResourceFieldTest(unittest.TestCase):
 
         self.assertEqual(target_dict['foo'], {'bar': 20})
 
+    def test_outgoing_with_simple_none(self):
+
+
+        class Resource(ModelResource):
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        field = SubModelResourceField(attribute='foo', resource_class=Resource)
+
+        source_object = Mock()
+        source_object.foo.bar = None
+
+        target_dict = dict()
+
+        field.handle_outgoing(mock_context(), source_object, target_dict)
+
+        self.assertEqual(target_dict['foo'], {'bar': None})
+
+    def test_outgoing_with_submodel_none(self):
+
+        class OtherResource(ModelResource):
+            model_class = Mock()
+            field = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        class Resource(ModelResource):
+            model_class = Mock()
+            fields = [
+                SubModelResourceField(attribute='bar', resource_class=OtherResource),
+            ]
+
+        field = SubModelResourceField(attribute='foo', resource_class=Resource)
+
+        source_object = Mock()
+        source_object.foo= None
+
+        target_dict = dict()
+
+        field.handle_outgoing(mock_context(), source_object, target_dict)
+
+        self.assertEqual(target_dict['foo'], None)
+
     def test_incoming_update_existing(self):
 
         class Resource(ModelResource):
@@ -267,8 +311,46 @@ class SubModelResourceFieldTest(unittest.TestCase):
 
         field.handle_incoming(mock_context(), source_dict, target_object)
 
-        self.assertEqual(20, target_object.foo.bar)
+        self.assertEqual(target_object.foo.bar, 20)
         target_object.foo.save.assert_called_with()
+
+    def test_incoming_with_none_source(self):
+
+        class Resource(ModelResource):
+            model_class = Mock()
+            fields = [
+                AttributeField(attribute='bar', type=int),
+                ]
+
+        field = SubModelResourceField(attribute='foo', resource_class=Resource)
+
+        source_dict = {}
+
+        target_object = Mock()
+
+        field.handle_incoming(mock_context(), source_dict, target_object)
+
+        self.assertEqual(target_object.foo, None)
+
+    def test_incoming_with_none_subresource(self):
+
+        class Resource(ModelResource):
+            model_class = Mock()
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        field = SubModelResourceField(attribute='foo', resource_class=Resource)
+
+        source_dict = {
+            'foo': {}
+        }
+
+        target_object = Mock()
+
+        field.handle_incoming(mock_context(), source_dict, target_object)
+
+        self.assertEqual(target_object.foo, None)
 
     def test_incoming_read_only(self):
 
