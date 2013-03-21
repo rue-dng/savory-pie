@@ -17,6 +17,8 @@ class TestParams(object):
 
     def __init__(self, *args):
         # we need our query string to be camel cased, since in StandardFilter, we convert these strings
+        # Note, since we are calling default_publish_property on the filter names,
+        # it turns name_exact=Alice to nameExact=alice, so I made all the query strings like 'Alice' to be lower cased 'alice'
         formatted_names = []
         for name in args:
             formatted_names.append(savory_pie.formatters.JSONFormatter().default_published_property(name))
