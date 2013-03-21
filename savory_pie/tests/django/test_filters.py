@@ -4,7 +4,7 @@ from django.http import QueryDict
 
 from savory_pie.django import  filters
 from savory_pie.tests.django import mock_orm
-
+from savory_pie.tests.mock_context import mock_context
 
 class MockUser(mock_orm.Model):
     pass
@@ -26,7 +26,7 @@ _filters = [
 	filters.StandardFilter('alphabetical', {}, order_by=['name']),
 	filters.StandardFilter('reverse_alphabetical', {}, order_by=['-name']),
 	filters.ParameterizedFilter('name_exact', 'name'),
-	]
+]
 
 
 class TestParams:
@@ -38,7 +38,7 @@ class TestParams:
 class FilterTest(unittest.TestCase):
 
     def apply_filters(self, *filternames):
-        ctx = None
+        ctx = mock_context()
         queryset = _users
         params = TestParams(*filternames)
         for filter in _filters:
