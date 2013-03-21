@@ -21,7 +21,7 @@ class StandardFilter(object):
         return '<' + self.__class__.__name__ + ': ' + self.name + '>'
 
     def filter(self, ctx, params, queryset):
-        name = ctx.formatter.to_api_value(str, self.name)
+        name = ctx.formatter.default_published_property(self.name)
         if name in params._GET:
             criteria = self.criteria.copy()
             if self.paramkey is not None:
