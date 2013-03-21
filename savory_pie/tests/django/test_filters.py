@@ -1,12 +1,9 @@
 import unittest
-import sys
-from mock import Mock, MagicMock, call
+from mock import Mock
 from django.http import QueryDict
 
-from savory_pie.django import resources, fields, filters
+from savory_pie.django import  filters
 from savory_pie.tests.django import mock_orm
-from savory_pie.tests.mock_context import mock_context
-from savory_pie.resources import EmptyParams
 
 
 class MockUser(mock_orm.Model):
