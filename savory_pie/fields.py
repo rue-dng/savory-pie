@@ -73,7 +73,7 @@ class AttributeField(Field):
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
-            return self._published_property
+            return ctx.formatter.convert_to_public_property(self._published_property)
         else:
             return ctx.formatter.convert_to_public_property(self._bare_attribute)
 
@@ -170,7 +170,7 @@ class URIResourceField(Field):
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
-            return self._published_property
+            return ctx.formatter.convert_to_public_property(self._published_property)
         else:
             return ctx.formatter.convert_to_public_property(self._attribute)
 
@@ -230,7 +230,7 @@ class SubObjectResourceField(Field):
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
-            return self._published_property
+            return ctx.formatter.convert_to_public_property(self._published_property)
         else:
             return ctx.formatter.convert_to_public_property(self._attribute)
 
@@ -324,7 +324,7 @@ class IterableField(Field):
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
-            return self._published_property
+            return ctx.formatter.convert_to_public_property(self._published_property)
         else:
             return ctx.formatter.convert_to_public_property(self._attribute)
 
