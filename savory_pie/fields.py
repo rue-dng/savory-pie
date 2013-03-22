@@ -345,7 +345,6 @@ class IterableField(Field):
         new_models = []
         request_keys = set()
         request_models = {}
-        property = self._compute_property(ctx)
         for model_dict in source_dict[self._compute_property(ctx)]:
             if 'resourceUri' in model_dict:
                 resource = ctx.resolve_resource_uri(model_dict['resourceUri'])
@@ -382,7 +381,8 @@ class IterableField(Field):
         for model in manager.all():
             model_resource = self._resource_class(model)
             model_dict = model_resource.get(ctx, EmptyParams())
-            # TODO only add _id if there is not a resource_uri
-            model_dict['_id'] = model_resource.key
+            # only add '_id' if there is no 'resourceUri'
+            if 'resourceUri' not in model_dict:
+                model_dict['_id'] = model_resource.key
             objects.append(model_dict)
         target_dict[self._compute_property(ctx)] = objects

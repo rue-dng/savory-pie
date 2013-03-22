@@ -536,6 +536,29 @@ class RelatedManagerFieldTest(unittest.TestCase):
         field.handle_outgoing(mock_context(), source_object, target_dict)
         self.assertEqual([{'_id': '4', 'bar': 14}], target_dict['foo'])
 
+    def test_outgoing_with_resource_uri(self):
+
+        class MockResource(ModelResource):
+            model_class = mock_orm.Model
+            resource_path = 'bar'
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        field = RelatedManagerField(attribute='foo', resource_class=MockResource)
+
+        source_object = mock_orm.Model()
+        related_manager = mock_orm.Manager()
+        related_manager.all = Mock(return_value=mock_orm.QuerySet(
+            mock_orm.Model(pk=4, bar=14)
+        ))
+        source_object.foo = related_manager
+
+        target_dict = {}
+
+        field.handle_outgoing(mock_context(), source_object, target_dict)
+        self.assertEqual([{'resourceUri': 'uri://bar', 'bar': 14}], target_dict['foo'])
+
     def test_prepare(self):
 
         class MockResource(ModelResource):
@@ -583,7 +606,7 @@ class RelatedManagerFieldTest(unittest.TestCase):
         self.assertEqual(4, model.bar)
         related_manager.add.assert_called_with(model)
 
-    def test_incoming_with_resourceUri(self):
+    def test_incoming_with_resource_uri(self):
         del mock_orm.Model._models[:]
 
         class MockResource(ModelResource):
