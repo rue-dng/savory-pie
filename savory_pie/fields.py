@@ -345,8 +345,15 @@ class IterableField(Field):
         new_models = []
         request_keys = set()
         request_models = {}
+        property = self._compute_property(ctx)
         for model_dict in source_dict[self._compute_property(ctx)]:
-            if '_id' in model_dict: # TODO what if you give an id that is not in the db?
+            if 'resourceUri' in model_dict:
+                resource = ctx.resolve_resource_uri(model_dict['resourceUri'])
+                request_models[resource.key] = resource.model
+                request_keys.add(resource.key)
+                if resource.key in db_keys:
+                    resource.put(ctx, model_dict)
+            elif '_id' in model_dict: # TODO what if you give an id that is not in the db?
                 # TODO get key without the extra db lookup
                 model = self._resource_class.get_from_queryset(manager.all(), model_dict['_id'])
                 model_resource = self._resource_class(model)
@@ -375,7 +382,7 @@ class IterableField(Field):
         for model in manager.all():
             model_resource = self._resource_class(model)
             model_dict = model_resource.get(ctx, EmptyParams())
-            # TODO only add _id if there is not a resource_url
+            # TODO only add _id if there is not a resource_uri
             model_dict['_id'] = model_resource.key
             objects.append(model_dict)
         target_dict[self._compute_property(ctx)] = objects
