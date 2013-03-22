@@ -328,6 +328,17 @@ class IterableField(Field):
         else:
             return ctx.formatter.convert_to_public_property(self._attribute)
 
+    def _get_resource(self, ctx, manager, model_dict):
+        resource = None
+        if 'resourceUri' in model_dict:
+            resource = ctx.resolve_resource_uri(model_dict['resourceUri'])
+        elif '_id' in model_dict: # TODO what if you give an id that is not in the db?
+            # TODO get key without the extra db lookup
+            model = self._resource_class.get_from_queryset(manager.all(), model_dict['_id'])
+            resource = self._resource_class(model)
+
+        return resource
+
     def get_iterable(self, value):
         return value
 
@@ -346,14 +357,12 @@ class IterableField(Field):
         request_keys = set()
         request_models = {}
         for model_dict in source_dict[self._compute_property(ctx)]:
-            if '_id' in model_dict: # TODO what if you give an id that is not in the db?
-                # TODO get key without the extra db lookup
-                model = self._resource_class.get_from_queryset(manager.all(), model_dict['_id'])
-                model_resource = self._resource_class(model)
-                request_models[model_resource.key] = model_resource.model
-                request_keys.add(model_resource.key)
-                if model_resource.key in db_keys:
-                    model_resource.put(ctx, model_dict)
+            resource = self._get_resource(ctx, manager, model_dict)
+            if resource:
+                request_models[resource.key] = resource.model
+                request_keys.add(resource.key)
+                if resource.key in db_keys:
+                    resource.put(ctx, model_dict)
             else:
                 model_resource = self._resource_class.create_resource()
                 model_resource.put(ctx, model_dict)
@@ -375,7 +384,8 @@ class IterableField(Field):
         for model in manager.all():
             model_resource = self._resource_class(model)
             model_dict = model_resource.get(ctx, EmptyParams())
-            # TODO only add _id if there is not a resource_url
-            model_dict['_id'] = model_resource.key
+            # only add '_id' if there is no 'resourceUri'
+            if 'resourceUri' not in model_dict:
+                model_dict['_id'] = model_resource.key
             objects.append(model_dict)
         target_dict[self._compute_property(ctx)] = objects
