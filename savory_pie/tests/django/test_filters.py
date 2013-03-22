@@ -21,7 +21,7 @@ class TestParams(object):
         # it turns name_exact=Alice to nameExact=alice, so I made all the query strings like 'Alice' to be lower cased 'alice'
         formatted_names = []
         for name in args:
-            formatted_names.append(savory_pie.formatters.JSONFormatter().default_published_property(name))
+            formatted_names.append(savory_pie.formatters.JSONFormatter().convert_to_public_property(name))
 
         self.querystring = "&".join(formatted_names)
         self._GET = QueryDict(self.querystring)

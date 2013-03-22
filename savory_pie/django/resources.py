@@ -311,6 +311,6 @@ class SchemaResource(Resource):
             'fields': {}
         }
         for resource_field in self.__resource.fields:
-            field_name = ctx.formatter.default_published_property(resource_field.name)
+            field_name = ctx.formatter.convert_to_public_property(resource_field.name)
             schema['fields'][field_name] = resource_field.schema(ctx, model=self.__resource.model_class)
         return schema
