@@ -58,6 +58,10 @@ class JSONToAPITest(unittest.TestCase):
         result = self.json_formatter.to_api_value(datetime.datetime, self.now)
         self.assertEqual(self.json_now, result)
 
+    def test_empty_datetime(self):
+        result = self.json_formatter.to_api_value(datetime.datetime, None)
+        self.assertEqual(None, result)
+
 
 class JSONToPython(unittest.TestCase):
 
