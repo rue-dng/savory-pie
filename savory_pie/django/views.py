@@ -114,7 +114,7 @@ def _success(ctx, resource, request, content_dict=None):
 
 def _internal_error(ctx, request, error):
     response = HttpResponse(status=500, content_type=ctx.formatter.content_type)
-    error_body = { ctx.formatter.default_published_property('error'): error }
+    error_body = { ctx.formatter.convert_to_public_property('error'): error }
     ctx.formatter.write_to(error_body, response)
     return response
 

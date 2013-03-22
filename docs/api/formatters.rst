@@ -17,7 +17,7 @@ Formatter protocol
         - application/json
         - application/xml
 
-    .. method:: default_published_property(bare_attribute)
+    .. method:: convert_to_public_property(bare_attribute)
 
         Used to convert a python style name to an exported style name. Useful
         if you like javascript style names in a json api.

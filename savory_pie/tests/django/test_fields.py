@@ -134,6 +134,18 @@ class AttributeFieldTest(unittest.TestCase):
 
         self.assertEqual(target_object.foo.bar, 20)
 
+    def test_published_property_camel_case(self):
+        source_object = Mock()
+        source_object.foo.bar = 20
+
+        field = AttributeField(attribute='foo.bar', type=int, published_property='foo_bar')
+
+        target_dict = dict()
+
+        field.handle_outgoing(mock_context(), source_object, target_dict)
+
+        self.assertEqual(target_dict['fooBar'], 20)
+
     def test_prepare(self):
         field = AttributeField(attribute='foo.bar.baz', type=int)
 

@@ -73,9 +73,9 @@ class AttributeField(Field):
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
-            return self._published_property
+            return ctx.formatter.convert_to_public_property(self._published_property)
         else:
-            return ctx.formatter.default_published_property(self._bare_attribute)
+            return ctx.formatter.convert_to_public_property(self._bare_attribute)
 
     @property
     def _bare_attribute(self):
@@ -170,9 +170,9 @@ class URIResourceField(Field):
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
-            return self._published_property
+            return ctx.formatter.convert_to_public_property(self._published_property)
         else:
-            return ctx.formatter.default_published_property(self._attribute)
+            return ctx.formatter.convert_to_public_property(self._attribute)
 
     @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
@@ -230,9 +230,9 @@ class SubObjectResourceField(Field):
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
-            return self._published_property
+            return ctx.formatter.convert_to_public_property(self._published_property)
         else:
-            return ctx.formatter.default_published_property(self._attribute)
+            return ctx.formatter.convert_to_public_property(self._attribute)
 
     def get_subresource(self, ctx, source_dict, target_obj):
         """
@@ -324,9 +324,9 @@ class IterableField(Field):
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
-            return self._published_property
+            return ctx.formatter.convert_to_public_property(self._published_property)
         else:
-            return ctx.formatter.default_published_property(self._attribute)
+            return ctx.formatter.convert_to_public_property(self._attribute)
 
     def get_iterable(self, value):
         return value
