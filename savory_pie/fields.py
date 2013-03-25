@@ -269,7 +269,10 @@ class SubObjectResourceField(Field):
 
             sub_source_dict = source_dict[self._compute_property(ctx)]
 
-            if sub_source_dict is None:
+            # this is to get around django-orm limitations, where in particular
+            # if you have a one-to-one field, you can't set it to None since orm doesn't like it
+            # so only set the attr to None, if what's coming in is None and what's there is not already None
+            if sub_source_dict is None and getattr(target_obj, self._attribute) is not None:
                 setattr(target_obj, self._attribute, None)
             else:
                 sub_resource.put(ctx, sub_source_dict)
