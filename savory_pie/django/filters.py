@@ -15,8 +15,6 @@ import string
 
 class StandardFilter(object):
 
-    dateRegex = re.compile('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})')
-
     def __init__(self, name, criteria, order_by=None):
         self.name = name
         self.criteria = criteria or {}
@@ -25,14 +23,14 @@ class StandardFilter(object):
     def __repr__(self):
         return '<' + self.__class__.__name__ + ': ' + self.name + '>'
 
-    def get_param_value(self, name, params, criteria):
+    def get_param_value(self, name, ctx, params, criteria):
         pass
 
     def filter(self, ctx, params, queryset):
         name = ctx.formatter.convert_to_public_property(self.name)
         if name in params._GET:
             criteria = self.criteria.copy()
-            self.get_param_value(name, params, criteria)
+            self.get_param_value(name, ctx, params, criteria)
             limit = None
             # Django just uses 'limit' for this but there might be legitimate uses
             # in models for a field called 'limit', so use a more specific name.
@@ -57,20 +55,22 @@ class ParameterizedFilter(StandardFilter):
         self.paramkey = paramkey
         self.criteria = criteria or {}
         self._order_by = order_by or []
+        self.datatypes = [
+            # in order of decreasing specifity/complexity
+            datetime.datetime,
+            float,
+            int,
+        ]
 
-    def get_param_value(self, name, params, criteria):
+    def get_param_value(self, name, ctx, params, criteria):
         value = params._GET.get(name)
-        m = self.dateRegex.match(value)
-        if m is not None:
-            year, month, date, hour, minute, second = \
-                map(string.atoi, [m.group(i) for i in range(1, 7)])
-            value = datetime.datetime(year, month, date, hour, minute, second)
-        else:
+        for _type in self.datatypes:
             try:
-                value = float(value)
-            except ValueError:
-                try:
-                    value = int(value)
-                except ValueError:
-                    pass
+                # if the cast doesn't work, an exception will be raised
+                # and we'll go on to the next one. if none work, it
+                # remains a string.
+                value = ctx.formatter.to_python_value(_type, value)
+                break
+            except:
+                pass
         criteria[self.paramkey] = value
