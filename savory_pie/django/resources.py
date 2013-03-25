@@ -268,10 +268,24 @@ class ModelResource(Resource):
         return target_dict
 
     def put(self, ctx, source_dict):
+        '''
+        This is where we respect the 'pre_save' flag on each field.
+        If pre_save is true, then we set the field value, before calling save.
+        If not, call save first, before setting the field value, this is for the
+        many-to-many relationship.
+        '''
+        if not source_dict:
+            return
+
         for field in self.fields:
-            field.handle_incoming(ctx, source_dict, self.model)
+            if field.pre_save:
+                field.handle_incoming(ctx, source_dict, self.model)
 
         self.model.save()
+
+        for field in self.fields:
+            if not field.pre_save:
+                field.handle_incoming(ctx, source_dict, self.model)
 
     def delete(self, ctx):
         self.model.delete()
@@ -279,25 +293,24 @@ class ModelResource(Resource):
 
 class SchemaResource(Resource):
     def __init__(self, model_resource):
-        self.model = model_resource.model_class
-        self.fields = model_resource.fields
+        self.__resource = model_resource
 
     @property
     def allowed_methods(self):
-        return ['GET']
+        return self.__resource(self.__resource.model_class).allowed_methods
 
     def get(self, ctx, params=None, **kwargs):
         schema = {
             'allowedDetailHttpMethods': [m.lower() for m in self.allowed_methods],
             'allowedListHttpMethods': [m.lower() for m in self.allowed_methods],
-            'defaultFormat': getattr(self, 'defaultFormat', 'application/json'),
-            'defaultLimit': getattr(self, 'defaultLimit', 0),
-            'filtering': getattr(self, 'filtering', {}),
-            'ordering': getattr(self, 'ordering', []),
+            'defaultFormat': getattr(self.__resource, 'default_format', 'application/json'),
+            'defaultLimit': getattr(self.__resource, 'default_limit', 0),
+            'filtering': getattr(self.__resource, 'filtering', {}),
+            'ordering': getattr(self.__resource, 'ordering', []),
             'resourceUri': ctx.build_resource_uri(self),
             'fields': {}
         }
-        for resource_field in self.fields:
-            field_name = ctx.formatter.default_published_property(resource_field.name)
-            schema['fields'][field_name] = resource_field.schema(ctx, model=self.model)
+        for resource_field in self.__resource.fields:
+            field_name = ctx.formatter.convert_to_public_property(resource_field.name)
+            schema['fields'][field_name] = resource_field.schema(ctx, model=self.__resource.model_class)
         return schema

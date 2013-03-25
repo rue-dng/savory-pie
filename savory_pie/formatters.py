@@ -23,7 +23,7 @@ class JSONFormatter(object):
 
         m = self.dateRegex.match(s)
         if m is None:
-            raise FormatException("Invalid date format")
+            raise FormatException("Invalid date format: '%s'" % s)
 
         for i in range(1, 10):
             print str(i) + ":" + m.group(i)
@@ -43,10 +43,9 @@ class JSONFormatter(object):
         elif tz_op == "+":
             return date + offset
 
-    def default_published_property(self, bare_attribute):
+    def convert_to_public_property(self, bare_attribute):
         parts = bare_attribute.split('_')
         return ''.join([parts[0], ''.join(x.capitalize() for x in parts[1:])])
-
 
     def read_from(self, request):
         return json.load(request)
@@ -63,9 +62,10 @@ class JSONFormatter(object):
     # Not 100% happy with this API review pre 1.0
     def to_api_value(self, type_, python_value):
         if issubclass(type_, datetime):
-            return python_value.isoformat("T") 
+            if python_value:
+                return python_value.isoformat("T") 
         elif type(python_value) not in (int, long, float, dict, list,
                                         bool, str, unicode, type(None)):
             return str(python_value)
-        else:
-            return python_value
+
+        return python_value

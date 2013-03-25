@@ -73,9 +73,9 @@ class AttributeField(Field):
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
-            return self._published_property
+            return ctx.formatter.convert_to_public_property(self._published_property)
         else:
-            return ctx.formatter.default_published_property(self._bare_attribute)
+            return ctx.formatter.convert_to_public_property(self._bare_attribute)
 
     @property
     def _bare_attribute(self):
@@ -170,9 +170,9 @@ class URIResourceField(Field):
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
-            return self._published_property
+            return ctx.formatter.convert_to_public_property(self._published_property)
         else:
-            return ctx.formatter.default_published_property(self._attribute)
+            return ctx.formatter.convert_to_public_property(self._attribute)
 
     @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
@@ -230,9 +230,9 @@ class SubObjectResourceField(Field):
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
-            return self._published_property
+            return ctx.formatter.convert_to_public_property(self._published_property)
         else:
-            return ctx.formatter.default_published_property(self._attribute)
+            return ctx.formatter.convert_to_public_property(self._attribute)
 
     def get_subresource(self, ctx, source_dict, target_obj):
         """
@@ -242,28 +242,47 @@ class SubObjectResourceField(Field):
         """
         sub_source_dict = source_dict[self._compute_property(ctx)]
         resource = None
-        if 'resource_uri' in sub_source_dict:
+        if sub_source_dict is not None and 'resource_uri' in sub_source_dict:
             resource = ctx.resolve_resource_uri(sub_source_dict['resource_uri'])
         else:
-            resource = self._resource_class(getattr(target_obj, self._attribute, None))
+            try:
+                attribute = getattr(target_obj, self._attribute)
+            except AttributeError:
+                return None
+
+            resource = self._resource_class(attribute)
+
         return resource
+
+    def get_submodel(self, ctx, source_object):
+        return getattr(source_object, self._attribute, None)
 
     @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
-        sub_resource = self.get_subresource(ctx, source_dict, target_obj)
+        if not source_dict:
+            setattr(target_obj, self._attribute, None)
+        else:
+            sub_resource = self.get_subresource(ctx, source_dict, target_obj)
 
-        if not sub_resource: # creating a new resource
-            sub_resource = self._resource_class.create_resource()
+            if not sub_resource: # creating a new resource
+                sub_resource = self._resource_class.create_resource()
 
-        sub_source_dict = source_dict[self._compute_property(ctx)]
-        sub_resource.put(ctx, sub_source_dict)
-        # Must be after the save on the sub_model
-        setattr(target_obj, self._attribute, sub_resource.model)
+            sub_source_dict = source_dict[self._compute_property(ctx)]
+
+            if sub_source_dict is None:
+                setattr(target_obj, self._attribute, None)
+            else:
+                sub_resource.put(ctx, sub_source_dict)
+                # Must be after the save on the sub_model
+                setattr(target_obj, self._attribute, sub_resource.model)
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
-        sub_model = getattr(source_obj, self._attribute)
-        target_dict[self._compute_property(ctx)] =\
-            self._resource_class(sub_model).get(ctx, EmptyParams())
+        sub_model = self.get_submodel(ctx, source_obj)
+        if sub_model is None:
+            target_dict[self._compute_property(ctx)] = None
+        else:
+            target_dict[self._compute_property(ctx)] =\
+                self._resource_class(sub_model).get(ctx, EmptyParams())
 
 
 class IterableField(Field):
@@ -305,16 +324,23 @@ class IterableField(Field):
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
-            return self._published_property
+            return ctx.formatter.convert_to_public_property(self._published_property)
         else:
-            return ctx.formatter.default_published_property(self._bare_attribute)
+            return ctx.formatter.convert_to_public_property(self._attribute)
+
+    def _get_resource(self, ctx, manager, model_dict):
+        resource = None
+        if 'resourceUri' in model_dict:
+            resource = ctx.resolve_resource_uri(model_dict['resourceUri'])
+        elif '_id' in model_dict: # TODO what if you give an id that is not in the db?
+            # TODO get key without the extra db lookup
+            model = self._resource_class.get_from_queryset(manager.all(), model_dict['_id'])
+            resource = self._resource_class(model)
+
+        return resource
 
     def get_iterable(self, value):
         return value
-
-    @property
-    def _bare_attribute(self):
-        return self._attribute.split('.')[-1]
 
     @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
@@ -331,14 +357,12 @@ class IterableField(Field):
         request_keys = set()
         request_models = {}
         for model_dict in source_dict[self._compute_property(ctx)]:
-            if '_id' in model_dict: # TODO what if you give an id that is not in the db?
-                # TODO get key without the extra db lookup
-                model = self._resource_class.get_from_queryset(manager.all(), model_dict['_id'])
-                model_resource = self._resource_class(model)
-                request_models[model_resource.key] = model_resource.model
-                request_keys.add(model_resource.key)
-                if model_resource.key in db_keys:
-                    model_resource.put(ctx, model_dict)
+            resource = self._get_resource(ctx, manager, model_dict)
+            if resource:
+                request_models[resource.key] = resource.model
+                request_keys.add(resource.key)
+                if resource.key in db_keys:
+                    resource.put(ctx, model_dict)
             else:
                 model_resource = self._resource_class.create_resource()
                 model_resource.put(ctx, model_dict)
@@ -355,19 +379,13 @@ class IterableField(Field):
                 model.delete()
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
-        attrs = self._attribute.split('.')
-        manager = source_obj
-
-        for attr in attrs:
-            manager = getattr(manager, attr)
-            if manager is None:
-                return None
-
+        manager = getattr(source_obj, self._attribute)
         objects = []
         for model in manager.all():
             model_resource = self._resource_class(model)
             model_dict = model_resource.get(ctx, EmptyParams())
-            # TODO only add _id if there is not a resource_url
-            model_dict['_id'] = model_resource.key
+            # only add '_id' if there is no 'resourceUri'
+            if 'resourceUri' not in model_dict:
+                model_dict['_id'] = model_resource.key
             objects.append(model_dict)
         target_dict[self._compute_property(ctx)] = objects

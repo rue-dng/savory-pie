@@ -21,10 +21,11 @@ class StandardFilter(object):
         return '<' + self.__class__.__name__ + ': ' + self.name + '>'
 
     def filter(self, ctx, params, queryset):
-        if params._GET.__contains__(self.name):
+        name = ctx.formatter.convert_to_public_property(self.name)
+        if name in params._GET:
             criteria = self.criteria.copy()
             if self.paramkey is not None:
-                criteria[self.paramkey] = params._GET.get(self.name)
+                criteria[self.paramkey] = params._GET.get(name)
             queryset = queryset.filter(**criteria)
             if self._order_by is not None:
                 queryset = queryset.order_by(*self._order_by)

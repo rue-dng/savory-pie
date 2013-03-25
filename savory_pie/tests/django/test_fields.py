@@ -134,6 +134,18 @@ class AttributeFieldTest(unittest.TestCase):
 
         self.assertEqual(target_object.foo.bar, 20)
 
+    def test_published_property_camel_case(self):
+        source_object = Mock()
+        source_object.foo.bar = 20
+
+        field = AttributeField(attribute='foo.bar', type=int, published_property='foo_bar')
+
+        target_dict = dict()
+
+        field.handle_outgoing(mock_context(), source_object, target_dict)
+
+        self.assertEqual(target_dict['fooBar'], 20)
+
     def test_prepare(self):
         field = AttributeField(attribute='foo.bar.baz', type=int)
 
@@ -249,6 +261,50 @@ class SubModelResourceFieldTest(unittest.TestCase):
 
         self.assertEqual(target_dict['foo'], {'bar': 20})
 
+    def test_outgoing_with_simple_none(self):
+
+
+        class Resource(ModelResource):
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        field = SubModelResourceField(attribute='foo', resource_class=Resource)
+
+        source_object = Mock()
+        source_object.foo.bar = None
+
+        target_dict = dict()
+
+        field.handle_outgoing(mock_context(), source_object, target_dict)
+
+        self.assertEqual(target_dict['foo'], {'bar': None})
+
+    def test_outgoing_with_submodel_none(self):
+
+        class OtherResource(ModelResource):
+            model_class = Mock()
+            field = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        class Resource(ModelResource):
+            model_class = Mock()
+            fields = [
+                SubModelResourceField(attribute='bar', resource_class=OtherResource),
+            ]
+
+        field = SubModelResourceField(attribute='foo', resource_class=Resource)
+
+        source_object = Mock()
+        source_object.foo= None
+
+        target_dict = dict()
+
+        field.handle_outgoing(mock_context(), source_object, target_dict)
+
+        self.assertEqual(target_dict['foo'], None)
+
     def test_incoming_update_existing(self):
 
         class Resource(ModelResource):
@@ -267,8 +323,45 @@ class SubModelResourceFieldTest(unittest.TestCase):
 
         field.handle_incoming(mock_context(), source_dict, target_object)
 
-        self.assertEqual(20, target_object.foo.bar)
+        self.assertEqual(target_object.foo.bar, 20)
         target_object.foo.save.assert_called_with()
+
+    def test_incoming_with_none_source(self):
+
+        class Resource(ModelResource):
+            model_class = Mock()
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        field = SubModelResourceField(attribute='foo', resource_class=Resource)
+
+        source_dict = {}
+
+        target_object = Mock()
+
+        field.handle_incoming(mock_context(), source_dict, target_object)
+
+        self.assertEqual(target_object.foo, None)
+
+    def test_incoming_with_none_subresource(self):
+
+        class Resource(ModelResource):
+            model_class = Mock()
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        field = SubModelResourceField(attribute='foo', resource_class=Resource)
+
+        source_dict = {
+            'foo': {}
+        }
+
+        target_object = Mock()
+
+        field.handle_incoming(mock_context(), source_dict, target_object)
+        self.assertIsNotNone(target_object.foo)
 
     def test_incoming_read_only(self):
 
@@ -455,6 +548,29 @@ class RelatedManagerFieldTest(unittest.TestCase):
         field.handle_outgoing(mock_context(), source_object, target_dict)
         self.assertEqual([{'_id': '4', 'bar': 14}], target_dict['foo'])
 
+    def test_outgoing_with_resource_uri(self):
+
+        class MockResource(ModelResource):
+            model_class = mock_orm.Model
+            resource_path = 'bar'
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        field = RelatedManagerField(attribute='foo', resource_class=MockResource)
+
+        source_object = mock_orm.Model()
+        related_manager = mock_orm.Manager()
+        related_manager.all = Mock(return_value=mock_orm.QuerySet(
+            mock_orm.Model(pk=4, bar=14)
+        ))
+        source_object.foo = related_manager
+
+        target_dict = {}
+
+        field.handle_outgoing(mock_context(), source_object, target_dict)
+        self.assertEqual([{'resourceUri': 'uri://bar', 'bar': 14}], target_dict['foo'])
+
     def test_prepare(self):
 
         class MockResource(ModelResource):
@@ -501,6 +617,41 @@ class RelatedManagerFieldTest(unittest.TestCase):
         model = mock_orm.Model._models[model_index]
         self.assertEqual(4, model.bar)
         related_manager.add.assert_called_with(model)
+
+    def test_incoming_with_resource_uri(self):
+        del mock_orm.Model._models[:]
+
+        class MockResource(ModelResource):
+            model_class = mock_orm.Model
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        field = RelatedManagerField(attribute='foo', resource_class=MockResource)
+
+        target_obj = mock_orm.Mock()
+        related_manager = mock_orm.Manager()
+        related_model = mock_orm.Model(pk=4, bar=14)
+        related_manager.all = Mock(return_value=mock_orm.QuerySet(
+            related_model
+        ))
+        target_obj.foo = related_manager
+        source_dict = {
+            'foo': [{
+                'resourceUri': 'http://testsever/api/v2/bar/14',
+                'bar': 14
+            }],
+        }
+
+        model_index = len(mock_orm.Model._models)
+        ctx = mock_context()
+        ctx.resolve_resource_uri = Mock()
+
+        field.handle_incoming(ctx, source_dict, target_obj)
+        model = mock_orm.Model._models[model_index-1]
+        self.assertEqual(14, model.bar)
+        related_manager.add.assert_called_with()
+
 
     def test_incoming_delete(self):
         del mock_orm.Model._models[:]

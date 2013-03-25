@@ -1,6 +1,6 @@
 import django.core.exceptions
 from django.utils.functional import Promise
-
+from django.db.models.fields import FieldDoesNotExist
 from savory_pie import fields as base_fields
 
 
@@ -13,7 +13,10 @@ class DjangoField(base_fields.Field):
             self._field = model._meta.get_field(field_name)
         except:
             # probably only for m2m fields
-            self._field = model._meta.get_field_by_name(field_name)[0].field
+            try:
+                self._field = model._meta.get_field_by_name(field_name)[0].field
+            except FieldDoesNotExist:
+                self._field = None
 
         schema = super(DjangoField, self).schema(**kwargs)
 
@@ -58,6 +61,7 @@ class AttributeField(base_fields.AttributeField, DjangoField):
                 This parameter is meaningless for top-level attributes.
     """
     def __init__(self, *args, **kwargs):
+        self.pre_save = True
         self._use_prefetch = kwargs.pop('use_prefetch', False)
         super(AttributeField, self).__init__(*args, **kwargs)
 
@@ -96,7 +100,7 @@ class URIResourceField(base_fields.URIResourceField, DjangoField):
     """
     def __init__(self, *args, **kwargs):
         self._use_prefetch = kwargs.pop('use_prefetch', False)
-
+        self.pre_save = True
         super(URIResourceField, self).__init__(*args, **kwargs)
 
 
@@ -160,6 +164,35 @@ class SubModelResourceField(base_fields.SubObjectResourceField, DjangoField):
             setattr(target_obj, self._attribute, sub_resource.model)
         return sub_resource
 
+    def get_submodel(self, ctx, source_object):
+        try:
+            # Look at non-null FK
+            sub_model = super(SubModelResourceField, self).get_submodel(
+                ctx,
+                source_object
+            )
+        except django.core.exceptions.ObjectDoesNotExist:
+            sub_model = None
+
+        return sub_model
+
+    @property
+    def pre_save(self):
+        '''
+        This is to figure if we need to pre_save the foreign key or not.
+        If Model A has foreign key to Model B, do everything normal
+        If Model B has foreign key to Model A, you need to save Model A first before setting value on Model B
+        @return: a Boolean variable used in ModelResources' put
+        '''
+
+        try:
+            attribute_name = self._field.related.field.name
+            attribute = getattr(self._resource_class.model_class, attribute_name)
+            if isinstance(attribute, django.db.models.fields.related.ReverseSingleRelatedObjectDescriptor):
+                return False
+        except AttributeError:
+            return True
+
 
 class RelatedManagerField(base_fields.IterableField, DjangoField):
     """
@@ -181,3 +214,14 @@ class RelatedManagerField(base_fields.IterableField, DjangoField):
     def schema(self, ctx, **kwargs):
         kwargs = dict(kwargs.items() + {'schema': {'type': 'related', 'relatedType': 'to_many'}}.items())
         return super(RelatedManagerField, self).schema(ctx, **kwargs)
+
+    @property
+    def pre_save(self):
+        '''
+        This is to figure out if we need to pre_save the many to many field or not.
+        If Model A has a ManyToManyField to Model B, save Model A first, then save Model B.
+        @return: a Boolean variable used in ModelResources' put
+        '''
+        return not isinstance(self._field, django.db.models.fields.related.ManyToManyField)
+
+
