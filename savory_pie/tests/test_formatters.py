@@ -1,8 +1,8 @@
 import unittest
 import decimal
 import datetime
-import timezone
 import time
+import pytz
 from mock import Mock
 
 import savory_pie.formatters
@@ -12,11 +12,8 @@ class JSONToAPITest(unittest.TestCase):
 
     def setUp(self):
         self.json_formatter = savory_pie.formatters.JSONFormatter()
-        self.now = datetime.datetime(2013, 3, 5, 14, 50, 39, 123456, timezone.UTC)
-
-        print "TIME: " + self.json_formatter.to_api_value(datetime.datetime, self.now)
-
-        self.json_now = '2013-03-05T14:50:39.123456'
+        self.now = datetime.datetime(2013, 3, 5, 14, 50, 39, 123456, pytz.UTC)
+        self.json_now = '2013-03-05T14:50:39.123456+00:00'
 
     def test_int(self):
         result = self.json_formatter.to_api_value(int, 15)
@@ -71,8 +68,8 @@ class JSONToPython(unittest.TestCase):
 
     def setUp(self):
         self.json_formatter = savory_pie.formatters.JSONFormatter()
-        self.now = datetime.datetime(2013, 3, 5, 14, 50, 39)
-        self.json_now = '2013-03-05T14:50:39'
+        self.now = datetime.datetime(2013, 3, 5, 14, 50, 39, 123456, pytz.UTC)
+        self.json_now = '2013-03-05T14:50:39.123456+00:00'
 
     def test_int(self):
         result = self.json_formatter.to_python_value(int, 15)

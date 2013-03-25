@@ -2,9 +2,10 @@ import unittest
 from mock import Mock, MagicMock, call, patch
 
 from savory_pie.django import resources, fields
-from savory_pie.tests.django import user_resource_schema, mock_orm
+from savory_pie.tests.django import user_resource_schema, mock_orm, date_str
 from savory_pie.tests.mock_context import mock_context
 from savory_pie.resources import EmptyParams
+from savory_pie import formatters
 
 from datetime import datetime
 
@@ -351,10 +352,14 @@ class DjangoUserResource(resources.ModelResource):
 
 class SchemaResourceTest(unittest.TestCase):
     maxDiff = None
+
+    def setUp(self):
+        self.json_formatter = formatters.JSONFormatter()
     
     def do_assert_date_equal(self, key):
         field = self.do_get()['fields'][key]
-        field['default'] = datetime.strptime(field['default'], "%Y-%m-%dT%H:%M:%S").strftime("%Y-%m-%dT%H:%M")
+        field['default'] = date_str
+
         self.assertDictEqual(field, user_resource_schema['fields'][key])
 
     def do_assert_equal(self, key, assert_type=''):

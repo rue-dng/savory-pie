@@ -1,11 +1,9 @@
 import json
 import time
+import pytz
 from datetime import datetime, timedelta
 import string
 import re
-
-class FormatException(Exception):
-    pass
 
 class JSONFormatter(object):
     """
@@ -19,29 +17,23 @@ class JSONFormatter(object):
 
     def parse_datetime(self, s):
 
-        print s
-
-        m = self.dateRegex.match(s)
+        m = self.dateRegex.match(str(s))
         if m is None:
-            raise FormatException("Invalid date format: '%s'" % s)
+            #This is what was done before, but it seems really weird
+            #to silently return the input on error...
+            return s
 
-        for i in range(1, 10):
-            print str(i) + ":" + m.group(i)
-            
         year, month, date, hour, minute, second, milliseconds = \
             map(string.atoi, [m.group(i) for i in range(1, 8)])
 
-        tz_op = m.group(7)
+        tz_op = m.group(8)
 
         tz_hour, tz_minute = \
-            map(string.atoi, [m.group(i) for i in range(8, 10)])
+            map(string.atoi, [m.group(i) for i in range(9, 11)])
 
-        offset = timedelta(hours=tz_hour, minute=tz_minute)
-        date = datetime(year, month, date, hour, minute, second, milliseconds)
-        if tz_op == "-":
-            return date - offset
-        elif tz_op == "+":
-            return date + offset
+        offset = tz_hour * 60 + tz_minute
+
+        return datetime(year, month, date, hour, minute, second, milliseconds, pytz.FixedOffset(offset))
 
     def convert_to_public_property(self, bare_attribute):
         parts = bare_attribute.split('_')
@@ -63,6 +55,9 @@ class JSONFormatter(object):
     def to_api_value(self, type_, python_value):
         if issubclass(type_, datetime):
             if python_value:
+                #Check if it is a naive date, and if so, make it UTC
+                if not python_value.tzinfo:
+                    python_value = python_value.replace(tzinfo=pytz.UTC)
                 return python_value.isoformat("T") 
         elif type(python_value) not in (int, long, float, dict, list,
                                         bool, str, unicode, type(None)):
