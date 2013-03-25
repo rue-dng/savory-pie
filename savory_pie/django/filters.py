@@ -41,7 +41,7 @@ class StandardFilter(object):
             queryset = queryset.filter(**criteria)
             if self._order_by is not None:
                 queryset = queryset.order_by(*self._order_by)
-            if limit is not None:
+            if limit:
                 queryset = queryset[:limit]
         return queryset
 
