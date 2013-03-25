@@ -344,6 +344,26 @@ class SubModelResourceFieldTest(unittest.TestCase):
 
         self.assertEqual(target_object.foo, None)
 
+    def test_incoming_with_none_source_with_not_none_existing(self):
+        class Resource(ModelResource):
+            model_class = Mock()
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        field = SubModelResourceField(attribute='foo', resource_class=Resource)
+
+        source_dict = {
+            'foo': None
+        }
+
+        target_object = Mock()
+        target_object.foo = {'bar': 4}
+
+        field.handle_incoming(mock_context(), source_dict, target_object)
+
+        self.assertEqual(target_object.foo, None)
+
     def test_incoming_with_none_subresource(self):
 
         class Resource(ModelResource):
