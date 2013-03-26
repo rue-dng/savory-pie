@@ -7,8 +7,7 @@ from django.http import QueryDict
 from savory_pie.django import  filters
 from savory_pie.tests.django import mock_orm
 from savory_pie.tests.mock_context import mock_context
-
-import savory_pie.formatters
+from savory_pie.formatters import JSONFormatter
 
 
 class MockUser(mock_orm.Model):
@@ -23,7 +22,7 @@ class TestParams(object):
         # Camel casing should be applied to filter names, but NOT to parameters.
         formatted_names = []
         for name, value in filters.items():
-            formatted_names.append(savory_pie.formatters.JSONFormatter().convert_to_public_property(name)
+            formatted_names.append(JSONFormatter().convert_to_public_property(name)
                                    + '=' + value)
         self.querystring = "&".join(formatted_names)
         self._GET = QueryDict(self.querystring)
@@ -136,6 +135,25 @@ class ParameterizedFilterTest(FilterTest):
         results = self.apply_filters({'name_exact': 'charlie'})
         self.assertEqual(1, results.count())
         self.assertEqual(['charlie'], [x.name for x in results])
+
+    def test_parameter_data_types(self):
+        # get_param_value should assume unparsable data remains a string
+        ctx = mock_context()
+        ctx.formatter = JSONFormatter()
+        foofilter = filters.ParameterizedFilter('foo', 'bar')
+        params = TestParams({'bar': 'unparsable'})
+        criteria = {}
+        foofilter.get_param_value('bar', ctx, params, criteria)
+        self.assertEqual({'bar': 'unparsable'}, criteria)
+        # parsable data should be parsed as a correct type
+        now = datetime.datetime.now().replace(microsecond=0)
+        for value, svalue in [(11, '11'),
+                              (3.14159, '3.14159'),
+                              (now, now.isoformat())]:
+            params = TestParams({'bar': svalue})
+            criteria = {}
+            foofilter.get_param_value('bar', ctx, params, criteria)
+            self.assertEqual(value, criteria['bar'])
 
     def test_before(self):
         results = self.apply_filters({'before': now.isoformat()})

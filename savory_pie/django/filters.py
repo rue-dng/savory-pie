@@ -66,11 +66,11 @@ class ParameterizedFilter(StandardFilter):
         value = params._GET.get(name)
         for _type in self.datatypes:
             try:
-                # if the cast doesn't work, an exception will be raised
+                # if a cast doesn't work, a TypeError will be raised
                 # and we'll go on to the next one. if none work, it
                 # remains a string.
                 value = ctx.formatter.to_python_value(_type, value)
                 break
-            except:
-                pass
+            except TypeError:
+                continue
         criteria[self.paramkey] = value

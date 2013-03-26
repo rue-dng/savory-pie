@@ -15,13 +15,14 @@ class JSONFormatter(object):
     dateRegex = re.compile('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})')
 
     def parse_datetime(self, s):
-        if s is not None:
-            m = self.dateRegex.match(s)
-            if m is not None:
-                year, month, date, hour, minute, second = \
-                    map(string.atoi, [m.group(i) for i in range(1, 7)])
-                return datetime.datetime(year, month, date, hour, minute, second)
-        return s
+        if not s:
+            raise TypeError
+        m = self.dateRegex.match(s)
+        if m is None:
+            raise TypeError
+        year, month, date, hour, minute, second = \
+            map(string.atoi, [m.group(i) for i in range(1, 7)])
+        return datetime.datetime(year, month, date, hour, minute, second)
 
     def convert_to_public_property(self, bare_attribute):
         parts = bare_attribute.split('_')
@@ -35,9 +36,12 @@ class JSONFormatter(object):
 
     # Not 100% happy with this API review pre 1.0
     def to_python_value(self, type_, api_value):
-        if issubclass(type_, datetime.datetime):
-            return self.parse_datetime(api_value)
-        return None if api_value is None else type_(api_value)
+        try:
+            if issubclass(type_, datetime.datetime):
+                return self.parse_datetime(api_value)
+            return None if api_value is None else type_(api_value)
+        except ValueError:
+            raise TypeError('Expected ' + str(type_) + ', got ' + repr(api_value))
 
     # Not 100% happy with this API review pre 1.0
     def to_api_value(self, type_, python_value):
