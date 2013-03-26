@@ -7,6 +7,7 @@ This section documents the API for dealing Django in Savory Pie.
     :maxdepth: 1
 
     django/fields
+    django/filters
     django/resources
     django/utils
     django/views
