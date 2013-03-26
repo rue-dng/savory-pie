@@ -297,7 +297,7 @@ class IterableField(Field):
 
         ``attribute``
             name of the relationship between the parent object and the related
-            objects may only be single level
+            objects can be a multi-level expression - like related_entity.many_to_many_field
 
         ``resource_class``
             a ModelResource -- used to represent the related objects
@@ -346,6 +346,10 @@ class IterableField(Field):
     def get_iterable(self, value):
         return value
 
+    @property
+    def _bare_attribute(self):
+        return self._attribute.split('.')[-1]
+
     @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
         manager = getattr(target_obj, self._attribute)
@@ -383,7 +387,14 @@ class IterableField(Field):
                 model.delete()
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
-        manager = getattr(source_obj, self._attribute)
+        attrs = self._attribute.split('.')
+        manager = source_obj
+
+        for attr in attrs:
+            manager = getattr(manager, attr)
+            if manager is None:
+                return None
+
         objects = []
         for model in manager.all():
             model_resource = self._resource_class(model)

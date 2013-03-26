@@ -2,6 +2,7 @@ import django.core.exceptions
 from django.utils.functional import Promise
 from django.db.models.fields import FieldDoesNotExist
 from savory_pie import fields as base_fields
+from savory_pie.resources import EmptyParams
 
 
 class DjangoField(base_fields.Field):
@@ -207,8 +208,9 @@ class RelatedManagerField(base_fields.IterableField, DjangoField):
         return value.all()
 
     def prepare(self, ctx, related):
-        related.prefetch(self._attribute)
-        self._resource_class.prepare(ctx, related.sub_prefetch(self._attribute))
+        attrs = self._attribute.replace('.', '__')
+        related.prefetch(attrs)
+        self._resource_class.prepare(ctx, related.sub_prefetch(attrs))
 
     def schema(self, ctx, **kwargs):
         kwargs = dict(kwargs.items() + {'schema': {'type': 'related', 'relatedType': 'to_many'}}.items())
