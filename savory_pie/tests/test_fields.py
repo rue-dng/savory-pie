@@ -55,7 +55,7 @@ class IterableFieldTestCase(unittest.TestCase):
 
 #This test clearly doesn't work...
 
-    #def test_outgoing(self):
+#    def test_outgoing(self):
 #
 #        class GenericModel(object):
 #            pass

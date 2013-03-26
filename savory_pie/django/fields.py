@@ -207,9 +207,8 @@ class RelatedManagerField(base_fields.IterableField, DjangoField):
         return value.all()
 
     def prepare(self, ctx, related):
-        attrs = self._attribute.replace('.', '__')
-        related.prefetch(attrs)
-        self._resource_class.prepare(ctx, related.sub_prefetch(attrs))
+        related.prefetch(self._attribute)
+        self._resource_class.prepare(ctx, related.sub_prefetch(self._attribute)) 
 
     def schema(self, ctx, **kwargs):
         kwargs = dict(kwargs.items() + {'schema': {'type': 'related', 'relatedType': 'to_many'}}.items())
