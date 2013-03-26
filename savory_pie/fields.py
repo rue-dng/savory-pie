@@ -242,6 +242,7 @@ class SubObjectResourceField(Field):
         """
         sub_source_dict = source_dict[self._compute_property(ctx)]
         resource = None
+        # TODO: clean up later per bug JRUT-4708
         if sub_source_dict is not None and 'resourceUri' in sub_source_dict:
             resource = ctx.resolve_resource_uri(sub_source_dict['resourceUri'])
         else:
