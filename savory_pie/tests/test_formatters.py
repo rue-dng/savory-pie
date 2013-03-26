@@ -122,5 +122,39 @@ class JSONToPython(unittest.TestCase):
         self.assertEqual(self.now, result)
 
     def test_empty_datetime(self):
-        result = self.json_formatter.to_python_value(datetime.datetime, None)
-        self.assertEqual(None, result)
+        try:
+            self.json_formatter.to_python_value(datetime.datetime, None)
+            self.fail('None should not be parsable as a datetime')
+        except TypeError:
+            pass
+        try:
+            self.json_formatter.to_python_value(datetime.datetime, '')
+            self.fail('Empty string should not be parsable as a datetime')
+        except TypeError:
+            pass
+
+    def test_unparsable_data(self):
+        # should raise a TypeError
+        # The following datatypes can parse any string as legal data so we don't try
+        # to test them here: list, bool, str, unicode.
+        unparsable = 'unparsable_data'
+        for _type, svalue in [(int, unparsable),
+                              (long, unparsable),
+                              (float, unparsable),
+                              (dict, unparsable),
+                              (type(None), unparsable),
+                              (datetime.datetime, unparsable)]:
+            message = ('Expected a TypeError for unparsable ' + str(_type)
+                + ' with value ' + repr(svalue))
+            succeeded_incorrectly = False
+            try:
+                value = self.json_formatter.to_python_value(_type, svalue)
+                succeeded_incorrectly = True
+                import sys; print>>sys.stderr, repr(value)
+            except TypeError:
+                pass
+            except Exception, e:
+                self.fail(message + ', got ' + str(e.__class__))
+            if succeeded_incorrectly:
+                self.fail(message)
+
