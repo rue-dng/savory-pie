@@ -242,8 +242,8 @@ class SubObjectResourceField(Field):
         """
         sub_source_dict = source_dict[self._compute_property(ctx)]
         resource = None
-        if sub_source_dict is not None and 'resource_uri' in sub_source_dict:
-            resource = ctx.resolve_resource_uri(sub_source_dict['resource_uri'])
+        if sub_source_dict is not None and 'resourceUri' in sub_source_dict:
+            resource = ctx.resolve_resource_uri(sub_source_dict['resourceUri'])
         else:
             try:
                 attribute = getattr(target_obj, self._attribute)
