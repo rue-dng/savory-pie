@@ -223,6 +223,6 @@ class RelatedManagerField(base_fields.IterableField, DjangoField):
         If Model A has a ManyToManyField to Model B, save Model A first, then save Model B.
         @return: a Boolean variable used in ModelResources' put
         '''
-        return not isinstance(self._field, django.db.models.fields.related.ManyToManyField)
+        return False
 
 

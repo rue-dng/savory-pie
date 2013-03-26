@@ -267,7 +267,7 @@ class ModelResource(Resource):
 
         return target_dict
 
-    def put(self, ctx, source_dict):
+    def put(self, ctx, source_dict, save=True):
         '''
         This is where we respect the 'pre_save' flag on each field.
         If pre_save is true, then we set the field value, before calling save.
@@ -281,7 +281,8 @@ class ModelResource(Resource):
             if field.pre_save:
                 field.handle_incoming(ctx, source_dict, self.model)
 
-        self.model.save()
+        if save:
+            self.model.save()
 
         for field in self.fields:
             if not field.pre_save:

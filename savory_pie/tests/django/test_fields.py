@@ -489,7 +489,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
 
         source_dict = {
             'foo': {
-                'resource_uri': 'http://testsever/api/v1/bar/20',
+                'resourceUri': 'http://testsever/api/v1/bar/20',
                 'bar': 20
             },
         }
@@ -500,7 +500,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
         foo_20 = ctx.resolve_resource_uri.return_value = MockResource(Mock())
         field.handle_incoming(ctx, source_dict, target_object)
 
-        ctx.resolve_resource_uri.assert_called_with(source_dict['foo']['resource_uri'])
+        ctx.resolve_resource_uri.assert_called_with(source_dict['foo']['resourceUri'])
         target_object.foo.save.assert_called()
 
         self.assertEqual(foo_20.model, target_object.foo)
@@ -666,11 +666,12 @@ class RelatedManagerFieldTest(unittest.TestCase):
         model_index = len(mock_orm.Model._models)
         ctx = mock_context()
         ctx.resolve_resource_uri = Mock()
+        bar_14 = ctx.resolve_resource_uri.return_value = MockResource(Mock())
 
         field.handle_incoming(ctx, source_dict, target_obj)
         model = mock_orm.Model._models[model_index-1]
         self.assertEqual(14, model.bar)
-        related_manager.add.assert_called_with()
+        related_manager.add.assert_called_with(bar_14.model)
 
 
     def test_incoming_delete(self):
