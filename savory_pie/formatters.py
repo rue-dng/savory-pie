@@ -1,7 +1,5 @@
 import json
-import time
 import datetime
-import string
 import re
 
 class JSONFormatter(object):
@@ -16,12 +14,12 @@ class JSONFormatter(object):
 
     def parse_datetime(self, s):
         if not s:
-            raise TypeError
+            raise TypeError('Unable to parse ' + repr(s) + ' as a datetime')
         m = self.dateRegex.match(s)
         if m is None:
-            raise TypeError
+            raise TypeError('Unable to parse ' + repr(s) + ' as a datetime')
         year, month, date, hour, minute, second = \
-            map(string.atoi, [m.group(i) for i in range(1, 7)])
+            map(int, [m.group(i) for i in range(1, 7)])
         return datetime.datetime(year, month, date, hour, minute, second)
 
     def convert_to_public_property(self, bare_attribute):
