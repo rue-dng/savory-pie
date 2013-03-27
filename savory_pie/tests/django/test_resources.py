@@ -150,6 +150,19 @@ class ModelResourceTest(unittest.TestCase):
         self.assertEqual(user.age, 20)
         self.assertEqual(user.owner.name, 'bob owner')
 
+    def test_put_with_save_false(self):
+        user = User()
+
+        resource = AddressableUserResource(user)
+        resource.put(mock_context(), {
+            'name': 'Bob',
+            'age': 20
+        }, save=False)
+
+        self.assertEqual(user.name, 'Bob')
+        self.assertEqual(user.age, 20)
+        self.assertFalse(user.save.called)
+
     def test_delete(self):
         user = User()
 

@@ -372,9 +372,10 @@ class IterableField(Field):
                 request_keys.add(resource.key)
                 if resource.key in db_keys:
                     resource.put(ctx, model_dict)
+                new_models.append(resource.model)
             else:
                 model_resource = self._resource_class.create_resource()
-                model_resource.put(ctx, model_dict)
+                model_resource.put(ctx, model_dict, save=False)
                 new_models.append(model_resource.model)
 
         manager.add(*new_models)

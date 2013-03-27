@@ -73,7 +73,7 @@ class Resource(object):
         Returns a new Resource
         """
 
-    # def put(self, ctx, dict):
+    # def put(self, ctx, dict, save):
         """
         Optional method that is called during a PUT request.
 
