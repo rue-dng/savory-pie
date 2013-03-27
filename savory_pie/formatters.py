@@ -13,8 +13,8 @@ class JSONFormatter(object):
     dateRegex = re.compile('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})')
 
     def parse_datetime(self, s):
-        if not s:
-            raise TypeError('Unable to parse ' + repr(s) + ' as a datetime')
+        if s is None:
+            return None
         m = self.dateRegex.match(s)
         if m is None:
             raise TypeError('Unable to parse ' + repr(s) + ' as a datetime')
