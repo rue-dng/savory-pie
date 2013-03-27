@@ -34,6 +34,10 @@ def api_view(root_resource):
 
         try:
             resource = ctx.resolve_resource_path(resource_path)
+            if hasattr(resource, 'validate'):
+                errors = resource.validate()
+                if errors:
+                    raise Exception('invalid data, skip request')
 
             if resource is None:
                 return _not_found(ctx, request)

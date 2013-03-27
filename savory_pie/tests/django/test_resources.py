@@ -1,7 +1,7 @@
 import unittest
 from mock import Mock, MagicMock, call, patch
 
-from savory_pie.django import resources, fields
+from savory_pie.django import resources, fields, validators
 from savory_pie.tests.django import user_resource_schema, mock_orm, date_str
 from savory_pie.tests.mock_context import mock_context
 from savory_pie.resources import EmptyParams
@@ -31,6 +31,34 @@ class User(mock_orm.Model):
 class UserOwner(mock_orm.Model):
     user = Mock(django.db.models.fields.related.ReverseSingleRelatedObjectDescriptor(Mock()))
     name = Mock()
+
+
+class EverybodyHatesBob(validators.ResourceValidator):
+    error_message = 'Everybody hates Bob'
+
+    def test(self, user):
+        return user.name != 'Bob'
+
+
+class TooYoungToDrink(validators.FieldValidator):
+    error_message = 'Too young to drink'
+
+    def test(self, age):
+        return age >= 21
+
+
+class LegalDrinkingAgeResource(resources.ModelResource):
+    parent_resource_path = 'users'
+    model_class = User
+
+    validators = [
+        EverybodyHatesBob()
+    ]
+
+    fields = [
+        fields.AttributeField(attribute='name', type=str),
+        fields.AttributeField(attribute='age', type=int, validator=TooYoungToDrink())
+    ]
 
 
 class AddressableUserResource(resources.ModelResource):
@@ -205,6 +233,22 @@ class ModelResourceTest(unittest.TestCase):
             ComplexUserResource.get_by_source_dict(mock_context(), source_dict)
 
         objects.filter.assert_called_with()
+
+    def test_validation(self):
+        resource = LegalDrinkingAgeResource(User())
+        resource.put(mock_context(), {
+            'name': 'Bob',
+            'age': 20
+        }, save=False)
+        errors = resource.validate()
+        self.assertEqual(
+            {'savory_pie.tests.django.test_resources.LegalDrinkingAgeResource':
+                ['Everybody hates Bob'],
+             'savory_pie.tests.django.test_resources.LegalDrinkingAgeResource.age':
+                ['Too young to drink']
+            },
+            errors
+        )
 
 
 class AddressableUserQuerySetResource(resources.QuerySetResource):

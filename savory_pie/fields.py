@@ -65,11 +65,14 @@ class AttributeField(Field):
                  type,
                  published_property=None,
                  use_prefetch=False,
-                 read_only=False):
+                 read_only=False,
+                 validator=None):
         self._full_attribute = attribute
         self._type = type
         self._published_property = published_property
         self._read_only = read_only
+        if validator:
+            self.validator = validator
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
@@ -162,11 +165,14 @@ class URIResourceField(Field):
                  attribute,
                  resource_class,
                  published_property=None,
-                 read_only=False):
+                 read_only=False,
+                 validator=None):
         self._attribute = attribute
         self._resource_class = resource_class
         self._published_property = published_property
         self._read_only = read_only
+        if validator:
+            self.validator = validator
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
@@ -222,11 +228,14 @@ class SubObjectResourceField(Field):
                  attribute,
                  resource_class,
                  published_property=None,
-                 read_only=False):
+                 read_only=False,
+                 validator=None):
         self._attribute = attribute
         self._resource_class = resource_class
         self._published_property = published_property
         self._read_only = read_only
+        if validator:
+            self.validator = validator
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
@@ -321,11 +330,14 @@ class IterableField(Field):
                  attribute,
                  resource_class,
                  published_property=None,
-                 read_only=False):
+                 read_only=False,
+                 validator=None):
         self._attribute = attribute
         self._resource_class = resource_class
         self._published_property = published_property
         self._read_only = read_only
+        if validator:
+            self.validator = validator
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
