@@ -203,6 +203,14 @@ class RelatedManagerField(base_fields.IterableField, DjangoField):
         Parameters:
             :class:`savory_pie.fields.IterableField`
     """
+    def __init__(self, *args, **kwargs):
+        '''
+        This is to figure out if we need to pre_save the many to many field or not.
+        In this case, we always want the related model to save first, before we save ourselves.
+        @return: a Boolean variable used in ModelResources' put
+        '''
+        self.pre_save = False
+        super(RelatedManagerField, self).__init__(*args, **kwargs)
 
     def get_iterable(self, value):
         return value.all()
@@ -215,14 +223,3 @@ class RelatedManagerField(base_fields.IterableField, DjangoField):
     def schema(self, ctx, **kwargs):
         kwargs = dict(kwargs.items() + {'schema': {'type': 'related', 'relatedType': 'to_many'}}.items())
         return super(RelatedManagerField, self).schema(ctx, **kwargs)
-
-    @property
-    def pre_save(self):
-        '''
-        This is to figure out if we need to pre_save the many to many field or not.
-        If Model A has a ManyToManyField to Model B, save Model A first, then save Model B.
-        @return: a Boolean variable used in ModelResources' put
-        '''
-        return False
-
-

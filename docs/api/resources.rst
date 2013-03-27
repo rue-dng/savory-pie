@@ -68,7 +68,7 @@ Resource protocol
 
         Returns a new Resource
 
-    .. method:: put(ctx, dict)
+    .. method:: put(ctx, dict, save=True)
 
         Optional method that is called during a PUT request.
 
@@ -79,6 +79,9 @@ Resource protocol
 
             ``dict``
                  deserialized representation of the body content
+
+            ``save``
+                determines whether put calls save to the data store.
 
     .. method:: delete(ctx)
 
