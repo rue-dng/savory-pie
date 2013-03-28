@@ -12,7 +12,7 @@ class JSONFormatter(object):
 
     dateRegex = re.compile('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})')
 
-    def parse_datetime(self, s):
+    def parse_datetime(self, s, as_date=False):
         if s is None:
             return None
         m = self.dateRegex.match(s)
@@ -20,7 +20,10 @@ class JSONFormatter(object):
             raise TypeError('Unable to parse ' + repr(s) + ' as a datetime')
         year, month, date, hour, minute, second = \
             map(int, [m.group(i) for i in range(1, 7)])
-        return datetime.datetime(year, month, date, hour, minute, second)
+        if as_date:
+            return datetime.date(year, month, date)
+        else:
+            return datetime.datetime(year, month, date, hour, minute, second)
 
     def convert_to_public_property(self, bare_attribute):
         parts = bare_attribute.split('_')
@@ -37,6 +40,8 @@ class JSONFormatter(object):
         try:
             if issubclass(type_, datetime.datetime):
                 return self.parse_datetime(api_value)
+            elif issubclass(type_, datetime.date):
+                return self.parse_datetime(api_value, as_date=True)
             return None if api_value is None else type_(api_value)
         except ValueError:
             raise TypeError('Expected ' + str(type_) + ', got ' + repr(api_value))
@@ -46,6 +51,8 @@ class JSONFormatter(object):
         if python_value is not None:
             if issubclass(type_, datetime.datetime):
                 return python_value.strftime("%Y-%m-%dT%H:%M:%S")
+            if issubclass(type_, datetime.date):
+                return python_value.strftime("%Y-%m-%d")
             elif type(python_value) not in (int, long, float, dict, list,
                                             bool, str, unicode, type(None)):
                 return str(python_value)
