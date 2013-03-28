@@ -35,11 +35,6 @@ class Resource(object):
     validators = []
 
     @property
-    def dotted_name(self):
-        c = self.__class__
-        return c.__module__ + '.' + c.__name__
-
-    @property
     def allowed_methods(self):
         """
         defaults to set of available methods based on
@@ -59,23 +54,6 @@ class Resource(object):
                 pass
 
         return allowed_methods
-
-    def validate(self):
-        """
-        Descend through the resource, including its fields and any related resources,
-        looking for validation errors in any resources or models whose validators flag
-        issues with content therein.
-
-        Returns a dict mapping dotted keys (representing resources or fields) to
-        validation errors.
-        """
-        error_dict = {}
-        for field in self.fields:
-            if hasattr(field, 'validator'):
-                field.validator.find_errors(error_dict, self, field)
-        for validator in self.validators:
-            validator.find_errors(error_dict, self)
-        return error_dict
 
     # def get(self, ctx, params):
         """

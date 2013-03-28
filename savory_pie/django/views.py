@@ -2,6 +2,7 @@ from django.http import HttpResponse
 
 from savory_pie.context import APIContext
 from savory_pie.formatters import JSONFormatter
+from savory_pie.django import validators
 
 
 def api_view(root_resource):
@@ -34,10 +35,10 @@ def api_view(root_resource):
 
         try:
             resource = ctx.resolve_resource_path(resource_path)
-            if hasattr(resource, 'validate'):
-                errors = resource.validate()
-                if errors:
-                    raise Exception('invalid data, skip request')
+            errors = validators.BaseValidator.validate(resource,
+                ctx.base_uri + '.' + resource.__class__.__name__)
+            if errors:
+                return _internal_error(ctx, request, errors)
 
             if resource is None:
                 return _not_found(ctx, request)
