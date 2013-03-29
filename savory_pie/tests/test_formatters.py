@@ -11,8 +11,14 @@ class JSONToAPITest(unittest.TestCase):
 
     def setUp(self):
         self.json_formatter = savory_pie.formatters.JSONFormatter()
+
+        # datetime
         self.now = datetime.datetime(2013, 3, 5, 14, 50, 39)
         self.json_now = '2013-03-05T14:50:39'
+
+        # date
+        self.now_date = datetime.date(2013, 3, 5)
+        self.json_now_date = '2013-03-05'
 
     def test_int(self):
         result = self.json_formatter.to_api_value(int, 15)
@@ -58,8 +64,16 @@ class JSONToAPITest(unittest.TestCase):
         result = self.json_formatter.to_api_value(datetime.datetime, self.now)
         self.assertEqual(self.json_now, result)
 
+    def test_date(self):
+        result = self.json_formatter.to_api_value(datetime.date, self.now_date)
+        self.assertEqual(self.json_now_date, result)
+
     def test_empty_datetime(self):
         result = self.json_formatter.to_api_value(datetime.datetime, None)
+        self.assertEqual(None, result)
+
+    def test_empty_date(self):
+        result = self.json_formatter.to_api_value(datetime.date, None)
         self.assertEqual(None, result)
 
 
@@ -67,8 +81,14 @@ class JSONToPython(unittest.TestCase):
 
     def setUp(self):
         self.json_formatter = savory_pie.formatters.JSONFormatter()
+
+        # datetime
         self.now = datetime.datetime(2013, 3, 5, 14, 50, 39)
         self.json_now = '2013-03-05T14:50:39'
+
+        # date
+        self.now_date = datetime.date(2013, 3, 5)
+        self.json_now_date = '2013-03-05'
 
     def test_int(self):
         result = self.json_formatter.to_python_value(int, 15)
@@ -133,6 +153,14 @@ class JSONToPython(unittest.TestCase):
                 self.fail(repr(craziness) + ' should not be parsable as a datetime')
             except TypeError:
                 pass
+
+    def test_date(self):
+        result = self.json_formatter.to_python_value(datetime.date, self.json_now_date)
+        self.assertEqual(self.now_date, result)
+
+    def test_none_date(self):
+        result = self.json_formatter.to_python_value(datetime.date, None)
+        self.assertEqual(None, result)
 
     def test_unparsable_data(self):
         # should raise a TypeError
