@@ -12,3 +12,4 @@ is order alphabetically by module.
     api/fields
     api/formatters
     api/resources
+    api/validators

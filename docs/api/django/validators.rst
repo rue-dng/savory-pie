@@ -6,7 +6,7 @@
 .. automodule:: savory_pie.django.validators
 
     .. autoclass:: BaseValidator
-        :members: check_value, error_message, validate
+        :members: check_value, error_message, validate, to_schema
 
     .. autoclass:: ResourceValidator
         :members: find_errors

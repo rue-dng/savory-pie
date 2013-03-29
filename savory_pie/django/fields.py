@@ -1,3 +1,4 @@
+import collections
 import django.core.exceptions
 from django.utils.functional import Promise
 from django.db.models.fields import FieldDoesNotExist
@@ -20,6 +21,10 @@ class DjangoField(base_fields.Field):
                 self._field = None
 
         schema = super(DjangoField, self).schema(**kwargs)
+        if isinstance(self.validator, collections.Iterable):
+            schema['validators'] = [validator.to_schema() for validator in self.validator]
+        else:
+            schema['validators'] = [self.validator.to_schema()]
 
         if self._field:
             _schema = {

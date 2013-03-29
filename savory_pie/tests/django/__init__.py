@@ -22,7 +22,8 @@ user_resource_schema = {
             'helpText': u'Required. 30 characters or fewer. Letters, numbers and @/./+/-/_ characters',
             'blank': False,
             'unique': True,
-            'type': 'str'
+            'type': 'str',
+            'validators': []
         },
         'lastLogin': {
             'nullable': False,
@@ -31,7 +32,8 @@ user_resource_schema = {
             'helpText': u'',
             'blank': False,
             'unique': False,
-            'type': 'datetime'
+            'type': 'datetime',
+            'validators': []
         },
         'firstName': {
             'nullable': False,
@@ -40,7 +42,8 @@ user_resource_schema = {
             'helpText': u'',
             'blank': True,
             'unique': False,
-            'type': 'str'
+            'type': 'str',
+            'validators': []
         },
         'userPermissions': {
             'nullable': False,
@@ -50,7 +53,8 @@ user_resource_schema = {
             'helpText': u'Specific permissions for this user. Hold down "Control", or "Command" on a Mac, to select more than one.',
             'blank': True,
             'unique': False,
-            'type': 'related'
+            'type': 'related',
+            'validators': []
         },
         'lastName': {
             'nullable': False,
@@ -59,7 +63,8 @@ user_resource_schema = {
             'helpText': u'',
             'blank': True,
             'unique': False,
-            'type': 'str'
+            'type': 'str',
+            'validators': []
         },
         'isSuperuser': {
             'nullable': False,
@@ -68,7 +73,8 @@ user_resource_schema = {
             'helpText': u'Designates that this user has all permissions without explicitly assigning them.',
             'blank': True,
             'unique': False,
-            'type': 'bool'
+            'type': 'bool',
+            'validators': []
         },
         'dateJoined': {
             'nullable': False,
@@ -77,7 +83,8 @@ user_resource_schema = {
             'helpText': u'',
             'blank': False,
             'unique': False,
-            'type': 'datetime'
+            'type': 'datetime',
+            'validators': []
         },
         'isStaff': {
             'nullable': False,
@@ -86,7 +93,8 @@ user_resource_schema = {
             'helpText': u'Designates whether the user can log into this admin site.',
             'blank': True,
             'unique': False,
-            'type': 'bool'
+            'type': 'bool',
+            'validators': []
         },
         'groups': {
             'nullable': False,
@@ -96,7 +104,8 @@ user_resource_schema = {
             'helpText': u'The groups this user belongs to. A user will get all permissions granted to each of his/her group. Hold down "Control", or "Command" on a Mac, to select more than one.',
             'blank': True,
             'unique': False,
-            'type': 'related'
+            'type': 'related',
+            'validators': []
         },
         'pk': {
             'nullable': False,
@@ -105,7 +114,8 @@ user_resource_schema = {
             'helpText': u'',
             'blank': True,
             'unique': True,
-            'type': 'int'
+            'type': 'int',
+            'validators': []
         },
         'password': {
             'nullable': False,
@@ -114,7 +124,8 @@ user_resource_schema = {
             'helpText': u'',
             'blank': False,
             'unique': False,
-            'type': 'str'
+            'type': 'str',
+            'validators': []
         },
         'email': {
             'nullable': False,
@@ -123,8 +134,8 @@ user_resource_schema = {
             'helpText': u'',
             'blank': True,
             'unique': False,
-            'type':
-            'str'
+            'type': 'str',
+            'validators': []
         },
         'isActive': {
             'nullable': False,
@@ -133,7 +144,8 @@ user_resource_schema = {
             'helpText': u'Designates whether this user should be treated as active. Unselect this instead of deleting accounts.',
             'blank': True,
             'unique': False,
-            'type': 'bool'
+            'type': 'bool',
+            'validators': []
         }
     }
 }

@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from savory_pie import fields as base_fields
 from savory_pie.django import resources, fields
 from savory_pie.django import validators as spie_validators
+from savory_pie.tests.mock_context import mock_context
 
 from django.db import models
 
@@ -86,7 +87,7 @@ class UserTestResource(resources.ModelResource):
         fields.AttributeField(attribute='systolic_bp', type=int,
             validator=spie_validators.IntFieldRangeValidator(100, 120,
                 'blood pressure out of range')),
-        base_fields.SubObjectResourceField('vehicle', CarTestResource)
+        fields.SubModelResourceField('vehicle', CarTestResource)
     ]
 
 def create_car(make, year, ugly=False):
@@ -111,7 +112,7 @@ def validate_user_resource(name, age, start, end, systolic, car=None):
 
 class ValidationTestCase(unittest.TestCase):
 
-    maxDiff = 4096
+    maxDiff = None
 
     def setUp(self):
         self.now = datetime.now()
@@ -221,3 +222,28 @@ class SubModelValidationTestCase(ValidationTestCase):
         car = create_car('Toyota', 2008)
         errors = validate_user_resource('Bob', 23, self.now, self.later, 120, car)
         self.assertEqual({'user.vehicle.year': ['car is too old']}, errors)
+
+
+class SchemaGetTestCase(ValidationTestCase):
+
+    def test_validation_schema_get(self):
+        resource = resources.SchemaResource(UserTestResource)
+        ctx = mock_context()
+        ctx.build_resource_uri = lambda resource: 'uri://user/schema/'
+        result = resource.get(ctx)
+        self.assertEqual(['javascript code for data validation'], result['validators'])
+        for field_name in result['fields']:
+            field = result['fields'][field_name]
+            validators = field['validators']
+            self.assertTrue(type(validators) is list)
+            [self.assertTrue(type(v) is str) for v in validators]
+            expected = {
+                'after': [],
+                'age': ['javascript code for data validation',
+                        'javascript code for data validation'],
+                'before': [],
+                'name': ['javascript code for data validation'],
+                'systolicBp': ['javascript code for data validation'],
+                'vehicle': []
+            }
+            self.assertEqual(expected[field_name], validators)

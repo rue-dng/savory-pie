@@ -123,6 +123,21 @@ class BaseValidator:
         else:
             error_dict[key] = [error]
 
+    def to_schema(self):
+        """
+        Subclasses are expected to overload this method with a string used in
+        the front end for HTML form validation, for example in the context of
+        something like `jQuery-Validation-Engine`_.
+
+        .. _`jQuery-Validation-Engine`: https://github.com/posabsolute/jQuery-Validation-Engine
+
+        Returns:
+
+            a string representing the constraints on this resource or field, in a form
+            that's useful on the front end, e.g. JavaScript
+        """
+        return 'javascript code for data validation'
+
     def check_value(self, value):
         """
         Extend this method to test whatever needs testing on a model or field. Return
