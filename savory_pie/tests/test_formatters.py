@@ -82,7 +82,7 @@ class JSONToPython(unittest.TestCase):
     def setUp(self):
         self.json_formatter = savory_pie.formatters.JSONFormatter()
 
-        # date
+        # datetime
         self.now = datetime.datetime(2013, 3, 5, 14, 50, 39)
         self.json_now = '2013-03-05T14:50:39'
 
