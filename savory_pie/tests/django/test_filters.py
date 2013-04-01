@@ -156,13 +156,13 @@ class ParameterizedFilterTest(FilterTest):
             self.assertEqual(value, criteria['bar'])
 
     def test_before(self):
-        results = self.apply_filters({'before': now.isoformat()})
+        results = self.apply_filters({'before': now.isoformat("T")})
         self.assertEqual(1, results.count())
         self.assertEqual(['alice'], [x.name for x in results])
-        results = self.apply_filters({'before': (now + hour).isoformat()})
+        results = self.apply_filters({'before': (now + hour).isoformat("T")})
         self.assertEqual(2, results.count())
         self.assertEqual(['alice', 'charlie'], [x.name for x in results])
-        results = self.apply_filters({'before': (now + 2 * hour).isoformat()})
+        results = self.apply_filters({'before': (now + 2 * hour).isoformat("T")})
         self.assertEqual(3, results.count())
         self.assertEqual(['alice', 'charlie', 'bob'], [x.name for x in results])
 
@@ -170,8 +170,8 @@ class ParameterizedFilterTest(FilterTest):
         results = self.apply_filters({'no_earlier_than': now.isoformat()})
         self.assertEqual(2, results.count())
         self.assertEqual(['charlie', 'bob'], [x.name for x in results])
-        results = self.apply_filters({'no_earlier_than': (now + hour).isoformat()})
+        results = self.apply_filters({'no_earlier_than': (now + hour).isoformat("T")})
         self.assertEqual(1, results.count())
         self.assertEqual(['bob'], [x.name for x in results])
-        results = self.apply_filters({'no_earlier_than': (now + 2 * hour).isoformat()})
+        results = self.apply_filters({'no_earlier_than': (now + 2 * hour).isoformat("T")})
         self.assertEqual(0, results.count())

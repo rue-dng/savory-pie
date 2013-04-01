@@ -1,7 +1,9 @@
 from datetime import datetime
-from django.utils.timezone import UTC
+from savory_pie import formatters
+import pytz
 
-_utc = UTC()
+json_formatter = formatters.JSONFormatter()
+date_str = json_formatter.to_api_value(datetime, datetime.now(pytz.UTC))
 
 #TODO add filtering and sort order
 user_resource_schema = {
@@ -24,7 +26,7 @@ user_resource_schema = {
         },
         'lastLogin': {
             'nullable': False,
-            'default': datetime.now(_utc).strftime("%Y-%m-%dT%H:%M"),
+            'default': date_str,
             'readonly': False,
             'helpText': u'',
             'blank': False,
@@ -70,7 +72,7 @@ user_resource_schema = {
         },
         'dateJoined': {
             'nullable': False,
-            'default': datetime.now(_utc).strftime("%Y-%m-%dT%H:%M"),
+            'default': date_str,
             'readonly': False,
             'helpText': u'',
             'blank': False,
