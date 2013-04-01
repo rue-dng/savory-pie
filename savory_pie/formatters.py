@@ -13,17 +13,23 @@ class JSONFormatter(object):
 
     content_type = 'application/json'
 
-    dateTimeRegex = re.compile('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\\.(\d+)([+-])(\d{2}):(\d{2})')
+    dateTimeRegex = re.compile('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\\.?(\d*)([+-])(\d{2}):(\d{2})')
     dateRegex = re.compile('(\d{4})-(\d{2})-(\d{2})(.*)')
 
     def parse_datetime(self, s):
-
-        m = self.dateTimeRegex.match(str(s))
+        if s is None:
+            return None
+        m = self.dateTimeRegex.match(s)
         if m is None:
             raise TypeError('Unable to parse ' + repr(s) + ' as a datetime')
 
-        year, month, date, hour, minute, second, milliseconds = \
-            map(string.atoi, [m.group(i) for i in range(1, 8)])
+        year, month, date, hour, minute, second = \
+            map(string.atoi, [m.group(i) for i in range(1, 7)])
+
+        if m.group(7):
+            milliseconds = string.atoi(m.group(7))
+        else:
+            milliseconds = 0
 
         tz_op = m.group(8)
 
@@ -31,6 +37,8 @@ class JSONFormatter(object):
             map(string.atoi, [m.group(i) for i in range(9, 11)])
 
         offset = tz_hour * 60 + tz_minute
+        if tz_op == '-':
+            offset *= -1
 
         return datetime.datetime(year, month, date, hour, minute, second, milliseconds, pytz.FixedOffset(offset))
 
@@ -68,11 +76,10 @@ class JSONFormatter(object):
     def to_api_value(self, type_, python_value):
         if python_value is not None:
             if issubclass(type_, datetime.datetime):
-            	if python_value:
-                	#Check if it is a naive date, and if so, make it UTC
-                    if not python_value.tzinfo:
-                    	python_value = python_value.replace(tzinfo=pytz.UTC)
-                    return python_value.isoformat("T") 
+                #Check if it is a naive date, and if so, make it UTC
+                if not python_value.tzinfo:
+                    python_value = python_value.replace(tzinfo=pytz.UTC)
+                return python_value.isoformat("T") 
             elif issubclass(type_, datetime.date):
             	return python_value.strftime("%Y-%m-%d")
             elif type(python_value) not in (int, long, float, dict, list,

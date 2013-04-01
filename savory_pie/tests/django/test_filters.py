@@ -8,7 +8,7 @@ from savory_pie.django import  filters
 from savory_pie.tests.django import mock_orm
 from savory_pie.tests.mock_context import mock_context
 from savory_pie.formatters import JSONFormatter
-
+import pytz
 
 class MockUser(mock_orm.Model):
     pass
@@ -24,10 +24,10 @@ class TestParams(object):
         for name, value in filters.items():
             formatted_names.append(JSONFormatter().convert_to_public_property(name)
                                    + '=' + value)
-        self.querystring = "&".join(formatted_names)
+        self.querystring = "&".join(formatted_names).replace("+", "%2B")
         self._GET = QueryDict(self.querystring)
 
-now = datetime.datetime.now().replace(microsecond=0)
+now = datetime.datetime.now(tz=pytz.UTC).replace(microsecond=0)
 hour = datetime.timedelta(hours=1)
 
 _users = mock_orm.QuerySet(
@@ -146,10 +146,10 @@ class ParameterizedFilterTest(FilterTest):
         foofilter.get_param_value('bar', ctx, params, criteria)
         self.assertEqual({'bar': 'unparsable'}, criteria)
         # parsable data should be parsed as a correct type
-        now = datetime.datetime.now().replace(microsecond=0)
+        now = datetime.datetime.now(tz=pytz.UTC).replace(microsecond=0)
         for value, svalue in [(11, '11'),
                               (3.14159, '3.14159'),
-                              (now, now.isoformat())]:
+                              (now, now.isoformat("T"))]:
             params = TestParams({'bar': svalue})
             criteria = {}
             foofilter.get_param_value('bar', ctx, params, criteria)
@@ -167,7 +167,7 @@ class ParameterizedFilterTest(FilterTest):
         self.assertEqual(['alice', 'charlie', 'bob'], [x.name for x in results])
 
     def test_no_earlier_than(self):
-        results = self.apply_filters({'no_earlier_than': now.isoformat()})
+        results = self.apply_filters({'no_earlier_than': now.isoformat("T")})
         self.assertEqual(2, results.count())
         self.assertEqual(['charlie', 'bob'], [x.name for x in results])
         results = self.apply_filters({'no_earlier_than': (now + hour).isoformat("T")})
