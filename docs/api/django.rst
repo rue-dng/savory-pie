@@ -10,4 +10,5 @@ This section documents the API for dealing Django in Savory Pie.
     django/filters
     django/resources
     django/utils
+    django/validators
     django/views

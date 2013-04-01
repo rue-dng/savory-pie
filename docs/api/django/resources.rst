@@ -23,6 +23,8 @@
 
             .. autoattribute:: fields
 
+            .. autoattribute:: validators
+
             .. autoattribute:: parent_resource_path
 
             .. autoattribute:: published_key

@@ -176,7 +176,6 @@ class JSONToPython(unittest.TestCase):
             try:
                 value = self.json_formatter.to_python_value(_type, svalue)
                 succeeded_incorrectly = True
-                import sys; print>>sys.stderr, repr(value)
             except TypeError:
                 pass
             except Exception, e:

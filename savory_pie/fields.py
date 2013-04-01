@@ -1,5 +1,7 @@
+import collections
 import functools
 from savory_pie.resources import EmptyParams
+from savory_pie.django.validators import BaseValidator
 
 
 def read_only_noop(func):
@@ -65,11 +67,13 @@ class AttributeField(Field):
                  type,
                  published_property=None,
                  use_prefetch=False,
-                 read_only=False):
+                 read_only=False,
+                 validator=None):
         self._full_attribute = attribute
         self._type = type
         self._published_property = published_property
         self._read_only = read_only
+        self.validator = validator or []
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
@@ -124,6 +128,15 @@ class AttributeField(Field):
     def to_api_value(self, ctx, python_value):
         return ctx.formatter.to_api_value(self._type, python_value)
 
+    def validate_resource(self, key, resource):
+        error_dict = {}
+        if isinstance(self.validator, collections.Iterable):
+            for validator in self.validator:
+                validator.find_errors(error_dict, key, resource, self)
+        else:
+            self.validator.find_errors(error_dict, key, resource, self)
+        return error_dict
+
 
 class URIResourceField(Field):
     """
@@ -156,17 +169,17 @@ class URIResourceField(Field):
     """
 
 
-
-
     def __init__(self,
                  attribute,
                  resource_class,
                  published_property=None,
-                 read_only=False):
+                 read_only=False,
+                 validator=None):
         self._attribute = attribute
         self._resource_class = resource_class
         self._published_property = published_property
         self._read_only = read_only
+        self.validator = validator or []
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
@@ -190,6 +203,11 @@ class URIResourceField(Field):
 
         target_dict[self._compute_property(ctx)] = ctx.build_resource_uri(resource)
 
+    def validate_resource(self, key, resource):
+        error_dict = {}
+        # TODO how do we validate this guy?
+        return error_dict
+
 
 class SubObjectResourceField(Field):
     """
@@ -210,6 +228,10 @@ class SubObjectResourceField(Field):
         ``read_only``
             optional -- this api will never try and set this value
 
+        ``validator``
+            optional -- a ResourceValidator, or list/tuple of ResourceValidators, to
+            validate the data in the related object
+
         .. code-block:: python
 
             SubObjectResourceField('other', OtherResource)
@@ -222,11 +244,13 @@ class SubObjectResourceField(Field):
                  attribute,
                  resource_class,
                  published_property=None,
-                 read_only=False):
+                 read_only=False,
+                 validator=None):
         self._attribute = attribute
         self._resource_class = resource_class
         self._published_property = published_property
         self._read_only = read_only
+        self.validator = validator or []
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
@@ -289,6 +313,20 @@ class SubObjectResourceField(Field):
             target_dict[self._compute_property(ctx)] =\
                 self._resource_class(sub_model).get(ctx, EmptyParams())
 
+    def validate_resource(self, key, resource):
+        error_dict = {}
+        submodel = self.get_submodel(None, resource.model)
+        if submodel is not None:
+            subresource = self._resource_class(submodel)
+            error_dict.update(BaseValidator.validate(subresource, key + '.' + self.name))
+            # a validator here will be a ResourceValidator, not a FieldValidator
+            if isinstance(self.validator, collections.Iterable):
+                for validator in self.validator:
+                    validator.find_errors(error_dict, key, subresource)
+            else:
+                self.validator.find_errors(error_dict, key, subresource)
+        return error_dict
+
 
 class IterableField(Field):
     """
@@ -321,11 +359,13 @@ class IterableField(Field):
                  attribute,
                  resource_class,
                  published_property=None,
-                 read_only=False):
+                 read_only=False,
+                 validator=None):
         self._attribute = attribute
         self._resource_class = resource_class
         self._published_property = published_property
         self._read_only = read_only
+        self.validator = validator or []
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
@@ -406,3 +446,8 @@ class IterableField(Field):
                 model_dict['_id'] = model_resource.key
             objects.append(model_dict)
         target_dict[self._compute_property(ctx)] = objects
+
+    def validate_resource(self, key, resource):
+        error_dict = {}
+        # TODO how do we validate this guy?
+        return error_dict

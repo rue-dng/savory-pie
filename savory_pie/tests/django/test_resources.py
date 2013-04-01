@@ -1,7 +1,7 @@
 import unittest
 from mock import Mock, MagicMock, call, patch
 
-from savory_pie.django import resources, fields
+from savory_pie.django import resources, fields, validators
 from savory_pie.tests.django import user_resource_schema, mock_orm, date_str
 from savory_pie.tests.mock_context import mock_context
 from savory_pie.resources import EmptyParams
@@ -364,7 +364,6 @@ class DjangoUserResource(resources.ModelResource):
 
 
 class SchemaResourceTest(unittest.TestCase):
-    maxDiff = None
 
     def setUp(self):
         self.json_formatter = formatters.JSONFormatter()
