@@ -6,9 +6,4 @@
 Using Validators
 =======================================
 
-Blah blah blah blah blah. Supercalifragilistic expialidocious.
-Blah blah blah blah blah. Supercalifragilistic expialidocious.
-Blah blah blah blah blah. Supercalifragilistic expialidocious.
-Blah blah blah blah blah. Supercalifragilistic expialidocious.
-Blah blah blah blah blah. Supercalifragilistic expialidocious.
-Blah blah blah blah blah. Supercalifragilistic expialidocious.
+Blah blah blah blah blah.

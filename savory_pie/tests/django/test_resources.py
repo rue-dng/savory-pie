@@ -364,7 +364,6 @@ class DjangoUserResource(resources.ModelResource):
 
 
 class SchemaResourceTest(unittest.TestCase):
-    maxDiff = None
 
     def setUp(self):
         self.json_formatter = formatters.JSONFormatter()

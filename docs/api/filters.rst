@@ -1,4 +1,4 @@
-.. _formaters_modile:
+.. _filters_modile:
 
 :mod:`savory_pie.filters`
 ----------------------------

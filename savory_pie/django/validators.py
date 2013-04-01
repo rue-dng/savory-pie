@@ -1,6 +1,7 @@
 import collections
 import datetime
 import re
+import json
 import logging
 
 logger = logging.getLogger('savory_pie')
@@ -87,6 +88,16 @@ class BaseValidator:
     failure, if one occurs.
     """
 
+    json_name = 'What the front end calls this validator'
+    """
+    This should be a name understood by the front-end developers as referring to this
+    particular validator so that they can wire up JavaScript to validate HTML forms in
+    the browser.
+    """
+
+    def __init__(self):
+        self.populate_schema()
+
     @classmethod
     def validate(cls, resource, key):
         """
@@ -123,6 +134,20 @@ class BaseValidator:
         else:
             error_dict[key] = [error]
 
+    def populate_schema(self, **kwargs):
+        """
+        Every validator *MUST* call this method in its constructor. The *kwargs*
+        should be name-value pairs for any parameters required for validation. If the
+        constructor sets error_message, that should happen *before* the call to this
+        method.
+        """
+        self._schema = schema = {
+            'name': self.json_name,
+            'text': self.error_message
+        }
+        for key, value in kwargs.items():
+            schema[key] = value
+
     def to_schema(self):
         """
         Subclasses are expected to overload this method with a string used in
@@ -136,7 +161,7 @@ class BaseValidator:
             a string representing the constraints on this resource or field, in a form
             that's useful on the front end, e.g. JavaScript
         """
-        return 'javascript code for data validation'
+        return self._schema
 
     def check_value(self, value):
         """
@@ -182,13 +207,15 @@ class DatetimeFieldSequenceValidator(ResourceValidator):
             condition is not met
     """
 
+    json_name = 'dates_in_sequence'
+
     error_message = 'Datetimes are not in expected sequence.'
 
     def __init__(self, *date_fields, **kwargs):
         self._date_fields = date_fields
         if 'error_message' in kwargs:
             self.error_message =  kwargs['error_message']
-
+        self.populate_schema(fields=','.join(date_fields))
 
     def find_errors(self, error_dict, key, resource):
         """
@@ -240,6 +267,8 @@ class StringFieldZipcodeValidator(FieldValidator):
         Handle international postal codes, some are six digits???
     """
 
+    json_name = 'us_zipcode'
+
     error_message = 'This should be a zipcode.'
 
     def check_value(self, value):
@@ -269,12 +298,15 @@ class StringFieldExactMatchValidator(FieldValidator):
             condition is not met
     """
 
+    json_name = 'exact_string'
+
     error_message = 'This should exactly match the expected value.'
 
     def __init__(self, expected, error_message=None):
         self._expected = expected
         if error_message:
             self.error_message =  error_message
+        self.populate_schema(expected=expected)
 
     def check_value(self, value):
         """
@@ -299,16 +331,19 @@ class IntFieldMinValidator(FieldValidator):
             condition is not met
     """
 
+    json_name = 'int_min'
+
     def __init__(self, _min, error_message=None):
         self._min = _min
         if error_message:
             self.error_message =  error_message
+        self.populate_schema(value=_min)
 
     def check_value(self, intvalue):
         """
         Verify integer value is no less than specified minimum.
         """
-        return intvalue >= self._min
+        return type(intvalue) is int and intvalue >= self._min
 
 
 class IntFieldMaxValidator(FieldValidator):
@@ -327,16 +362,19 @@ class IntFieldMaxValidator(FieldValidator):
             condition is not met
     """
 
+    json_name = 'int_max'
+
     def __init__(self, _max, error_message=None):
         self._max = _max
         if error_message:
             self.error_message =  error_message
+        self.populate_schema(value=_max)
 
     def check_value(self, intvalue):
         """
         Verify integer value is no greater than specified maximum.
         """
-        return intvalue <= self._max
+        return type(intvalue) is int and intvalue <= self._max
 
 
 class IntFieldRangeValidator(FieldValidator):
@@ -358,14 +396,81 @@ class IntFieldRangeValidator(FieldValidator):
             condition is not met
     """
 
+    json_name = 'int_range'
+
     def __init__(self, _min, _max, error_message=None):
         self._min = _min
         self._max = _max
         if error_message:
             self.error_message =  error_message
+        self.populate_schema(min=_min, max=_max)
 
     def check_value(self, intvalue):
         """
         Verify that numerical value is within specified range.
         """
-        return intvalue >= self._min and intvalue <= self._max
+        return type(intvalue) is int and intvalue >= self._min and intvalue <= self._max
+
+
+class DatetimeFieldMinValidator(FieldValidator):
+
+    """
+    Test an AttributeField of type datetime to make sure it is no earlier than a
+    specified minimum.
+
+    Parameters:
+
+        ``min``
+            the specified minimum
+
+        ``error_message``
+            optional: the message to appear in the error dictionary if this
+            condition is not met
+    """
+
+    json_name = 'datetime_min'
+
+    def __init__(self, _min, error_message=None):
+        _min = _min.replace(microsecond=0)
+        self._min = _min
+        if error_message:
+            self.error_message =  error_message
+        self.populate_schema(value=_min.isoformat())
+
+    def check_value(self, datetimevalue):
+        """
+        Verify integer value is no less than specified minimum.
+        """
+        return type(datetimevalue) is datetime.datetime and datetimevalue >= self._min
+
+
+class DatetimeFieldMaxValidator(FieldValidator):
+
+    """
+    Test an AttributeField of type datetime to make sure it is no later than a
+    specified maximum.
+
+    Parameters:
+
+        ``max``
+            the specified maximum
+
+        ``error_message``
+            optional: the message to appear in the error dictionary if this
+            condition is not met
+    """
+
+    json_name = 'datetime_max'
+
+    def __init__(self, _max, error_message=None):
+        _max = _max.replace(microsecond=0)
+        self._max = _max
+        if error_message:
+            self.error_message =  error_message
+        self.populate_schema(value=_max.isoformat())
+
+    def check_value(self, datetimevalue):
+        """
+        Verify integer value is no greater than specified maximum.
+        """
+        return type(datetimevalue) is datetime.datetime and datetimevalue <= self._max

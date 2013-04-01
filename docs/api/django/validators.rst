@@ -6,7 +6,7 @@
 .. automodule:: savory_pie.django.validators
 
     .. autoclass:: BaseValidator
-        :members: check_value, error_message, validate, to_schema
+        :members: check_value, error_message, validate, to_schema, populate_schema, json_name
 
     .. autoclass:: ResourceValidator
         :members: find_errors
@@ -27,4 +27,10 @@
         :members: __init__, find_errors
 
     .. autoclass:: IntFieldRangeValidator
+        :members: __init__, find_errors
+
+    .. autoclass:: DatetimeFieldMaxValidator
+        :members: __init__, find_errors
+
+    .. autoclass:: DatetimeFieldRangeValidator
         :members: __init__, find_errors
