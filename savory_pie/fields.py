@@ -301,9 +301,16 @@ class SubObjectResourceField(Field):
                 if hasattr(target_obj, self._attribute) and getattr(target_obj, self._attribute) is not None:
                     setattr(target_obj, self._attribute, None)
             else:
+                # Use the pre_save property, to determine whether we need to set the attribute before or after put
+                # in the case of a ReverseSingleRelatedObject (pre_save is False), then we need to set the attribute first
+                # before calling put. This is to get around the Django ORM restrictions.
+                if not self.pre_save:
+                    setattr(target_obj, self._attribute, sub_resource.model)
+
                 sub_resource.put(ctx, sub_source_dict)
-                # Must be after the save on the sub_model
-                setattr(target_obj, self._attribute, sub_resource.model)
+
+                if self.pre_save:
+                    setattr(target_obj, self._attribute, sub_resource.model)
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
         sub_model = self.get_submodel(ctx, source_obj)
