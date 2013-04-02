@@ -121,7 +121,12 @@ class BaseValidator:
             if hasattr(resource, 'fields') and \
                         isinstance(resource.fields, collections.Iterable):
                 for field in resource.fields:
-                    error_dict.update(field.validate_resource(key, resource))
+                    try:
+                        validate_method = field.validate_resource
+                    except AttributeError:
+                        pass
+                    else:
+                        error_dict.update(validate_method(key, resource))
             if hasattr(resource, 'validators') and \
                         isinstance(resource.validators, collections.Iterable):
                 for validator in resource.validators:
