@@ -64,10 +64,10 @@ class JSONFormatter(object):
     # Not 100% happy with this API review pre 1.0
     def to_python_value(self, type_, api_value):
         try:
-            if issubclass(type_, datetime.datetime):
-                return self.parse_datetime(api_value)
-            elif issubclass(type_, datetime.date):
+            if type_ is datetime.date:
                 return self.parse_date(api_value)
+            elif issubclass(type_, datetime.datetime):
+                return self.parse_datetime(api_value)
             return None if api_value is None else type_(api_value)
         except ValueError:
             raise TypeError('Expected ' + str(type_) + ', got ' + repr(api_value))
@@ -75,13 +75,13 @@ class JSONFormatter(object):
     # Not 100% happy with this API review pre 1.0
     def to_api_value(self, type_, python_value):
         if python_value is not None:
-            if issubclass(type_, datetime.datetime):
+            if type_ is datetime.date:
+                return python_value.strftime("%Y-%m-%d")
+            elif issubclass(type_, datetime.datetime):
                 #Check if it is a naive date, and if so, make it UTC
                 if not python_value.tzinfo:
                     python_value = python_value.replace(tzinfo=pytz.UTC)
-                return python_value.isoformat("T") 
-            elif issubclass(type_, datetime.date):
-            	return python_value.strftime("%Y-%m-%d")
+                return python_value.isoformat("T")
             elif type(python_value) not in (int, long, float, dict, list,
                                             bool, str, unicode, type(None)):
                 return str(python_value)
