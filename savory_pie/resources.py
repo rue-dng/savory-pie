@@ -32,6 +32,8 @@ class Resource(object):
     #: construction.
     resource_path = None
 
+    validators = []
+
     @property
     def allowed_methods(self):
         """

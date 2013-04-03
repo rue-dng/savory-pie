@@ -176,6 +176,10 @@ class ModelResource(Resource):
     #: into and read from dict-s being handled by get, post, and put
     fields = []
 
+    #: A list of Validator-s that are used to check data consistence and
+    #: integrity on a model.
+    validators = []
+
     _resource_path = None
 
     @classmethod
@@ -288,6 +292,10 @@ class ModelResource(Resource):
     def delete(self, ctx):
         self.model.delete()
 
+    @classmethod
+    def _validator_schema(cls):
+        return [validator.to_schema() for validator in cls.validators]
+
 
 class SchemaResource(Resource):
     def __init__(self, model_resource):
@@ -305,7 +313,8 @@ class SchemaResource(Resource):
             'defaultLimit': getattr(self.__resource, 'default_limit', 0),
             'filtering': getattr(self.__resource, 'filtering', {}),
             'ordering': getattr(self.__resource, 'ordering', []),
-            'fields': {}
+            'validators': self.__resource._validator_schema(),
+            'fields': {},
         }
         for resource_field in self.__resource.fields:
             field_name = ctx.formatter.convert_to_public_property(resource_field.name)

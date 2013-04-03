@@ -1,4 +1,7 @@
 import json
+import time
+import pytz
+import string
 import datetime
 import re
 
@@ -10,18 +13,34 @@ class JSONFormatter(object):
 
     content_type = 'application/json'
 
-    datetimeRegex = re.compile('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})')
+    dateTimeRegex = re.compile('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\\.?(\d*)([+-])(\d{2}):(\d{2})')
     dateRegex = re.compile('(\d{4})-(\d{2})-(\d{2})(.*)')
 
     def parse_datetime(self, s):
         if s is None:
             return None
-        m = self.datetimeRegex.match(s)
+        m = self.dateTimeRegex.match(s)
         if m is None:
             raise TypeError('Unable to parse ' + repr(s) + ' as a datetime')
+
         year, month, date, hour, minute, second = \
-            map(int, [m.group(i) for i in range(1, 7)])
-        return datetime.datetime(year, month, date, hour, minute, second)
+            map(string.atoi, [m.group(i) for i in range(1, 7)])
+
+        if m.group(7):
+            milliseconds = string.atoi(m.group(7))
+        else:
+            milliseconds = 0
+
+        tz_op = m.group(8)
+
+        tz_hour, tz_minute = \
+            map(string.atoi, [m.group(i) for i in range(9, 11)])
+
+        offset = tz_hour * 60 + tz_minute
+        if tz_op == '-':
+            offset *= -1
+
+        return datetime.datetime(year, month, date, hour, minute, second, milliseconds, pytz.FixedOffset(offset))
 
     def parse_date(self, s):
         if s is None:
@@ -45,10 +64,10 @@ class JSONFormatter(object):
     # Not 100% happy with this API review pre 1.0
     def to_python_value(self, type_, api_value):
         try:
-            if issubclass(type_, datetime.datetime):
-                return self.parse_datetime(api_value)
-            elif issubclass(type_, datetime.date):
+            if type_ is datetime.date:
                 return self.parse_date(api_value)
+            elif issubclass(type_, datetime.datetime):
+                return self.parse_datetime(api_value)
             return None if api_value is None else type_(api_value)
         except ValueError:
             raise TypeError('Expected ' + str(type_) + ', got ' + repr(api_value))
@@ -56,11 +75,15 @@ class JSONFormatter(object):
     # Not 100% happy with this API review pre 1.0
     def to_api_value(self, type_, python_value):
         if python_value is not None:
-            if issubclass(type_, datetime.datetime):
-                return python_value.strftime("%Y-%m-%dT%H:%M:%S")
-            elif issubclass(type_, datetime.date):
+            if type_ is datetime.date:
                 return python_value.strftime("%Y-%m-%d")
+            elif issubclass(type_, datetime.datetime):
+                #Check if it is a naive date, and if so, make it UTC
+                if not python_value.tzinfo:
+                    python_value = python_value.replace(tzinfo=pytz.UTC)
+                return python_value.isoformat("T")
             elif type(python_value) not in (int, long, float, dict, list,
                                             bool, str, unicode, type(None)):
                 return str(python_value)
+
         return python_value

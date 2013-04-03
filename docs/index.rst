@@ -64,6 +64,8 @@ Narrative documentation
    narr/running_tests
    narr/resources
    narr/fields
+   narr/filters
+   narr/validation
    narr/extending
 
 API Documentation

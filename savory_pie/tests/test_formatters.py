@@ -2,6 +2,7 @@ import unittest
 import decimal
 import datetime
 import time
+import pytz
 from mock import Mock
 
 import savory_pie.formatters
@@ -11,10 +12,8 @@ class JSONToAPITest(unittest.TestCase):
 
     def setUp(self):
         self.json_formatter = savory_pie.formatters.JSONFormatter()
-
-        # datetime
-        self.now = datetime.datetime(2013, 3, 5, 14, 50, 39)
-        self.json_now = '2013-03-05T14:50:39'
+        self.now = datetime.datetime(2013, 3, 5, 14, 50, 39, 123456, pytz.UTC)
+        self.json_now = '2013-03-05T14:50:39.123456+00:00'
 
         # date
         self.now_date = datetime.date(2013, 3, 5)
@@ -81,10 +80,8 @@ class JSONToPython(unittest.TestCase):
 
     def setUp(self):
         self.json_formatter = savory_pie.formatters.JSONFormatter()
-
-        # datetime
-        self.now = datetime.datetime(2013, 3, 5, 14, 50, 39)
-        self.json_now = '2013-03-05T14:50:39'
+        self.now = datetime.datetime(2013, 3, 5, 14, 50, 39, 123456, pytz.UTC)
+        self.json_now = '2013-03-05T14:50:39.123456+00:00'
 
         # date
         self.now_date = datetime.date(2013, 3, 5)
@@ -179,7 +176,6 @@ class JSONToPython(unittest.TestCase):
             try:
                 value = self.json_formatter.to_python_value(_type, svalue)
                 succeeded_incorrectly = True
-                import sys; print>>sys.stderr, repr(value)
             except TypeError:
                 pass
             except Exception, e:

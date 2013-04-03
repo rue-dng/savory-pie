@@ -1,8 +1,10 @@
 import unittest
+import django
+
 from mock import Mock, MagicMock
 
 from django.core.exceptions import ObjectDoesNotExist
-
+from savory_pie.django import resources, fields
 from savory_pie.django.utils import Related
 from savory_pie.django.resources import ModelResource, QuerySetResource
 from savory_pie.django.fields import (
@@ -505,6 +507,57 @@ class SubModelResourceFieldTest(unittest.TestCase):
 
         self.assertEqual(foo_20.model, target_object.foo)
         self.assertEqual(20, target_object.foo.bar)
+
+    def test_incoming_with_reverse_foreign_key(self):
+        class User(mock_orm.Model):
+            name = Mock()
+
+        class UserOwner(mock_orm.Model):
+            user = Mock(django.db.models.fields.related.ReverseSingleRelatedObjectDescriptor(Mock()))
+            type = Mock()
+
+        class UserOwnerResource(resources.ModelResource):
+            model_class = UserOwner
+
+            fields = [
+                fields.AttributeField(attribute='type', type=str),
+            ]
+
+        class MockResource(ModelResource):
+            model_class = User
+
+            owner_field = fields.SubModelResourceField(attribute='owner', resource_class=UserOwnerResource)
+            # needed to set the proper pre_save property on fields
+            owner_field._field = Mock()
+            owner_field._field.related = Mock()
+            owner_field._field.related.field = Mock()
+            owner_field._field.related.field.name = 'user'
+            fields = [
+                AttributeField(attribute='name', type=str),
+                owner_field
+            ]
+
+
+        field = SubModelResourceField(attribute='user', resource_class=MockResource)
+
+        source_dict = {
+            'user': {'name': 'username', 'owner': {'type': 'ownertype'}},
+        }
+
+        # The django ORM makes me sad that this is not a None or AttributeError
+        class MockFailsOnFooAccess(Mock):
+            def __getattr__(self, name):
+                if name == 'user':
+                    raise ObjectDoesNotExist
+                else:
+                    return super(Mock, self).__getattr__(name)
+
+        target_object = MockFailsOnFooAccess()
+        field.handle_incoming(mock_context(), source_dict, target_object)
+
+        self.assertEqual('username', target_object.user.name)
+        self.assertEqual('ownertype', target_object.user.owner.type)
+        target_object.user.save.assert_called()
 
     def test_prepare(self):
 
