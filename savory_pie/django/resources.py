@@ -119,7 +119,8 @@ class QuerySetResource(Resource):
             meta['count'] = len(objects)
 
         # add meta-level resourceUri to QuerySet response
-        meta['resourceUri'] = ctx.build_resource_uri(self)
+        if self.resource_path is not None:
+            meta['resourceUri'] = ctx.build_resource_uri(self)
 
         return {
             'meta': meta,
