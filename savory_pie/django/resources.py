@@ -262,9 +262,6 @@ class ModelResource(Resource):
         for field in self.fields:
             field.handle_outgoing(ctx, self.model, target_dict)
 
-        if self.resource_path is not None:
-            target_dict['resourceUri'] = ctx.build_resource_uri(self)
-
         return target_dict
 
     def put(self, ctx, source_dict, save=True):
@@ -308,7 +305,6 @@ class SchemaResource(Resource):
             'defaultLimit': getattr(self.__resource, 'default_limit', 0),
             'filtering': getattr(self.__resource, 'filtering', {}),
             'ordering': getattr(self.__resource, 'ordering', []),
-            'resourceUri': ctx.build_resource_uri(self),
             'fields': {}
         }
         for resource_field in self.__resource.fields:
