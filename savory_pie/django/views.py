@@ -64,21 +64,9 @@ def _strip_query_string(path):
     return path.split('?', 1)[0]
 
 
-def _process_resource_uri(ctx, resource, response):
-    try:
-        resource_uri = ctx.build_resource_uri(resource)
-    except:
-        resource_uri = ''
-    if 'meta' in response:
-        response['meta']['resourceUri'] = resource_uri
-    else:
-        response['resourceUri'] = resource_uri
-
-
 def _process_get(ctx, resource, request):
     if 'GET' in resource.allowed_methods:
         content_dict = resource.get(ctx, _ParamsImpl(request.GET))
-        _process_resource_uri(ctx, resource, content_dict)
         return _content_success(ctx, resource, request, content_dict)
     else:
         return _not_allowed_method(ctx, resource, request)

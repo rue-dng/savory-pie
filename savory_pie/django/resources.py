@@ -118,6 +118,9 @@ class QuerySetResource(Resource):
             # do a len on the accumulated objects to avoid the extra COUNT(*) query.
             meta['count'] = len(objects)
 
+        # add meta-level resourceUri to QuerySet response
+        meta['resourceUri'] = ctx.build_resource_uri(self)
+
         return {
             'meta': meta,
             'objects': objects
@@ -266,6 +269,9 @@ class ModelResource(Resource):
         for field in self.fields:
             field.handle_outgoing(ctx, self.model, target_dict)
 
+        if self.resource_path is not None:
+            target_dict['resourceUri'] = ctx.build_resource_uri(self)
+
         return target_dict
 
     def put(self, ctx, source_dict, save=True):
@@ -314,6 +320,7 @@ class SchemaResource(Resource):
             'filtering': getattr(self.__resource, 'filtering', {}),
             'ordering': getattr(self.__resource, 'ordering', []),
             'validators': self.__resource._validator_schema(),
+            'resourceUri': ctx.build_resource_uri(self),
             'fields': {},
         }
         for resource_field in self.__resource.fields:
