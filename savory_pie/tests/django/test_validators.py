@@ -150,7 +150,7 @@ class OptionalValidationTestCase(ValidationTestCase):
 
     def test_optional_validation(self):
         """
-        Fields should not bw required to have validation
+        Fields should not be required to have validation
         """
         model = User()
         resource = UserTestResource(model)
