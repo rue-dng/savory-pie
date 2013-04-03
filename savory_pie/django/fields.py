@@ -1,10 +1,11 @@
 import collections
+import logging
 import django.core.exceptions
 from django.utils.functional import Promise
 from django.db.models.fields import FieldDoesNotExist
 from savory_pie import fields as base_fields
-from savory_pie.resources import EmptyParams
 
+logger = logging.getLogger(__name__)
 
 class DjangoField(base_fields.Field):
     def schema(self, ctx, **kwargs):
@@ -195,8 +196,10 @@ class SubModelResourceField(base_fields.SubObjectResourceField, DjangoField):
             attribute_name = self._field.related.field.name
             attribute = getattr(self._resource_class.model_class, attribute_name)
             if isinstance(attribute, django.db.models.fields.related.ReverseSingleRelatedObjectDescriptor):
+                logger.debug('Setting pre_save to false with attribute %s and attribute_name %s', self._attribute, attribute_name)
                 return False
         except AttributeError:
+            logger.debug('Setting pre_save to True with attribute %s', self._attribute)
             return True
 
 
