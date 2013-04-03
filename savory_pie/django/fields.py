@@ -6,7 +6,6 @@ from django.db.models.fields import FieldDoesNotExist
 from savory_pie import fields as base_fields
 
 logger = logging.getLogger(__name__)
-print 'logging with name {0}'.format(__name__)
 
 class DjangoField(base_fields.Field):
     def schema(self, ctx, **kwargs):
