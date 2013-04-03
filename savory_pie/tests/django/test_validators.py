@@ -130,6 +130,33 @@ class ValidationTestCase(unittest.TestCase):
     maxDiff = None
 
 
+class NoOpField(object):
+    def handle_incoming(self, ctx, source_dict, target_obj):
+        pass
+
+    def handle_outgoing(self, ctx, source_obj, target_dict):
+        pass
+
+
+class OptionalValidationTestCase(ValidationTestCase):
+
+    class OptionalResource(resources.ModelResource):
+        parent_resource_path = 'users'
+        model_class = User
+
+        fields = [
+            NoOpField()
+        ]
+
+    def test_optional_validation(self):
+        """
+        Fields should not be required to have validation
+        """
+        model = User()
+        resource = UserTestResource(model)
+        errors = spie_validators.BaseValidator.validate(resource, 'user')
+
+
 class SimpleValidationTestCase(ValidationTestCase):
 
     def test_okay(self):
