@@ -218,7 +218,7 @@ class SubModelResourceField(base_fields.SubObjectResourceField, DjangoField):
                 return True
             else:
                 if isinstance(attribute, django.db.models.fields.related.ReverseSingleRelatedObjectDescriptor):
-                    logger.debug('Setting pre_save to false with attribute %s and attribute_name %s', self._attribute, attribute_name)
+                    logger.debug('Setting pre_save to False with attribute %s and attribute_name %s', self._attribute, attribute_name)
                     return False
 
         return True
