@@ -11,6 +11,7 @@ class DjangoField(base_fields.Field):
     def schema(self, ctx, **kwargs):
         model = kwargs['model']
         field_name = (model._meta.pk.name if self.name == 'pk' else self.name)
+        # TODO: need to remove _field, field is a global state, we should not be changing it on an instance level
         self._field = None
         try:
             self._field = model._meta.get_field(field_name)
