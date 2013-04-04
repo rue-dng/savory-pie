@@ -68,7 +68,6 @@ class AttributeField(base_fields.AttributeField, DjangoField):
                 This parameter is meaningless for top-level attributes.
     """
     def __init__(self, *args, **kwargs):
-        self.pre_save = True
         self._use_prefetch = kwargs.pop('use_prefetch', False)
         super(AttributeField, self).__init__(*args, **kwargs)
 
@@ -82,6 +81,9 @@ class AttributeField(base_fields.AttributeField, DjangoField):
 
     def filter_by_item(self, ctx, filter_args, source_dict):
         filter_args[self._full_attribute] = source_dict[self._compute_property(ctx)]
+
+    def pre_save(self, model):
+        return True
 
 
 class URIResourceField(base_fields.URIResourceField, DjangoField):
@@ -107,15 +109,16 @@ class URIResourceField(base_fields.URIResourceField, DjangoField):
     """
     def __init__(self, *args, **kwargs):
         self._use_prefetch = kwargs.pop('use_prefetch', False)
-        self.pre_save = True
         super(URIResourceField, self).__init__(*args, **kwargs)
-
 
     def prepare(self, ctx, related):
         if self._use_prefetch:
             related.sub_prefetch(self._attribute)
         else:
             related.sub_select(self._attribute)
+
+    def pre_save(self, model):
+        return True
 
 
 class SubModelResourceField(base_fields.SubObjectResourceField, DjangoField):
@@ -183,8 +186,20 @@ class SubModelResourceField(base_fields.SubObjectResourceField, DjangoField):
 
         return sub_model
 
-    @property
-    def pre_save(self):
+    def _get_field(self, model):
+        field_name = (model._meta.pk.name if self.name == 'pk' else self.name)
+        field = None
+        try:
+            field = model._meta.get_field(field_name)
+        except:
+            # probably only for m2m fields
+            try:
+                field = model._meta.get_field_by_name(field_name)[0].field
+            except FieldDoesNotExist:
+                field = None
+        return field
+
+    def pre_save(self, model):
         '''
         This is to figure if we need to pre_save the foreign key or not.
         If Model A has foreign key to Model B, do everything normal
@@ -192,15 +207,17 @@ class SubModelResourceField(base_fields.SubObjectResourceField, DjangoField):
         @return: a Boolean variable used in ModelResources' put
         '''
 
-        try:
-            attribute_name = self._field.related.field.name
-            attribute = getattr(self._resource_class.model_class, attribute_name)
-            if isinstance(attribute, django.db.models.fields.related.ReverseSingleRelatedObjectDescriptor):
-                logger.debug('Setting pre_save to false with attribute %s and attribute_name %s', self._attribute, attribute_name)
-                return False
-        except AttributeError:
-            logger.debug('Setting pre_save to True with attribute %s', self._attribute)
-            return True
+        field = self._get_field(model)
+        if field:
+            attribute_name = field.related.field.name
+            try:
+                attribute = getattr(self._resource_class.model_class, attribute_name)
+                if isinstance(attribute, django.db.models.fields.related.ReverseSingleRelatedObjectDescriptor):
+                    logger.debug('Setting pre_save to false with attribute %s and attribute_name %s', self._attribute, attribute_name)
+                    return False
+            except AttributeError:
+                logger.debug('Setting pre_save to True with attribute %s', self._attribute)
+                return True
 
 
 class RelatedManagerField(base_fields.IterableField, DjangoField):
@@ -212,12 +229,6 @@ class RelatedManagerField(base_fields.IterableField, DjangoField):
             :class:`savory_pie.fields.IterableField`
     """
     def __init__(self, *args, **kwargs):
-        '''
-        This is to figure out if we need to pre_save the many to many field or not.
-        In this case, we always want the related model to save first, before we save ourselves.
-        @return: a Boolean variable used in ModelResources' put
-        '''
-        self.pre_save = False
         super(RelatedManagerField, self).__init__(*args, **kwargs)
 
     def get_iterable(self, value):
@@ -231,3 +242,11 @@ class RelatedManagerField(base_fields.IterableField, DjangoField):
     def schema(self, ctx, **kwargs):
         kwargs = dict(kwargs.items() + {'schema': {'type': 'related', 'relatedType': 'to_many'}}.items())
         return super(RelatedManagerField, self).schema(ctx, **kwargs)
+
+    def pre_save(self, model):
+        '''
+        This is to figure out if we need to pre_save the many to many field or not.
+        In this case, we always want the related model to save first, before we save ourselves.
+        @return: a Boolean variable used in ModelResources' put
+        '''
+        return False

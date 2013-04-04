@@ -322,7 +322,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
         }
 
         target_object = Mock()
-
+        target_object._meta.get_field().related.field.name = 'bar'
         field.handle_incoming(mock_context(), source_dict, target_object)
 
         self.assertEqual(target_object.foo.bar, 20)
@@ -381,7 +381,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
         }
 
         target_object = Mock()
-
+        target_object._meta.get_field().related.field.name = 'bar'
         field.handle_incoming(mock_context(), source_dict, target_object)
         self.assertIsNotNone(target_object.foo)
 
@@ -438,6 +438,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
                     return super(Mock, self).__getattr__(name)
 
         target_object = MockFailsOnFooAccess()
+        target_object._meta.get_field().related.field.name = 'bar'
         field.handle_incoming(mock_context(), source_dict, target_object)
 
         self.assertEqual(20, target_object.foo.bar)
@@ -473,6 +474,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
                     return super(Mock, self).__getattr__(name)
 
         target_object = MockFailsOnFooAccess()
+        target_object._meta.get_field().related.field.name = 'bar'
         field.handle_incoming(mock_context(), source_dict, target_object)
 
         self.assertEqual(20, target_object.foo.bar)
@@ -497,6 +499,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
         }
 
         target_object = Mock()
+        target_object._meta.get_field().related.field.name = 'bar'
         ctx = mock_context()
         ctx.resolve_resource_uri = Mock()
         foo_20 = ctx.resolve_resource_uri.return_value = MockResource(Mock())
@@ -527,16 +530,10 @@ class SubModelResourceFieldTest(unittest.TestCase):
             model_class = User
 
             owner_field = fields.SubModelResourceField(attribute='owner', resource_class=UserOwnerResource)
-            # needed to set the proper pre_save property on fields
-            owner_field._field = Mock()
-            owner_field._field.related = Mock()
-            owner_field._field.related.field = Mock()
-            owner_field._field.related.field.name = 'user'
             fields = [
                 AttributeField(attribute='name', type=str),
                 owner_field
             ]
-
 
         field = SubModelResourceField(attribute='user', resource_class=MockResource)
 
@@ -546,6 +543,8 @@ class SubModelResourceFieldTest(unittest.TestCase):
 
         # The django ORM makes me sad that this is not a None or AttributeError
         class MockFailsOnFooAccess(Mock):
+            def model(self):
+                return Mock()
             def __getattr__(self, name):
                 if name == 'user':
                     raise ObjectDoesNotExist
@@ -553,6 +552,9 @@ class SubModelResourceFieldTest(unittest.TestCase):
                     return super(Mock, self).__getattr__(name)
 
         target_object = MockFailsOnFooAccess()
+        target_object._meta.get_field().related.field.name = 'name'
+        User.objects.filter().get()._meta.get_field().related.field.name = 'name'
+
         field.handle_incoming(mock_context(), source_dict, target_object)
 
         self.assertEqual('username', target_object.user.name)

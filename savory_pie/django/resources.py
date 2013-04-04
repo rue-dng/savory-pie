@@ -282,14 +282,14 @@ class ModelResource(Resource):
             return
 
         for field in self.fields:
-            if field.pre_save:
+            if field.pre_save(self.model):
                 field.handle_incoming(ctx, source_dict, self.model)
 
         if save:
             self.model.save()
 
         for field in self.fields:
-            if not field.pre_save:
+            if not field.pre_save(self.model):
                 field.handle_incoming(ctx, source_dict, self.model)
 
     def delete(self, ctx):
