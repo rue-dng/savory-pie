@@ -134,6 +134,7 @@ class Model(object):
         pass
 
     _models = []
+    _meta = Mock()
     objects = Manager()
 
     def __init__(self, **kwargs):
