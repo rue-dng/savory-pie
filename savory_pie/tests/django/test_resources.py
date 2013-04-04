@@ -73,12 +73,7 @@ class ComplexUserRelationResource(resources.ModelResource):
     model_class = User
 
     owner_field = fields.SubModelResourceField(attribute='owner', resource_class=UserOwnerResource)
-    # needed to set the proper pre_save property on fields
-    owner_field._field = Mock()
-    owner_field._field.related = Mock()
-    owner_field._field.related.field = Mock()
-    owner_field._field.related.field.name = 'user'
-    
+
     fields = [
         fields.AttributeField(attribute='name', type=str),
         fields.AttributeField(attribute='age', type=int),
@@ -120,6 +115,7 @@ class ModelResourceTest(unittest.TestCase):
 
     def test_put_with_foreign_key(self):
         user = User()
+        user._meta.get_field().related.field.name = 'name'
         user.owner = UserOwner()
 
         resource = ComplexUserRelationResource(user)
