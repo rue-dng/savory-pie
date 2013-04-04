@@ -213,13 +213,15 @@ class SubModelResourceField(base_fields.SubObjectResourceField, DjangoField):
             attribute_name = field.related.field.name
             try:
                 attribute = getattr(self._resource_class.model_class, attribute_name)
-                if isinstance(attribute, django.db.models.fields.related.ReverseSingleRelatedObjectDescriptor):
-                    logger.debug('Setting pre_save to false with attribute %s and attribute_name %s', self._attribute, attribute_name)
-                    return False
             except AttributeError:
                 logger.debug('Setting pre_save to True with attribute %s', self._attribute)
                 return True
+            else:
+                if isinstance(attribute, django.db.models.fields.related.ReverseSingleRelatedObjectDescriptor):
+                    logger.debug('Setting pre_save to false with attribute %s and attribute_name %s', self._attribute, attribute_name)
+                    return False
 
+        return True
 
 class RelatedManagerField(base_fields.IterableField, DjangoField):
     """
