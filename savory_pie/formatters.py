@@ -5,6 +5,8 @@ import string
 import datetime
 import re
 
+from dateutil import parser
+
 class JSONFormatter(object):
     """
     Formatter reads and writes json while converting properties to and from
@@ -13,45 +15,21 @@ class JSONFormatter(object):
 
     content_type = 'application/json'
 
-    dateTimeRegex = re.compile('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\\.?(\d*)(Z|(([+-])(\d{2}):(\d{2})))')
     dateRegex = re.compile('(\d{4})-(\d{2})-(\d{2})(.*)')
-
+    
     def parse_datetime(self, s):
         if s is None:
             return None
-        m = self.dateTimeRegex.match(s)
-        if m is None:
-            raise TypeError('Unable to parse ' + repr(s) + ' as a datetime')
-
-        year, month, date, hour, minute, second = \
-            map(string.atoi, [m.group(i) for i in range(1, 7)])
-
-        if m.group(7):
-            milliseconds = string.atoi(m.group(7))
-        else:
-            milliseconds = 0
-
-        if m.group(8) != 'Z':
-            tz_op = m.group(10)
-            tz_hour, tz_minute = \
-            map(string.atoi, [m.group(i) for i in range(11, 13)])
-
-            offset = tz_hour * 60 + tz_minute
-            if tz_op == '-':
-                offset *= -1
-        else:
-            offset = 0
-
-        return datetime.datetime(year, month, date, hour, minute, second, milliseconds, pytz.FixedOffset(offset))
+        if self.dateRegex.match(s):
+            return parser.parse(s).astimezone(pytz.utc)
+        raise TypeError('Unable to parse ' + repr(s) + ' as a datetime')
 
     def parse_date(self, s):
         if s is None:
             return None
-        m = self.dateRegex.match(s)
-        if m is None:
-            raise TypeError('Unable to parse ' + repr(s) + ' as a date')
-        year, month, date = map(int, [m.group(i) for i in range(1, 4)])
-        return datetime.date(year, month, date)
+        if self.dateRegex.match(s):
+            return parser.parse(s).date()
+        raise TypeError('Unable to parse ' + repr(s) + ' as a datetime')
 
     def convert_to_public_property(self, bare_attribute):
         parts = bare_attribute.split('_')
