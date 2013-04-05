@@ -66,7 +66,6 @@ class JSONFormatter(object):
     # Not 100% happy with this API review pre 1.0
     def to_python_value(self, type_, api_value):
         try:
-            print type_, api_value
             if type_ is datetime.date:
                 return self.parse_date(api_value)
             elif issubclass(type_, datetime.datetime):
