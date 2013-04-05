@@ -13,7 +13,7 @@ class JSONFormatter(object):
 
     content_type = 'application/json'
 
-    dateTimeRegex = re.compile('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\\.?(\d*)([+-])(\d{2}):(\d{2})')
+    dateTimeRegex = re.compile('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\\.?(\d*)(Z|(([+-])(\d{2}):(\d{2})))')
     dateRegex = re.compile('(\d{4})-(\d{2})-(\d{2})(.*)')
 
     def parse_datetime(self, s):
@@ -31,14 +31,16 @@ class JSONFormatter(object):
         else:
             milliseconds = 0
 
-        tz_op = m.group(8)
+        if m.group(8) != 'Z':
+            tz_op = m.group(10)
+            tz_hour, tz_minute = \
+            map(string.atoi, [m.group(i) for i in range(11, 13)])
 
-        tz_hour, tz_minute = \
-            map(string.atoi, [m.group(i) for i in range(9, 11)])
-
-        offset = tz_hour * 60 + tz_minute
-        if tz_op == '-':
-            offset *= -1
+            offset = tz_hour * 60 + tz_minute
+            if tz_op == '-':
+                offset *= -1
+        else:
+            offset = 0
 
         return datetime.datetime(year, month, date, hour, minute, second, milliseconds, pytz.FixedOffset(offset))
 
@@ -64,6 +66,7 @@ class JSONFormatter(object):
     # Not 100% happy with this API review pre 1.0
     def to_python_value(self, type_, api_value):
         try:
+            print type_, api_value
             if type_ is datetime.date:
                 return self.parse_date(api_value)
             elif issubclass(type_, datetime.datetime):
