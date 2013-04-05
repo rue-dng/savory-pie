@@ -82,6 +82,7 @@ class JSONToPython(unittest.TestCase):
         self.json_formatter = savory_pie.formatters.JSONFormatter()
         self.now = datetime.datetime(2013, 3, 5, 14, 50, 39, 123456, pytz.UTC)
         self.json_now = '2013-03-05T14:50:39.123456+00:00'
+        self.json_now_alternative = '2013-03-05T14:50:39.123456Z'
 
         # date
         self.now_date = datetime.date(2013, 3, 5)
@@ -136,6 +137,10 @@ class JSONToPython(unittest.TestCase):
 
     def test_datetime(self):
         result = self.json_formatter.to_python_value(datetime.datetime, self.json_now)
+        self.assertEqual(self.now, result)
+
+    def test_datetime_alternative(self):
+        result = self.json_formatter.to_python_value(datetime.datetime, self.json_now_alternative)
         self.assertEqual(self.now, result)
 
     def test_none_datetime(self):
