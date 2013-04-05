@@ -118,7 +118,7 @@ class ParameterizedFilter(StandardFilter):
 
     """
 
-    def __init__(self, name, paramkey, criteria=None, order_by=None):
+    def __init__(self, name, paramkey, criteria=None, order_by=None, value_fn=None):
         """
         *name*: A name for invoking the filter in a URL. Should be camel-case with
         a lowercase first letter.
@@ -142,6 +142,8 @@ class ParameterizedFilter(StandardFilter):
         self.paramkey = paramkey
         self.criteria = criteria or {}
         self._order_by = order_by or []
+        self.value_fn = value_fn
+        
         self.datatypes = [
             # in order of decreasing specifity/complexity
             datetime.datetime,
@@ -164,6 +166,10 @@ class ParameterizedFilter(StandardFilter):
 
         """
         value = params._GET.get(name)
+
+        if self.value_fn is not None:
+            value = self.value_fn(value)
+
         for _type in self.datatypes:
             try:
                 # if a cast doesn't work, a TypeError will be raised
