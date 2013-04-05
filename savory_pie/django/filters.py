@@ -137,6 +137,9 @@ class ParameterizedFilter(StandardFilter):
         *order_by*: An optional list of model field names used to sort the query results.
         Preface the fiield name with a minus-sign to reverse the order.
 
+        *value_fn*: An optional callable which is passed the raw filter value from the
+        querystring and which must return the value to be used in the filter.
+
         """
         self.name = name
         self.paramkey = paramkey
