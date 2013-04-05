@@ -229,6 +229,11 @@ class QuerySetResourceTest(unittest.TestCase):
         ))
         data = resource.get(mock_context(), EmptyParams())
 
+        self.assertEqual(data['meta'], {
+            'resourceUri': 'uri://users',
+            'count': 2
+        })
+
         self.assertEqual(data['objects'], [
             {'resourceUri': 'uri://users/1', 'name': 'Alice', 'age': 31},
             {'resourceUri': 'uri://users/2', 'name': 'Bob', 'age': 20}
