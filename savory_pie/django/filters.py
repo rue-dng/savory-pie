@@ -2,6 +2,8 @@ import datetime
 import re
 import string
 
+from haystack.query import SearchQuerySet
+
 
 class StandardFilter(object):
     """Filters the results from a query on a :class:`savory_pie.django.resources.QuerySetResource`.
@@ -82,6 +84,13 @@ class StandardFilter(object):
         """
         pass
 
+    def _special_filter(self, ctx, criteria, queryset):
+        """
+        If we need any preliminary special filtering operations, such as Haystack
+        search, this is the place to do it.
+        """
+        return queryset
+
     def filter(self, ctx, params, queryset):
         """
         Filters (or orders) the queryset according to the specified criteria
@@ -90,6 +99,7 @@ class StandardFilter(object):
         if name in params._GET:
             criteria = self.criteria.copy()
             self.get_param_value(name, ctx, params, criteria)
+            queryset = self._special_filter(ctx, criteria, queryset)
             limit = None
             # Django just uses 'limit' for this but there might be legitimate uses
             # in models for a field called 'limit', so use a more specific name.
@@ -150,8 +160,8 @@ class ParameterizedFilter(StandardFilter):
         self.datatypes = [
             # in order of decreasing specifity/complexity
             datetime.datetime,
+            int,   # an int could be mistaken for a float, so try int first
             float,
-            int,
         ]
 
     def get_param_value(self, name, ctx, params, criteria):
@@ -183,3 +193,22 @@ class ParameterizedFilter(StandardFilter):
             except TypeError:
                 continue
         criteria[self.paramkey] = value
+
+
+class HaystackFilter(ParameterizedFilter):
+    """
+    Assuming Haystack is available as a way to search models, use a Haystack search instead
+    of a Django filter operation. The filter parameter is treated as a Haystack search term.
+    Any additional search criteria, or the order_by stuff, is subsequently treated normally.
+    """
+
+    def __init__(self, name, criteria=None, order_by=None):
+        ParameterizedFilter.__init__(self, name, name, criteria, order_by)
+
+    def _special_filter(self, ctx, criteria, queryset):
+        """
+        If we need any preliminary special filtering operations, such as Haystack
+        search, this is the place to do it.
+        """
+        content = str(criteria.pop(self.paramkey))
+        return SearchQuerySet().filter(content=content).models(queryset.model)

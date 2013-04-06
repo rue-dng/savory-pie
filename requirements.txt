@@ -5,6 +5,10 @@ Django
 nose
 mock
 
+# Haystack, Whoosh
+django-haystack
+Whoosh
+
 # Docs
 sphinx
 
