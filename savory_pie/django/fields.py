@@ -5,7 +5,6 @@ from django.utils.functional import Promise
 from django.db.models.fields import FieldDoesNotExist
 from savory_pie import fields as base_fields
 
-DEBUG = False
 logger = logging.getLogger(__name__)
 
 
@@ -216,14 +215,12 @@ class SubModelResourceField(base_fields.SubObjectResourceField, DjangoField):
             try:
                 attribute = getattr(self._resource_class.model_class, attribute_name)
             except AttributeError:
-                if DEBUG:
-                    logger.debug('Setting pre_save to True with attribute %s', self._attribute)
+                logger.debug('Setting pre_save to True with attribute %s', self._attribute)
                 return True
             else:
                 if isinstance(attribute, django.db.models.fields.related.ReverseSingleRelatedObjectDescriptor):
-                    if DEBUG:
-                        logger.debug('Setting pre_save to False with attribute %s and attribute_name %s',
-                                     self._attribute, attribute_name)
+                    logger.debug('Setting pre_save to False with attribute %s and attribute_name %s',
+                                 self._attribute, attribute_name)
                     return False
 
         return True

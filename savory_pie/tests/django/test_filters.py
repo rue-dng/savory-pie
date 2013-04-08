@@ -142,18 +142,16 @@ class ParameterizedFilterTest(FilterTest):
         ctx.formatter = JSONFormatter()
         foofilter = filters.ParameterizedFilter('foo', 'bar')
         params = TestParams({'bar': 'unparsable'})
-        criteria = {}
-        foofilter.get_param_value('bar', ctx, params, criteria)
-        self.assertEqual({'bar': 'unparsable'}, criteria)
+        value = foofilter.get_param_value('bar', ctx, params)
+        self.assertEqual('unparsable', value)
         # parsable data should be parsed as a correct type
         now = datetime.datetime.now(tz=pytz.UTC).replace(microsecond=0)
         for value, svalue in [(11, '11'),
                               (3.14159, '3.14159'),
                               (now, now.isoformat("T"))]:
             params = TestParams({'bar': svalue})
-            criteria = {}
-            foofilter.get_param_value('bar', ctx, params, criteria)
-            self.assertEqual(value, criteria['bar'])
+            othervalue = foofilter.get_param_value('bar', ctx, params)
+            self.assertEqual(value, othervalue)
 
     def test_before(self):
         results = self.apply_filters({'before': now.isoformat("T")})

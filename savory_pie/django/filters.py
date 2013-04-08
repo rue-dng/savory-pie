@@ -66,7 +66,7 @@ class StandardFilter(object):
     def __unicode__(self):
         return u'<' + self.__class__.__name__ + ': ' + self.name + '>'
 
-    def get_param_value(self, name, ctx, params, criteria):
+    def get_param_value(self, name, ctx, params):
         """
         *name*: The name of a parameter which is treated as a key in the *params* QueryDict.
 
@@ -84,32 +84,43 @@ class StandardFilter(object):
         """
         pass
 
-    def _special_filter(self, ctx, criteria, queryset):
+    def is_applicable(self, ctx, params):
         """
-        If we need any preliminary special filtering operations, such as Haystack
-        search, this is the place to do it.
+        A filter applies in a particular situation if its name (converted to a
+        public property by the current formatter) is found among the keys in the
+        params._GET querydict. If this filter is applicable, return the converted
+        name, otherwise return False.
         """
+        name = ctx.formatter.convert_to_public_property(self.name)
+        if name in params._GET:
+            return name
+        else:
+            return False
+
+    def apply(self, criteria, queryset):
+        """
+        Apply filtering and sorting criteria to a queryset, return a result queryset.
+        """
+        # Django just uses 'limit' for this but there might be legitimate uses
+        # in models for a field called 'limit', so use a more specific name.
+        limit = criteria.get('limit_object_count', None)
+        if limit:
+            criteria = dict(filter(lambda item: item[0] != 'limit_object_count',
+                                   criteria.items()))
+        queryset = queryset.filter(**criteria)
+        if self._order_by is not None:
+            queryset = queryset.order_by(*self._order_by)
+        if limit:
+            queryset = queryset[:limit]
         return queryset
 
     def filter(self, ctx, params, queryset):
         """
-        Filters (or orders) the queryset according to the specified criteria
+        Filters (or orders) the queryset according to the specified criteria, if
+        this filter is applicable.
         """
-        name = ctx.formatter.convert_to_public_property(self.name)
-        if name in params._GET:
-            criteria = self.criteria.copy()
-            self.get_param_value(name, ctx, params, criteria)
-            queryset = self._special_filter(ctx, criteria, queryset)
-            limit = None
-            # Django just uses 'limit' for this but there might be legitimate uses
-            # in models for a field called 'limit', so use a more specific name.
-            if criteria.has_key('limit_object_count'):
-                limit = criteria.pop('limit_object_count')
-            queryset = queryset.filter(**criteria)
-            if self._order_by is not None:
-                queryset = queryset.order_by(*self._order_by)
-            if limit:
-                queryset = queryset[:limit]
+        if self.is_applicable(ctx, params):
+            queryset = self.apply(self.criteria, queryset)
         return queryset
 
     def describe(self, ctx, schema_dict):
@@ -164,7 +175,7 @@ class ParameterizedFilter(StandardFilter):
             float,
         ]
 
-    def get_param_value(self, name, ctx, params, criteria):
+    def get_param_value(self, name, ctx, params):
         """
         *name*: The name of a parameter which is treated as a key in the *params* QueryDict.
         The value of the parameter will be parsed as a Python object, and that key-value pair
@@ -192,7 +203,18 @@ class ParameterizedFilter(StandardFilter):
                 break
             except TypeError:
                 continue
-        criteria[self.paramkey] = value
+        return value
+
+    def filter(self, ctx, params, queryset):
+        """
+        Filters (or orders) the queryset according to the specified criteria
+        """
+        name = self.is_applicable(ctx, params)
+        if name:
+            d = {self.paramkey: self.get_param_value(name, ctx, params)}
+            d.update(self.criteria)
+            queryset = self.apply(d, queryset)
+        return queryset
 
 
 class HaystackFilter(ParameterizedFilter):
@@ -205,10 +227,10 @@ class HaystackFilter(ParameterizedFilter):
     def __init__(self, name, criteria=None, order_by=None):
         ParameterizedFilter.__init__(self, name, name, criteria, order_by)
 
-    def _special_filter(self, ctx, criteria, queryset):
-        """
-        If we need any preliminary special filtering operations, such as Haystack
-        search, this is the place to do it.
-        """
-        content = str(criteria.pop(self.paramkey))
-        return SearchQuerySet().filter(content=content).models(queryset.model)
+    def filter(self, ctx, params, queryset):
+        name = self.is_applicable(ctx, params)
+        if name:
+            value = self.get_param_value(name, ctx, params)
+            queryset = SearchQuerySet().filter(content=str(value)).models(queryset.model)
+            queryset = self.apply(self.criteria, queryset)
+        return queryset
