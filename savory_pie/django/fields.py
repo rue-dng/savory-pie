@@ -255,3 +255,12 @@ class RelatedManagerField(base_fields.IterableField, DjangoField):
         @return: a Boolean variable used in ModelResources' put
         '''
         return False
+
+class UpdatedByField(SubModelResourceField):
+    def handle_incoming(self, ctx, source_dict, target_obj):
+        setattr(target_obj, self._attribute, ctx.request.user)
+
+class CreatedByField(UpdatedByField):
+    def handle_incoming(self, ctx, source_dict, target_obj):
+        if not target_obj.pk:
+            super(CreatedByField, self).handle_incoming(ctx, source_dict, target_obj)
