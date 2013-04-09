@@ -9,13 +9,15 @@ from savory_pie.django.utils import Related
 from savory_pie.django.resources import ModelResource, QuerySetResource
 from savory_pie.django.fields import (
     AttributeField,
+    CreatedByField,
     SubModelResourceField,
     RelatedManagerField,
+    UpdatedByField,
     URIResourceField
 )
 from savory_pie.tests.django import mock_orm
 
-from savory_pie.tests.mock_context import mock_context
+from savory_pie.tests.django.mock_request import mock_context
 
 
 class AttributeFieldTest(unittest.TestCase):
@@ -841,3 +843,46 @@ class RelatedManagerFieldTest(unittest.TestCase):
         self.assertEqual(14, related_model.bar)
         self.assertFalse(related_model.save.called)
 
+class CreatedByFieldTest(unittest.TestCase):
+    def test_handle_incoming(self):
+
+        class User(ModelResource):
+            model_class = Mock()
+            fields = [
+                AttributeField(attribute='email', type=str),
+            ]
+
+        created_by = CreatedByField(attribute='created_by', resource_class=User)
+
+        source_dict = {}
+
+        target_object = Mock()
+        created_by.handle_incoming(mock_context(), source_dict, target_object)
+        self.assertTrue(hasattr(target_object, 'created_by'))
+
+        # test that created_by is unchanged after saving
+        _created_by = target_object.created_by
+        created_by.handle_incoming(mock_context(), source_dict, target_object)
+        self.assertEqual(_created_by, target_object.created_by)
+
+class UpdatedByFieldTest(unittest.TestCase):
+    def test_handle_incoming(self):
+
+        class User(ModelResource):
+            model_class = Mock()
+            fields = [
+                AttributeField(attribute='email', type=str),
+            ]
+
+        updated_by = UpdatedByField(attribute='updated_by', resource_class=User)
+
+        source_dict = {}
+
+        target_object = Mock()
+        updated_by.handle_incoming(mock_context(), source_dict, target_object)
+        self.assertTrue(hasattr(target_object, 'updated_by'))
+
+        # test that updated_by is changed after saving
+        _updated_by = target_object.updated_by
+        updated_by.handle_incoming(mock_context(), source_dict, target_object)
+        self.assertNotEqual(_updated_by, target_object.updated_by)
