@@ -12,8 +12,6 @@ from savory_pie.tests.mock_context import mock_context
 from savory_pie.formatters import JSONFormatter
 from savory_pie.tests.django.hfilter.models import User, UserResource, UserQuerySetResource
 
-os.environ['DJANGO_SETTINGS_MODULE']='savory_pie.tests.django.dummy_settings'
-
 
 class TestParams(object):
 

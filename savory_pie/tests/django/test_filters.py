@@ -152,6 +152,7 @@ class ParameterizedFilterTest(FilterTest):
             params = TestParams({'bar': svalue})
             othervalue = foofilter.get_param_value('bar', ctx, params)
             self.assertEqual(value, othervalue)
+            self.assertEqual(type(value), type(othervalue))
 
     def test_before(self):
         results = self.apply_filters({'before': now.isoformat("T")})

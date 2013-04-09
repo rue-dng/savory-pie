@@ -3,11 +3,9 @@ import unittest
 import sys
 import os
 from django.db import models, utils
-from savory_pie.django import fields, resources, filters
 from haystack import site, indexes
 from haystack import fields as hayfields
-
-os.environ['DJANGO_SETTINGS_MODULE']='savory_pie.tests.django.dummy_settings'
+from savory_pie.django import fields, resources, filters, haystack_filter
 
 
 class User(models.Model):
@@ -32,7 +30,7 @@ class UserQuerySetResource(resources.ModelResource):
     resource_class = UserResource
 
     filters = [
-        filters.HaystackFilter('haystack'),
+        haystack_filter.HaystackFilter('haystack'),
     ]
 
 
