@@ -40,8 +40,8 @@ class StandardFilter(object):
 
     .. warning::
 
-        Use of the special parameter *limit_object_count* will disable pagination on
-        the Rue La La website if it is under the page size. Use it only for something
+        Use of the special parameter *limit_object_count* will disable
+        pagination on if it is under the page size. Use it only for something
         like a top-ten query.
 
     """
