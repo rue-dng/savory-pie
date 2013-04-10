@@ -13,4 +13,3 @@ is order alphabetically by module.
     api/formatters
     api/resources
     api/filters
-    api/validators
