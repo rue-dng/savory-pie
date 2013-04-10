@@ -31,6 +31,3 @@
 
     .. autoclass:: DatetimeFieldMaxValidator
         :members: __init__, find_errors
-
-    .. autoclass:: DatetimeFieldRangeValidator
-        :members: __init__, find_errors
