@@ -14,7 +14,7 @@ HAYSTACK_WHOOSH_PATH = os.path.join(os.path.dirname(__file__), 'whoosh_index')
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'memory',
+        'NAME': ':memory:',
     }
 }
 
