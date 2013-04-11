@@ -30,7 +30,7 @@ class UserQuerySetResource(resources.ModelResource):
     resource_class = UserResource
 
     filters = [
-        haystack_filter.HaystackFilter('haystack'),
+        haystack_filter.HaystackFilter(User, 'haystack'),
     ]
 
 
