@@ -209,6 +209,79 @@ class URIResourceField(Field):
         return error_dict
 
 
+class URILinksResourceField(Field):
+    """
+    Field that embeds a many relationship into the parent object
+    """
+
+    def __init__(self,
+                 attribute,
+                 resource_class,
+                 published_property=None,
+                 read_only=False,
+                 validator=None):
+        self._attribute = attribute
+        self._resource_class = resource_class
+        self._published_property = published_property
+        self._read_only = read_only
+        self.validator = validator or []
+
+    def _compute_property(self, ctx):
+        if self._published_property is not None:
+            return ctx.formatter.convert_to_public_property(self._published_property)
+        else:
+            return ctx.formatter.convert_to_public_property(self._attribute)
+
+    @read_only_noop
+    def handle_incoming(self, ctx, source_dict, target_obj):
+        manager = getattr(target_obj, self._attribute)
+
+        db_keys = set()
+        db_models = {}
+        for model in manager.all():
+            resource = self._resource_class(model)
+            db_models[resource.key] = model
+            db_keys.add(resource.key)
+
+        new_models = []
+        request_keys = set()
+
+        for resource_uri in source_dict[self._compute_property(ctx)]:
+            resource = ctx.resolve_resource_uri(resource_uri)
+            if resource:
+                request_keys.add(resource.key)
+
+                if not resource.key in db_keys:
+                    new_models.append(resource.model)
+            else:
+                raise Exception, u'Unable to resolve resource uri {0}'.format(resource_uri)
+
+        manager.add(*new_models)
+
+        models_to_remove = [db_models[key] for key in db_keys - request_keys]
+        # If the FK is not nullable the manager will not have a remove
+        if hasattr(manager, 'remove'):
+            manager.remove(*models_to_remove)
+        else:
+            for model in models_to_remove:
+                model.delete()
+
+    def handle_outgoing(self, ctx, source_obj, target_dict):
+        attrs = self._attribute.split('.')
+        manager = source_obj
+
+        for attr in attrs:
+            manager = getattr(manager, attr)
+            if manager is None:
+                return None
+
+        resource_uris = []
+        for model in manager.all():
+            model_resource = self._resource_class(model)
+            resource_uris.append(ctx.build_resource_uri(model_resource))
+        target_dict[self._compute_property(ctx)] = resource_uris
+
+
 class SubObjectResourceField(Field):
     """
     Field that embeds a single related resource into the parent object
