@@ -211,7 +211,32 @@ class URIResourceField(Field):
 
 class URILinksResourceField(Field):
     """
-    Field that embeds a many relationship into the parent object
+    Field that exposes just the URI of related entity, this allows for a many to many relationship.
+
+
+    Parameters:
+
+        ``attribute``
+            name of the relationship between the parent object and the related
+            object may only be single level
+
+        ``resource_class``
+            a ModelResource -- used to represent the related object needs to be
+            fully addressable
+
+        ``published_property``
+            optional -- name exposed in the API
+
+        ``read_only``
+            optional -- this api will never try and set this value
+
+        .. code-block:: python
+
+            URIResourceField('other', OtherResource)
+
+        .. code-block:: javascript
+
+            {'other': '/api/other/{pk}'}
     """
 
     def __init__(self,
