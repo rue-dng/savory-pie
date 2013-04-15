@@ -9,10 +9,8 @@ from savory_pie.django.utils import Related
 from savory_pie.django.resources import ModelResource, QuerySetResource
 from savory_pie.django.fields import (
     AttributeField,
-    CreatedByField,
     SubModelResourceField,
     RelatedManagerField,
-    UpdatedByField,
     URIResourceField,
     URIListResourceField
 )
@@ -845,84 +843,7 @@ class RelatedManagerFieldTest(unittest.TestCase):
         self.assertFalse(related_model.save.called)
 
 
-class CreatedByFieldTest(unittest.TestCase):
-    def test_exists(self):
-        class User(ModelResource):
-            model_class = Mock()
-            fields = [
-                AttributeField(attribute='email', type=str),
-            ]
-
-        created_by = CreatedByField(attribute='created_by', resource_class=User)
-
-        source_dict = {}
-
-        target_object = Mock()
-        created_by.handle_incoming(mock_context(), source_dict, target_object)
-
-        # ensure created_by has been added to target
-        self.assertTrue(hasattr(target_object, 'created_by'))
-
-    def test_immutable(self):
-        class User(ModelResource):
-            model_class = Mock()
-            fields = [
-                AttributeField(attribute='email', type=str),
-            ]
-
-        created_by = CreatedByField(attribute='created_by', resource_class=User)
-
-        source_dict = {}
-
-        target_object = Mock()
-        created_by.handle_incoming(mock_context(), source_dict, target_object)
-        
-        _created_by = target_object.created_by
-        created_by.handle_incoming(mock_context(), source_dict, target_object)
-
-        # ensure created_by has not been changed in subsequent API calls
-        self.assertEqual(_created_by, target_object.created_by)
-
-
-class UpdatedByFieldTest(unittest.TestCase):
-    def test_exists(self):
-        class User(ModelResource):
-            model_class = Mock()
-            fields = [
-                AttributeField(attribute='email', type=str),
-            ]
-
-        updated_by = UpdatedByField(attribute='updated_by', resource_class=User)
-
-        source_dict = {}
-
-        target_object = Mock()
-        updated_by.handle_incoming(mock_context(), source_dict, target_object)
-
-        # ensure updated_by has been added to target
-        self.assertTrue(hasattr(target_object, 'updated_by'))
-
-    def test_mutable(self):
-        class User(ModelResource):
-            model_class = Mock()
-            fields = [
-                AttributeField(attribute='email', type=str),
-            ]
-
-        updated_by = UpdatedByField(attribute='updated_by', resource_class=User)
-
-        source_dict = {}
-
-        target_object = Mock()
-        updated_by.handle_incoming(mock_context(), source_dict, target_object)
-
-        _updated_by = target_object.updated_by
-        updated_by.handle_incoming(mock_context(), source_dict, target_object)
-
-        # ensure updated_by has been changed in subsequent API calls
-        self.assertNotEqual(_updated_by, target_object.updated_by)
-
-class URILinksResourceFieldTestCase(unittest.TestCase):
+class URIListResourceFieldTestCase(unittest.TestCase):
 
     def test_incoming_with_add(self):
         class MockResource(ModelResource):

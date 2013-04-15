@@ -211,7 +211,7 @@ class URIResourceField(Field):
 
 class URIListResourceField(Field):
     """
-    Field that exposes just the URI of related entity, this allows for a many to many relationship.
+    Field that exposes a list of URIs of related entity, this allows for a many to many relationship.
 
 
     Parameters:
@@ -232,11 +232,11 @@ class URIListResourceField(Field):
 
         .. code-block:: python
 
-            URIResourceField('other', OtherResource)
+            URIListResourceField('others', OtherResource)
 
         .. code-block:: javascript
 
-            {'other': '/api/other/{pk}'}
+            {'others': ['/api/other/{pk_1}', '/api/other/{pk_2}']
     """
 
     def __init__(self,
