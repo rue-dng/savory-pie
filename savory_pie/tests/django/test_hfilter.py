@@ -1,66 +1,49 @@
-import datetime
-import os
 import unittest
-import pytz
 
-from mock import Mock
-
-from django.http import QueryDict
-from django.core.management import call_command
+import mock
+from django.db import models
 
 from savory_pie.tests.mock_context import mock_context
-from savory_pie.formatters import JSONFormatter
-from savory_pie.tests.django.hfilter.models import User, UserResource, UserQuerySetResource
+from savory_pie.django.haystack_filter import HaystackFilter
 
 
-class TestParams(object):
-
-    def __init__(self, filters):
-        # we need our query string to be camel cased, since in StandardFilter, we convert these strings
-        # Note, since we are calling default_publish_property on the filter names,
-        # Camel casing should be applied to filter names, but NOT to parameters.
-        formatted_names = []
-        for name, value in filters.items():
-            formatted_names.append(JSONFormatter().convert_to_public_property(name)
-                                   + '=' + str(value))
-        self.querystring = "&".join(formatted_names).replace("+", "%2B")
-        self._GET = QueryDict(self.querystring)
-
-now = datetime.datetime.now(tz=pytz.UTC).replace(microsecond=0)
-hour = datetime.timedelta(hours=1)
-
-# helpful debug stuff: https://gist.github.com/wware/5336328
+class TestModel(models.Model):
+    pass
 
 
 class HaystackFilterTest(unittest.TestCase):
 
-    def setUp(self):
-        call_command('syncdb', verbosity=0)
-        User(name='alice', age=31, when=now-hour).save()
-        User(name='bob', age=20, when=now-hour).save()
-        User(name='charlie', age=26, when=now-hour).save()
-        call_command('rebuild_index', interactive=False, verbosity=0)
+    @mock.patch('savory_pie.django.haystack_filter.SearchQuerySet')
+    def test_simple_filter(self, haystack_qs_cls):
+        result1 = mock.Mock(name='result1', pk=1)
+        result2 = mock.Mock(name='result2', pk=2)
 
-    def tearDown(self):
-        User.objects.all().delete()
+        haystack_qs = haystack_qs_cls.return_value
+        haystack_qs.filter.return_value = haystack_qs
+        haystack_qs.models.return_value = haystack_qs
+        haystack_qs.__iter__ = lambda x: iter([result1, result2])
 
-    def apply_filters(self, filters):
-        ctx = mock_context()
-        queryset = User.objects.get_query_set()
-        params = TestParams(filters)
+        queryset = mock.Mock(name='queryset')
+        queryset.model = TestModel
 
-        for filter in UserQuerySetResource.filters:
-            queryset = filter.filter(ctx, params, queryset)
-        return queryset
+        haystack_filter = HaystackFilter()
+        haystack_filter.filter(
+            mock_context(),
+            {'q': 'foo'},
+            queryset,
+        )
 
-    def test_names(self):
-        for name in ('alice', 'bob', 'charlie'):
-            results = self.apply_filters({'haystack': name})
-            self.assertEqual(1, results.count())
-            self.assertEqual([name], [x.name for x in results])
+        queryset.assert_has_calls(
+            [
+                mock.call.filter(pk__in=[1, 2]),
+            ],
+            any_order=True,
+        )
 
-    def test_ages(self):
-        for age, name in ((31, 'alice'), (20, 'bob'), (26, 'charlie')):
-            results = self.apply_filters({'haystack': age})
-            self.assertEqual(1, results.count())
-            self.assertEqual([name], [x.name for x in results])
+        haystack_qs.assert_has_calls(
+            [
+                mock.call.filter(content=u'foo'),
+                mock.call.models(TestModel)
+            ],
+            any_order=True
+        )

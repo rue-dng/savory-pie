@@ -90,7 +90,7 @@ class StandardFilter(object):
         name, otherwise return False.
         """
         name = ctx.formatter.convert_to_public_property(self.name)
-        if name in params._GET:
+        if name in params:
             return name
         else:
             return False
@@ -165,7 +165,7 @@ class ParameterizedFilter(StandardFilter):
         self.criteria = criteria or {}
         self._order_by = order_by or []
         self.value_fn = value_fn
-        
+
         self.datatypes = [
             # in order of decreasing specifity/complexity
             datetime.datetime,
@@ -187,7 +187,7 @@ class ParameterizedFilter(StandardFilter):
         and successfully parsed in *params*.
 
         """
-        value = params._GET.get(name)
+        value = params.get(name)
 
         if self.value_fn is not None:
             value = self.value_fn(value)
