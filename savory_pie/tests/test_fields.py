@@ -186,3 +186,4 @@ class URILinksResourceFieldTestCase(unittest.TestCase):
         field.handle_outgoing(ctx, source_object, target_dict)
 
         self.assertEqual(['uri://resources/1', 'uri://resources/2'], target_dict['foos'])
+        
