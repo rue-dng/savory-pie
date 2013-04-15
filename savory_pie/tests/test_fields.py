@@ -35,4 +35,5 @@ class IterableFieldTestCase(unittest.TestCase):
 
         target_dict = {}
         field.handle_outgoing(mock_context(), source_object, target_dict)
-        
+        self.assertEqual([{'_id': '4', 'bar': 14}], target_dict['foo.fu'])
+
