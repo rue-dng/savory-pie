@@ -262,11 +262,11 @@ class URIListResourceField(Field):
 
     @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
-        manager = getattr(target_obj, self._attribute)
+        attribute = getattr(target_obj, self._attribute)
 
         db_keys = set()
         db_models = {}
-        for model in self.get_iterable(manager):
+        for model in self.get_iterable(attribute):
             resource = self._resource_class(model)
             db_models[resource.key] = model
             db_keys.add(resource.key)
@@ -284,27 +284,27 @@ class URIListResourceField(Field):
             else:
                 raise SavoryPieError(u'Unable to resolve resource uri {0}'.format(resource_uri))
 
-        manager.add(*new_models)
+        attribute.add(*new_models)
 
         models_to_remove = [db_models[key] for key in db_keys - request_keys]
-        # If the FK is not nullable the manager will not have a remove
-        if hasattr(manager, 'remove'):
-            manager.remove(*models_to_remove)
+        # If the FK is not nullable the attribute will not have a remove
+        if hasattr(attribute, 'remove'):
+            attribute.remove(*models_to_remove)
         else:
             for model in models_to_remove:
                 model.delete()
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
         attrs = self._attribute.split('.')
-        manager = source_obj
+        attribute = source_obj
 
         for attr in attrs:
-            manager = getattr(manager, attr)
-            if manager is None:
+            attribute = getattr(attribute, attr)
+            if attribute is None:
                 return None
 
         resource_uris = []
-        for model in self.get_iterable(manager):
+        for model in self.get_iterable(attribute):
             model_resource = self._resource_class(model)
             resource_uris.append(ctx.build_resource_uri(model_resource))
         target_dict[self._compute_property(ctx)] = resource_uris
@@ -481,13 +481,13 @@ class IterableField(Field):
         else:
             return ctx.formatter.convert_to_public_property(self._attribute)
 
-    def _get_resource(self, ctx, manager, model_dict):
+    def _get_resource(self, ctx, attribute, model_dict):
         resource = None
         if 'resourceUri' in model_dict:
             resource = ctx.resolve_resource_uri(model_dict['resourceUri'])
         elif '_id' in model_dict: # TODO what if you give an id that is not in the db?
             # TODO get key without the extra db lookup
-            model = self._resource_class.get_from_queryset(manager.all(), model_dict['_id'])
+            model = self._resource_class.get_from_queryset(self.get_iterable(attribute), model_dict['_id'])
             resource = self._resource_class(model)
 
         return resource
@@ -501,11 +501,11 @@ class IterableField(Field):
 
     @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
-        manager = getattr(target_obj, self._attribute)
+        attribute = getattr(target_obj, self._attribute)
 
         db_keys = set()
         db_models = {}
-        for model in self.get_iterable(manager):
+        for model in self.get_iterable(attribute):
             resource = self._resource_class(model)
             db_models[resource.key] = model
             db_keys.add(resource.key)
@@ -514,7 +514,7 @@ class IterableField(Field):
         request_keys = set()
         request_models = {}
         for model_dict in source_dict[self._compute_property(ctx)]:
-            resource = self._get_resource(ctx, manager, model_dict)
+            resource = self._get_resource(ctx, attribute, model_dict)
             if resource:
                 request_models[resource.key] = resource.model
                 request_keys.add(resource.key)
@@ -526,27 +526,27 @@ class IterableField(Field):
                 model_resource.put(ctx, model_dict, save=False)
                 new_models.append(model_resource.model)
 
-        manager.add(*new_models)
+        attribute.add(*new_models)
 
         models_to_remove = [db_models[key] for key in db_keys - request_keys]
-        # If the FK is not nullable the manager will not have a remove
-        if hasattr(manager, 'remove'):
-            manager.remove(*models_to_remove)
+        # If the FK is not nullable the attribute will not have a remove
+        if hasattr(attribute, 'remove'):
+            attribute.remove(*models_to_remove)
         else:
             for model in models_to_remove:
                 model.delete()
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
         attrs = self._attribute.split('.')
-        manager = source_obj
+        attribute = source_obj
 
         for attr in attrs:
-            manager = getattr(manager, attr)
-            if manager is None:
+            attribute = getattr(attribute, attr)
+            if attribute is None:
                 return None
 
         objects = []
-        for model in self.get_iterable(manager):
+        for model in self.get_iterable(attribute):
             model_resource = self._resource_class(model)
             model_dict = model_resource.get(ctx, EmptyParams())
             # only add '_id' if there is no 'resourceUri'
