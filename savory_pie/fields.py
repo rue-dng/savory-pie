@@ -257,13 +257,16 @@ class URIListResourceField(Field):
         else:
             return ctx.formatter.convert_to_public_property(self._attribute)
 
+    def get_iterable(self, value):
+        return value
+
     @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
         manager = getattr(target_obj, self._attribute)
 
         db_keys = set()
         db_models = {}
-        for model in manager.all():
+        for model in self.get_iterable(manager):
             resource = self._resource_class(model)
             db_models[resource.key] = model
             db_keys.add(resource.key)
@@ -301,7 +304,7 @@ class URIListResourceField(Field):
                 return None
 
         resource_uris = []
-        for model in manager.all():
+        for model in self.get_iterable(manager):
             model_resource = self._resource_class(model)
             resource_uris.append(ctx.build_resource_uri(model_resource))
         target_dict[self._compute_property(ctx)] = resource_uris
@@ -502,7 +505,7 @@ class IterableField(Field):
 
         db_keys = set()
         db_models = {}
-        for model in manager.all():
+        for model in self.get_iterable(manager):
             resource = self._resource_class(model)
             db_models[resource.key] = model
             db_keys.add(resource.key)
@@ -543,7 +546,7 @@ class IterableField(Field):
                 return None
 
         objects = []
-        for model in manager.all():
+        for model in self.get_iterable(manager):
             model_resource = self._resource_class(model)
             model_dict = model_resource.get(ctx, EmptyParams())
             # only add '_id' if there is no 'resourceUri'
