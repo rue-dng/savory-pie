@@ -2,7 +2,7 @@ import collections
 import functools
 from savory_pie.resources import EmptyParams
 from savory_pie.django.validators import BaseValidator
-
+from savory_pie.errors import SavoryPieError
 
 def read_only_noop(func):
     @functools.wraps(func)
@@ -17,7 +17,7 @@ class Field(object):
     def name(self):
         name = getattr(self, '_attribute', getattr(self, '_full_attribute', None))
         if not name:
-            raise Exception, u'Unable to determine name for field: {0}'.format(self)
+            raise SavoryPieError(u'Unable to determine name for field: {0}'.format(self))
         return name
 
     def schema(self, **kwargs):
@@ -193,7 +193,7 @@ class URIResourceField(Field):
 
         resource = ctx.resolve_resource_uri(uri)
         if resource is None:
-            raise ValueError, 'invalid URI: ' + uri
+            raise ValueError('invalid URI {0}: '.format(uri))
 
         setattr(target_obj, self._attribute, resource.model)
 
@@ -209,7 +209,7 @@ class URIResourceField(Field):
         return error_dict
 
 
-class URILinksResourceField(Field):
+class URIListResourceField(Field):
     """
     Field that exposes just the URI of related entity, this allows for a many to many relationship.
 
@@ -279,7 +279,7 @@ class URILinksResourceField(Field):
                 if not resource.key in db_keys:
                     new_models.append(resource.model)
             else:
-                raise Exception, u'Unable to resolve resource uri {0}'.format(resource_uri)
+                raise SavoryPieError(u'Unable to resolve resource uri {0}'.format(resource_uri))
 
         manager.add(*new_models)
 

@@ -64,6 +64,8 @@ Field protocol
 
     .. autoclass:: URIResourceField
 
+    .. autoclass:: URIListResourceField
+
     .. autoclass:: SubObjectResourceField
 
     .. autoclass:: IterableField

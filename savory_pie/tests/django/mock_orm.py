@@ -21,7 +21,7 @@ class QuerySet(Mock):
         return iter(self._elements)
 
     def __list__(self):
-        raise UserWarning, 'Don\'t call list; it will not take advantage of prior prefetch optimizations'
+        raise UserWarning(u'Don\'t call list; it will not take advantage of prior prefetch optimizations')
 
     def all(self):
         return QuerySet(*self._elements)

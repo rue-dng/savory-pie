@@ -2,7 +2,7 @@ from mock import Mock, patch
 import unittest
 
 from savory_pie.django.resources import ModelResource
-from savory_pie.fields import AttributeField, IterableField, URILinksResourceField
+from savory_pie.fields import AttributeField, IterableField, URIListResourceField
 from savory_pie.tests.mock_context import mock_context
 from savory_pie.tests.django import mock_orm
 
@@ -49,7 +49,7 @@ class URILinksResourceFieldTestCase(unittest.TestCase):
                 AttributeField(attribute='bar', type=int),
             ]
 
-        field = URILinksResourceField(attribute='foos', resource_class=MockResource)
+        field = URIListResourceField(attribute='foos', resource_class=MockResource)
 
         source_dict = {
             'foos': ['uri://resources/1', 'uri://resources/2']
@@ -83,7 +83,7 @@ class URILinksResourceFieldTestCase(unittest.TestCase):
                 AttributeField(attribute='bar', type=int),
             ]
 
-        field = URILinksResourceField(attribute='foos', resource_class=MockResource)
+        field = URIListResourceField(attribute='foos', resource_class=MockResource)
 
         source_dict = {
             'foos': ['uri://resources/1', 'uri://resources/2']
@@ -126,7 +126,7 @@ class URILinksResourceFieldTestCase(unittest.TestCase):
                 AttributeField(attribute='bar', type=int),
                 ]
 
-        field = URILinksResourceField(attribute='foos', resource_class=MockResource)
+        field = URIListResourceField(attribute='foos', resource_class=MockResource)
 
         source_dict = {
             'foos': ['uri://resources/1', 'uri://resources/2']
@@ -167,7 +167,7 @@ class URILinksResourceFieldTestCase(unittest.TestCase):
                 AttributeField(attribute='bar', type=int),
             ]
 
-        field = URILinksResourceField(attribute='foos', resource_class=MockResource)
+        field = URIListResourceField(attribute='foos', resource_class=MockResource)
 
         source_object = mock_orm.Model()
         related_manager = mock_orm.Manager()

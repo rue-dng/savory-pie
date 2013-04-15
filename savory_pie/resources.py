@@ -103,7 +103,7 @@ class APIResource(Resource):
         have a first-level resource_path already set.
         """
         if '/' in resource.resource_path:
-            raise ValueError, 'resource_path should be top-level'
+            raise ValueError(u'resource_path should be top-level')
 
         self._child_resources[resource.resource_path] = resource
         return self
