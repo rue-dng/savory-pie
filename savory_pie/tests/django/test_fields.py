@@ -13,7 +13,8 @@ from savory_pie.django.fields import (
     SubModelResourceField,
     RelatedManagerField,
     UpdatedByField,
-    URIResourceField
+    URIResourceField,
+    URIListResourceField
 )
 from savory_pie.tests.django import mock_orm
 
@@ -920,3 +921,151 @@ class UpdatedByFieldTest(unittest.TestCase):
 
         # ensure updated_by has been changed in subsequent API calls
         self.assertNotEqual(_updated_by, target_object.updated_by)
+
+class URILinksResourceFieldTestCase(unittest.TestCase):
+
+    def test_incoming_with_add(self):
+        class MockResource(ModelResource):
+            key = Mock()
+            model_class = mock_orm.Model
+            fields = [
+                AttributeField(attribute='bar', type=int),
+                ]
+
+        field = URIListResourceField(attribute='foos', resource_class=MockResource)
+
+        source_dict = {
+            'foos': ['uri://resources/1', 'uri://resources/2']
+        }
+
+        target_object = mock_orm.Mock()
+        related_manager = mock_orm.Manager()
+        related_manager.all = Mock(return_value=mock_orm.QuerySet())
+        target_object.foos = related_manager
+
+        ctx = mock_context()
+        foo1_model = Mock()
+        foo2_model = Mock()
+        mock_resources = Mock()
+        resource1 = MockResource(foo1_model)
+        resource1.key = 1
+        resource2 = MockResource(foo2_model)
+        resource2.key = 2
+        mock_resources.side_effect = [resource1, resource2]
+
+        ctx.resolve_resource_uri = mock_resources
+
+        field.handle_incoming(ctx, source_dict, target_object)
+        related_manager.add.assert_called_with(foo1_model, foo2_model)
+
+    def test_incoming_with_delete(self):
+        class MockResource(ModelResource):
+            key = Mock()
+            model_class = mock_orm.Model
+            fields = [
+                AttributeField(attribute='bar', type=int),
+                ]
+
+        field = URIListResourceField(attribute='foos', resource_class=MockResource)
+
+        source_dict = {
+            'foos': ['uri://resources/1', 'uri://resources/2']
+        }
+
+        target_object = mock_orm.Mock()
+        related_manager = mock_orm.Manager()
+        related_manager.remove = Mock()
+        related_model1 = mock_orm.Model(pk=1, bar=11)
+        related_model2 = mock_orm.Model(pk=2, bar=12)
+        related_model3 = mock_orm.Model(pk=3, bar=13)
+        mock_resource1 = MockResource(related_model1)
+        mock_resource1.key = 1
+        mock_resource2 = MockResource(related_model2)
+        mock_resource2.key = 2
+        mock_resource3 = MockResource(related_model3)
+        mock_resource3.key = 3
+
+        field._resource_class = Mock()
+        field._resource_class.side_effect = [mock_resource1, mock_resource2, mock_resource3]
+        related_manager.all = Mock(return_value=mock_orm.QuerySet(
+            related_model1, related_model2, related_model3
+        ))
+        target_object.foos = related_manager
+
+        ctx = mock_context()
+        mock_resources = Mock()
+        mock_resources.side_effect = [mock_resource1, mock_resource2]
+
+        ctx.resolve_resource_uri = mock_resources
+
+        field.handle_incoming(ctx, source_dict, target_object)
+        related_manager.remove.assert_called_with(related_model3)
+
+    def test_incoming_with_no_change(self):
+        class MockResource(ModelResource):
+            key = Mock()
+            model_class = mock_orm.Model
+            fields = [
+                AttributeField(attribute='bar', type=int),
+                ]
+
+        field = URIListResourceField(attribute='foos', resource_class=MockResource)
+
+        source_dict = {
+            'foos': ['uri://resources/1', 'uri://resources/2']
+        }
+
+        target_object = mock_orm.Mock()
+        related_manager = mock_orm.Manager()
+        related_manager.remove = Mock()
+        related_model1 = mock_orm.Model(pk=1, bar=11)
+        related_model2 = mock_orm.Model(pk=2, bar=12)
+        mock_resource1 = MockResource(related_model1)
+        mock_resource1.key = 1
+        mock_resource2 = MockResource(related_model2)
+        mock_resource2.key = 2
+
+        field._resource_class = Mock()
+        field._resource_class.side_effect = [mock_resource1, mock_resource2]
+        related_manager.all = Mock(return_value=mock_orm.QuerySet(
+            related_model1, related_model2
+        ))
+        target_object.foos = related_manager
+
+        ctx = mock_context()
+        mock_resources = Mock()
+        mock_resources.side_effect = [mock_resource1, mock_resource2]
+
+        ctx.resolve_resource_uri = mock_resources
+
+        field.handle_incoming(ctx, source_dict, target_object)
+
+        related_manager.remove.assert_called_with()
+        related_manager.add.assert_called_with()
+
+    def test_outgoing(self):
+        class MockResource(ModelResource):
+            model_class = mock_orm.Model
+            fields = [
+                AttributeField(attribute='bar', type=int),
+                ]
+
+        field = URIListResourceField(attribute='foos', resource_class=MockResource)
+
+        source_object = mock_orm.Model()
+        related_manager = mock_orm.Manager()
+        related_manager.all = Mock(return_value=mock_orm.QuerySet(
+            mock_orm.Model(pk=1, bar=14),
+            mock_orm.Model(pk=2, bar=14)
+        ))
+
+        source_object.foos = related_manager
+
+        ctx = mock_context()
+        ctx.build_resource_uri = Mock()
+        ctx.build_resource_uri.side_effect = ['uri://resources/1', 'uri://resources/2']
+
+        target_dict = {}
+        field.handle_outgoing(ctx, source_object, target_dict)
+
+        self.assertEqual(['uri://resources/1', 'uri://resources/2'], target_dict['foos'])

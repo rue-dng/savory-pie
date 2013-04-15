@@ -127,7 +127,8 @@ class QuerySet(Mock):
 class Manager(Mock):
     def all(self):
         return QuerySet()
-
+    def __iter__(self):
+        return iter(QuerySet())
 
 class Model(object):
     class DoesNotExist(ObjectDoesNotExist):
