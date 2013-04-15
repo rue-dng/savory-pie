@@ -47,7 +47,7 @@ class APIContext(object):
         Raises a ValueError if the resource_path of the Resource is None.
         """
         if resource.resource_path is None:
-            raise ValueError, 'unaddressable resource'
+            raise ValueError(u'unaddressable resource')
 
         return self.base_uri + resource.resource_path
 

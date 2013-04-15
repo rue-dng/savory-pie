@@ -123,6 +123,25 @@ class URIResourceField(base_fields.URIResourceField, DjangoField):
         return True
 
 
+class URIListResourceField(base_fields.URIListResourceField, DjangoField):
+    """
+    Django extension of the basic URIListResourceField
+
+        Parameters:
+            :class:`savory_pie.fields.URIListResourceField`
+
+            ``pre_save``
+                optional -- tells the sub-model resource field whether to save
+                before or after the related field.
+    """
+
+    def get_iterable(self, value):
+        return value.all()
+
+    def pre_save(self, model):
+        return False
+
+
 class SubModelResourceField(base_fields.SubObjectResourceField, DjangoField):
     """
     Django extension of the basic SubObjectResourceField that adds support for
@@ -255,12 +274,3 @@ class RelatedManagerField(base_fields.IterableField, DjangoField):
         @return: a Boolean variable used in ModelResources' put
         '''
         return False
-
-class UpdatedByField(SubModelResourceField):
-    def handle_incoming(self, ctx, source_dict, target_obj):
-        setattr(target_obj, self._attribute, ctx.request.user)
-
-class CreatedByField(UpdatedByField):
-    def handle_incoming(self, ctx, source_dict, target_obj):
-        if not target_obj.pk:
-            super(CreatedByField, self).handle_incoming(ctx, source_dict, target_obj)
