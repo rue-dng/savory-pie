@@ -1,31 +1,19 @@
 import datetime
 import unittest
 import sys
+
 from mock import Mock
-from django.http import QueryDict
+import pytz
 
 from savory_pie.django import  filters
 from savory_pie.tests.django import mock_orm
 from savory_pie.tests.mock_context import mock_context
 from savory_pie.formatters import JSONFormatter
-import pytz
+
 
 class MockUser(mock_orm.Model):
     pass
 
-
-class TestParams(object):
-
-    def __init__(self, filters):
-        # we need our query string to be camel cased, since in StandardFilter, we convert these strings
-        # Note, since we are calling default_publish_property on the filter names,
-        # Camel casing should be applied to filter names, but NOT to parameters.
-        formatted_names = []
-        for name, value in filters.items():
-            formatted_names.append(JSONFormatter().convert_to_public_property(name)
-                                   + '=' + value)
-        self.querystring = "&".join(formatted_names).replace("+", "%2B")
-        self._GET = QueryDict(self.querystring)
 
 now = datetime.datetime.now(tz=pytz.UTC).replace(microsecond=0)
 hour = datetime.timedelta(hours=1)
@@ -57,8 +45,11 @@ class FilterTest(unittest.TestCase):
     def apply_filters(self, filters):
         ctx = mock_context()
         queryset = _users
-        params = TestParams(filters)
-
+        params = {
+            ctx.formatter.convert_to_public_property(name): value
+            for name, value
+            in filters.items()
+        }
         for filter in _filters:
             queryset = filter.filter(ctx, params, queryset)
         return queryset
@@ -69,7 +60,10 @@ class StandardFilterTest(FilterTest):
     def test_without_filtering(self):
         results = self.apply_filters({})
         self.assertEqual(3, results.count())
-        self.assertEqual(['alice', 'charlie', 'bob'], [x.name for x in results])
+        self.assertEqual(
+            ['alice', 'charlie', 'bob'],
+            [x.name for x in results]
+        )
 
     def test_good_filter(self):
         results = self.apply_filters({'official_test_user': ''})
@@ -91,7 +85,10 @@ class StandardFilterTest(FilterTest):
     def test_gt_filter(self):
         results = self.apply_filters({'older_only': ''})
         self.assertEqual(2, results.count())
-        self.assertEqual(['alice','charlie'], [x.name for x in results])
+        self.assertEqual(
+            sorted(['alice','charlie']),
+            sorted([x.name for x in results])
+        )
 
     def test_lt_filter(self):
         results = self.apply_filters({'younger_only': ''})
@@ -101,17 +98,26 @@ class StandardFilterTest(FilterTest):
     def test_lt_filter_alphabetical(self):
         results = self.apply_filters({'early_name': ''})
         self.assertEqual(2, results.count())
-        self.assertEqual(['alice', 'bob'], [x.name for x in results])
+        self.assertEqual(
+            sorted(['alice', 'bob']),
+            sorted([x.name for x in results])
+        )
 
     def test_ascending_order(self):
         results = self.apply_filters({'alphabetical': ''})
         self.assertEqual(3, results.count())
-        self.assertEqual(['alice', 'bob', 'charlie'], [x.name for x in results])
+        self.assertEqual(
+            ['alice', 'bob', 'charlie'],
+            [x.name for x in results]
+        )
 
     def test_descending_order(self):
         results = self.apply_filters({'reverse_alphabetical': ''})
         self.assertEqual(3, results.count())
-        self.assertEqual(['charlie', 'bob', 'alice'], [x.name for x in results])
+        self.assertEqual(
+            ['charlie', 'bob', 'alice'],
+            [x.name for x in results]
+        )
 
     def test_name_exact_alice(self):
         results = self.apply_filters({'name_exact': 'alice'})
@@ -141,7 +147,7 @@ class ParameterizedFilterTest(FilterTest):
         ctx = mock_context()
         ctx.formatter = JSONFormatter()
         foofilter = filters.ParameterizedFilter('foo', 'bar')
-        params = TestParams({'bar': 'unparsable'})
+        params = {'bar': 'unparsable'}
         value = foofilter.get_param_value('bar', ctx, params)
         self.assertEqual('unparsable', value)
         # parsable data should be parsed as a correct type
@@ -149,7 +155,7 @@ class ParameterizedFilterTest(FilterTest):
         for value, svalue in [(11, '11'),
                               (3.14159, '3.14159'),
                               (now, now.isoformat("T"))]:
-            params = TestParams({'bar': svalue})
+            params = {'bar': svalue}
             othervalue = foofilter.get_param_value('bar', ctx, params)
             self.assertEqual(value, othervalue)
             self.assertEqual(type(value), type(othervalue))

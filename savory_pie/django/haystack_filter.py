@@ -1,5 +1,6 @@
-from savory_pie.django.filters import ParameterizedFilter
 from haystack.query import SearchQuerySet
+
+from savory_pie.django.filters import ParameterizedFilter
 
 
 class HaystackFilter(ParameterizedFilter):
@@ -17,7 +18,7 @@ class HaystackFilter(ParameterizedFilter):
         if name:
             value = self.get_param_value(name, ctx, params)
             hs_results = SearchQuerySet().filter(content=unicode(value)).models(queryset.model)
-            pks = (result.pk for result in hs_results)
+            pks = [result.pk for result in hs_results]
             queryset = queryset.filter(pk__in=pks)
             queryset = self.apply(self.criteria, queryset)
         return queryset

@@ -123,12 +123,16 @@ def _internal_error(ctx, request, error):
     ctx.formatter.write_to(error_body, response)
     return response
 
+
 class _ParamsImpl(object):
     def __init__(self, GET):
         self._GET = GET
 
     def keys(self):
         return self._GET.keys()
+
+    def __contains__(self, key):
+        return key in self._GET
 
     def __getitem__(self, key):
         return self._GET.get(key, None)
