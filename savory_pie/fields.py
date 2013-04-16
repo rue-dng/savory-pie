@@ -288,11 +288,11 @@ class URIListResourceField(Field):
             attribute.add(*new_models)
         else:
             for obj in new_models:
-                d = {
+                through_parameters = {
                     attribute.source_field_name: target_obj,
                     attribute.target_field_name: obj
                 }
-                attribute.through.objects.create(**d)
+                attribute.through.objects.create(**through_parameters)
 
         models_to_remove = [db_models[key] for key in db_keys - request_keys]
         # If the FK is not nullable the attribute will not have a remove
