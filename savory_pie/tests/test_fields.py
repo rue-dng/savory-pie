@@ -5,6 +5,7 @@ from savory_pie.django.resources import ModelResource
 from savory_pie.fields import AttributeField, IterableField
 from savory_pie.tests.mock_context import mock_context
 
+
 class IterableFieldTestCase(unittest.TestCase):
 
     def test_handle_outgoing_multi_level(self):
@@ -35,3 +36,4 @@ class IterableFieldTestCase(unittest.TestCase):
         target_dict = {}
         field.handle_outgoing(mock_context(), source_object, target_dict)
         self.assertEqual([{'_id': '4', 'bar': 14}], target_dict['foo.fu'])
+

@@ -9,6 +9,8 @@
 
     .. autoclass:: URIResourceField
 
+    .. autoclass:: URIListResourceField
+
     .. autoclass:: SubModelResourceField
 
     .. autoclass:: RelatedManagerField

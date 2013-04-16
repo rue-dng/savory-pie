@@ -37,3 +37,4 @@ nosetests.xml
 .idea
 env
 docs/_build/*
+savory_pie/tests/django/whoosh_index/

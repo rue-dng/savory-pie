@@ -2,7 +2,7 @@ import collections
 import functools
 from savory_pie.resources import EmptyParams
 from savory_pie.django.validators import BaseValidator
-
+from savory_pie.errors import SavoryPieError
 
 def read_only_noop(func):
     @functools.wraps(func)
@@ -17,7 +17,7 @@ class Field(object):
     def name(self):
         name = getattr(self, '_attribute', getattr(self, '_full_attribute', None))
         if not name:
-            raise Exception, u'Unable to determine name for field: {0}'.format(self)
+            raise SavoryPieError(u'Unable to determine name for field: {0}'.format(self))
         return name
 
     def schema(self, **kwargs):
@@ -193,7 +193,7 @@ class URIResourceField(Field):
 
         resource = ctx.resolve_resource_uri(uri)
         if resource is None:
-            raise ValueError, 'invalid URI: ' + uri
+            raise ValueError('invalid URI {0}: '.format(uri))
 
         setattr(target_obj, self._attribute, resource.model)
 
@@ -207,6 +207,115 @@ class URIResourceField(Field):
         error_dict = {}
         # TODO how do we validate this guy?
         return error_dict
+
+
+class URIListResourceField(Field):
+    """
+    Field that exposes a list of URIs of related entity, this allows for a many to many relationship.
+
+
+    Parameters:
+
+        ``attribute``
+            name of the relationship between the parent object and the related
+            object may only be single level
+
+        ``resource_class``
+            a ModelResource -- used to represent the related object needs to be
+            fully addressable
+
+        ``published_property``
+            optional -- name exposed in the API
+
+        ``read_only``
+            optional -- this api will never try and set this value
+
+        .. code-block:: python
+
+            URIListResourceField('others', OtherResource)
+
+        .. code-block:: javascript
+
+            {'others': ['/api/other/{pk_1}', '/api/other/{pk_2}']
+    """
+
+    def __init__(self,
+                 attribute,
+                 resource_class,
+                 published_property=None,
+                 read_only=False,
+                 validator=None):
+        self._attribute = attribute
+        self._resource_class = resource_class
+        self._published_property = published_property
+        self._read_only = read_only
+        self.validator = validator or []
+
+    def _compute_property(self, ctx):
+        if self._published_property is not None:
+            return ctx.formatter.convert_to_public_property(self._published_property)
+        else:
+            return ctx.formatter.convert_to_public_property(self._attribute)
+
+    def get_iterable(self, value):
+        return value
+
+    @read_only_noop
+    def handle_incoming(self, ctx, source_dict, target_obj):
+        attribute = getattr(target_obj, self._attribute)
+
+        db_keys = set()
+        db_models = {}
+        for model in self.get_iterable(attribute):
+            resource = self._resource_class(model)
+            db_models[resource.key] = model
+            db_keys.add(resource.key)
+
+        new_models = []
+        request_keys = set()
+
+        for resource_uri in source_dict[self._compute_property(ctx)]:
+            resource = ctx.resolve_resource_uri(resource_uri)
+            if resource:
+                request_keys.add(resource.key)
+
+                if not resource.key in db_keys:
+                    new_models.append(resource.model)
+            else:
+                raise SavoryPieError(u'Unable to resolve resource uri {0}'.format(resource_uri))
+
+        if hasattr(attribute, 'add'):
+            attribute.add(*new_models)
+        else:
+            for obj in new_models:
+                d = {
+                    attribute.source_field_name: target_obj,
+                    attribute.target_field_name: obj
+                }
+                attribute.through.objects.create(**d)
+
+        models_to_remove = [db_models[key] for key in db_keys - request_keys]
+        # If the FK is not nullable the attribute will not have a remove
+        if hasattr(attribute, 'remove'):
+            attribute.remove(*models_to_remove)
+        else:
+            for model in models_to_remove:
+                model.delete()
+
+    def handle_outgoing(self, ctx, source_obj, target_dict):
+        attrs = self._attribute.split('.')
+        attribute = source_obj
+
+        for attr in attrs:
+            attribute = getattr(attribute, attr)
+            if attribute is None:
+                return None
+
+        resource_uris = []
+        for model in self.get_iterable(attribute):
+            model_resource = self._resource_class(model)
+            resource_uris.append(ctx.build_resource_uri(model_resource))
+        target_dict[self._compute_property(ctx)] = resource_uris
 
 
 class SubObjectResourceField(Field):
@@ -380,13 +489,13 @@ class IterableField(Field):
         else:
             return ctx.formatter.convert_to_public_property(self._attribute)
 
-    def _get_resource(self, ctx, manager, model_dict):
+    def _get_resource(self, ctx, attribute, model_dict):
         resource = None
         if 'resourceUri' in model_dict:
             resource = ctx.resolve_resource_uri(model_dict['resourceUri'])
         elif '_id' in model_dict: # TODO what if you give an id that is not in the db?
             # TODO get key without the extra db lookup
-            model = self._resource_class.get_from_queryset(manager.all(), model_dict['_id'])
+            model = self._resource_class.get_from_queryset(self.get_iterable(attribute), model_dict['_id'])
             resource = self._resource_class(model)
 
         return resource
@@ -400,11 +509,11 @@ class IterableField(Field):
 
     @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
-        manager = getattr(target_obj, self._attribute)
+        attribute = getattr(target_obj, self._attribute)
 
         db_keys = set()
         db_models = {}
-        for model in manager.all():
+        for model in self.get_iterable(attribute):
             resource = self._resource_class(model)
             db_models[resource.key] = model
             db_keys.add(resource.key)
@@ -413,7 +522,7 @@ class IterableField(Field):
         request_keys = set()
         request_models = {}
         for model_dict in source_dict[self._compute_property(ctx)]:
-            resource = self._get_resource(ctx, manager, model_dict)
+            resource = self._get_resource(ctx, attribute, model_dict)
             if resource:
                 request_models[resource.key] = resource.model
                 request_keys.add(resource.key)
@@ -425,35 +534,35 @@ class IterableField(Field):
                 model_resource.put(ctx, model_dict, save=False)
                 new_models.append(model_resource.model)
 
-        if hasattr(manager, 'add'):
-            manager.add(*new_models)
+        if hasattr(attribute, 'add'):
+            attribute.add(*new_models)
         else:
             for obj in new_models:
                 d = {
-                    manager.source_field_name: target_obj,
-                    manager.target_field_name: obj
+                    attribute.source_field_name: target_obj,
+                    attribute.target_field_name: obj
                 }
-                manager.through.objects.create(**d)
+                attribute.through.objects.create(**d)
 
         models_to_remove = [db_models[key] for key in db_keys - request_keys]
-        # If the FK is not nullable the manager will not have a remove
-        if hasattr(manager, 'remove'):
-            manager.remove(*models_to_remove)
+        # If the FK is not nullable the attribute will not have a remove
+        if hasattr(attribute, 'remove'):
+            attribute.remove(*models_to_remove)
         else:
             for model in models_to_remove:
                 model.delete()
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
         attrs = self._attribute.split('.')
-        manager = source_obj
+        attribute = source_obj
 
         for attr in attrs:
-            manager = getattr(manager, attr)
-            if manager is None:
+            attribute = getattr(attribute, attr)
+            if attribute is None:
                 return None
 
         objects = []
-        for model in manager.all():
+        for model in self.get_iterable(attribute):
             model_resource = self._resource_class(model)
             model_dict = model_resource.get(ctx, EmptyParams())
             # only add '_id' if there is no 'resourceUri'

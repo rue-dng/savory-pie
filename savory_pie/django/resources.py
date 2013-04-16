@@ -36,7 +36,10 @@ class QuerySetResource(Resource):
     filters = []
 
     def __init__(self, queryset=None):
-        self.queryset = queryset or self.resource_class.model_class.objects.all()
+        if queryset is not None:
+            self.queryset = queryset
+        else:
+            self.queryset = self.resource_class.model_class.objects.all()
 
     @property
     def supports_paging(self):

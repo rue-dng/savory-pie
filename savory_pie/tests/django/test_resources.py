@@ -239,6 +239,20 @@ class QuerySetResourceTest(unittest.TestCase):
             {'resourceUri': 'uri://users/2', 'name': 'Bob', 'age': 20}
         ])
 
+    def test_empty_queryset(self):
+        mock_query_set = MagicMock()
+        mock_query_set.__bool__ = False
+        mock_query_set.return_value = None
+        resource = AddressableUserQuerySetResource(mock_query_set)
+        data = resource.get(mock_context(), EmptyParams())
+
+        self.assertEqual(data['meta'], {
+            'resourceUri': 'uri://users',
+            'count': 0
+        })
+
+        self.assertEqual(data['objects'], [])
+
     def test_addressable_post(self):
         queryset_resource = AddressableUserQuerySetResource()
 
