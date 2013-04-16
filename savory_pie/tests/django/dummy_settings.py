@@ -8,8 +8,6 @@ PROJECT_ROOT = os.path.join(os.path.dirname(__file__))
 TEMPLATE_DIRS = (os.path.join(PROJECT_ROOT, 'templates'),)
 
 HAYSTACK_SITECONF = 'savory_pie.tests.django.search_conf'
-HAYSTACK_SEARCH_ENGINE = 'whoosh'
-HAYSTACK_WHOOSH_PATH = os.path.join(os.path.dirname(__file__), 'whoosh_index')
 
 DATABASES = {
     'default': {
@@ -19,9 +17,7 @@ DATABASES = {
 }
 
 INSTALLED_APPS = [
-    'whoosh',
     'haystack',
-    'savory_pie.tests.django.hfilter'
 ]
 
 LOGGING = {
