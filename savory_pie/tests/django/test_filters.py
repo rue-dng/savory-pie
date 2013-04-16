@@ -61,8 +61,8 @@ class StandardFilterTest(FilterTest):
         results = self.apply_filters({})
         self.assertEqual(3, results.count())
         self.assertEqual(
-            sorted(['alice', 'charlie', 'bob']),
-            sorted([x.name for x in results])
+            ['alice', 'charlie', 'bob'],
+            [x.name for x in results]
         )
 
     def test_good_filter(self):
@@ -107,16 +107,16 @@ class StandardFilterTest(FilterTest):
         results = self.apply_filters({'alphabetical': ''})
         self.assertEqual(3, results.count())
         self.assertEqual(
-            sorted(['alice', 'bob', 'charlie']),
-            sorted([x.name for x in results])
+            ['alice', 'bob', 'charlie'],
+            [x.name for x in results]
         )
 
     def test_descending_order(self):
         results = self.apply_filters({'reverse_alphabetical': ''})
         self.assertEqual(3, results.count())
         self.assertEqual(
-            sorted(['charlie', 'bob', 'alice']),
-            sorted([x.name for x in results])
+            ['charlie', 'bob', 'alice'],
+            [x.name for x in results]
         )
 
     def test_name_exact_alice(self):
