@@ -5,11 +5,12 @@ class APIContext(object):
     The context object provides a hook into the underlying means to translates
     resources to / from URIs.
     """
-    def __init__(self, base_uri, root_resource, formatter, request=None):
+    def __init__(self, base_uri, root_resource, formatter, request=None, response=None):
         self.base_uri = base_uri
         self.root_resource = root_resource
         self.formatter = formatter
         self.request = request
+        self.response = response
 
     def resolve_resource_uri(self, uri):
         """
