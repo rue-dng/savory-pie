@@ -87,7 +87,7 @@ def _process_put(ctx, resource, request):
 
 def _process_delete(ctx, resource, request):
     if 'DELETE' in resource.allowed_methods:
-        resource.delete()
+        resource.delete(ctx)
         return _success(ctx, request, request)
     else:
         return _not_allowed_method(ctx, resource, request)

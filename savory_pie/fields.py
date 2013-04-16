@@ -425,7 +425,15 @@ class IterableField(Field):
                 model_resource.put(ctx, model_dict, save=False)
                 new_models.append(model_resource.model)
 
-        manager.add(*new_models)
+        if hasattr(manager, 'add'):
+            manager.add(*new_models)
+        else:
+            for obj in new_models:
+                d = {
+                    manager.source_field_name: target_obj,
+                    manager.target_field_name: obj
+                }
+                manager.through.objects.create(**d)
 
         models_to_remove = [db_models[key] for key in db_keys - request_keys]
         # If the FK is not nullable the manager will not have a remove
