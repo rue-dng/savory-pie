@@ -30,8 +30,7 @@ def api_view(root_resource):
             base_uri=request.build_absolute_uri(base_path),
             root_resource=root_resource,
             formatter=JSONFormatter(),
-            request=request,
-            response=HttpResponse()
+            request=request
         )
 
         try:
@@ -68,10 +67,6 @@ def _strip_query_string(path):
 def _process_get(ctx, resource, request):
     if 'GET' in resource.allowed_methods:
         content_dict = resource.get(ctx, _ParamsImpl(request.GET))
-        if hasattr(resource, "response_headers"):
-            for header in resource.response_headers:
-                key, value = header
-                ctx.response[key] = value
         return _content_success(ctx, resource, request, content_dict)
     else:
         return _not_allowed_method(ctx, resource, request)
@@ -112,10 +107,13 @@ def _created(ctx, resource, request, new_resource):
     return response
 
 def _content_success(ctx, resource, request, content_dict):
-    ctx.response['status'] = 200
-    ctx.response['content_type'] = ctx.formatter.content_type
-    ctx.formatter.write_to(content_dict, ctx.response)
-    return ctx.response
+    response = HttpResponse(status=200, content_type=ctx.formatter.content_type)
+    ctx.formatter.write_to(content_dict, response)
+    if ctx.headers_dict:
+        for header, value in ctx.headers_dict.items():
+            response[header] = value
+
+    return response
 
 def _no_content_success(ctx, resource, request):
     return HttpResponse(status=204)

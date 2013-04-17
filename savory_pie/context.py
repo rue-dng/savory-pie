@@ -5,12 +5,12 @@ class APIContext(object):
     The context object provides a hook into the underlying means to translates
     resources to / from URIs.
     """
-    def __init__(self, base_uri, root_resource, formatter, request=None, response=None):
+    def __init__(self, base_uri, root_resource, formatter, request=None):
         self.base_uri = base_uri
         self.root_resource = root_resource
         self.formatter = formatter
         self.request = request
-        self.response = response
+        self.headers_dict = {}
 
     def resolve_resource_uri(self, uri):
         """
@@ -52,6 +52,13 @@ class APIContext(object):
 
         return self.base_uri + resource.resource_path
 
+    def set_header(self, header, value):
+        """
+        Updates self.header_dict property for processing in the view where the Response headers should be set from
+        header_dict
+        """
+        self.headers_dict[header] = value
+        return self.headers_dict
 
 def _split_resource_path(resource_path):
     path_fragments = resource_path.split('/')
