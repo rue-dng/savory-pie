@@ -8,6 +8,7 @@ PROJECT_ROOT = os.path.join(os.path.dirname(__file__))
 TEMPLATE_DIRS = (os.path.join(PROJECT_ROOT, 'templates'),)
 
 HAYSTACK_SITECONF = 'savory_pie.tests.django.search_conf'
+HAYSTACK_SEARCH_ENGINE = 'dummy'
 
 DATABASES = {
     'default': {
