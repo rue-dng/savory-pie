@@ -140,3 +140,20 @@ class ViewTest(unittest.TestCase):
         response_json = json.loads(response.content)
         self.assertIn('error', response_json)
         self.assertEqual(response.status_code, 500)
+
+    def test_set_header(self):
+        """
+        Tests the set_header method in the APIContext class
+        """
+        def get(ctx, params):
+            ctx.set_header('foo1', 'bar1')
+            return {'foo2': 'bar2'}
+
+        root_resource = mock_resource(name='root')
+        root_resource.allowed_methods.add('GET')
+        root_resource.get = get
+
+        response = savory_dispatch(root_resource, method='GET')
+
+        self.assertEqual(response['foo1'], 'bar1')
+        self.assertEqual(response.content, '{"foo2": "bar2"}')
