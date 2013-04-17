@@ -209,7 +209,7 @@ class ParameterizedFilter(StandardFilter):
         """
         name = self.is_applicable(ctx, params)
         if name:
-            d = {self.paramkey: self.get_param_value(name, ctx, params)}
-            d.update(self.criteria)
-            queryset = self.apply(d, queryset)
+            criteria = {self.paramkey: self.get_param_value(name, ctx, params)}
+            criteria.update(self.criteria)
+            queryset = self.apply(criteria, queryset)
         return queryset

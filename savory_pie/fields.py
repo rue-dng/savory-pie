@@ -284,7 +284,15 @@ class URIListResourceField(Field):
             else:
                 raise SavoryPieError(u'Unable to resolve resource uri {0}'.format(resource_uri))
 
-        attribute.add(*new_models)
+        if hasattr(attribute, 'add'):
+            attribute.add(*new_models)
+        else:
+            for obj in new_models:
+                through_parameters = {
+                    attribute.source_field_name: target_obj,
+                    attribute.target_field_name: obj
+                }
+                attribute.through.objects.create(**through_parameters)
 
         models_to_remove = [db_models[key] for key in db_keys - request_keys]
         # If the FK is not nullable the attribute will not have a remove
@@ -526,7 +534,15 @@ class IterableField(Field):
                 model_resource.put(ctx, model_dict, save=False)
                 new_models.append(model_resource.model)
 
-        attribute.add(*new_models)
+        if hasattr(attribute, 'add'):
+            attribute.add(*new_models)
+        else:
+            for obj in new_models:
+                through_parameters = {
+                    attribute.source_field_name: target_obj,
+                    attribute.target_field_name: obj
+                }
+                attribute.through.objects.create(**through_parameters)
 
         models_to_remove = [db_models[key] for key in db_keys - request_keys]
         # If the FK is not nullable the attribute will not have a remove
