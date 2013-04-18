@@ -109,6 +109,10 @@ def _created(ctx, resource, request, new_resource):
 def _content_success(ctx, resource, request, content_dict):
     response = HttpResponse(status=200, content_type=ctx.formatter.content_type)
     ctx.formatter.write_to(content_dict, response)
+    if ctx.headers_dict:
+        for header, value in ctx.headers_dict.items():
+            response[header] = value
+
     return response
 
 def _no_content_success(ctx, resource, request):

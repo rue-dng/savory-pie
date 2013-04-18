@@ -10,6 +10,7 @@ class APIContext(object):
         self.root_resource = root_resource
         self.formatter = formatter
         self.request = request
+        self.headers_dict = {}
 
     def resolve_resource_uri(self, uri):
         """
@@ -51,6 +52,13 @@ class APIContext(object):
 
         return self.base_uri + resource.resource_path
 
+    def set_header(self, header, value):
+        """
+        Updates self.header_dict property for processing in the view where the Response headers should be set from
+        header_dict
+        """
+        self.headers_dict[header] = value
+        return self.headers_dict
 
 def _split_resource_path(resource_path):
     path_fragments = resource_path.split('/')
