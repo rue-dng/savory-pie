@@ -15,10 +15,14 @@ class HaystackResource(object):
     def get_child_resource(self, ctx, path_fragment):
         return None
 
-    def get(self, ctx, **kwargs):
+    def get(self, ctx, prams):
         search_query = SearchQuerySet().models(self.model)
-        print search_query
-        return (self._format_result(ctx, result) for result in search_query)
+        q = prams['q']
+        if q:
+            for word in q.split():
+                search_query = search_query.filter(content=unicode(word))
+
+        return [self._format_result(ctx, result) for result in search_query]
 
     def _format_result(self, ctx, search_result):
         logger.debug('Formating search result %r', search_result)

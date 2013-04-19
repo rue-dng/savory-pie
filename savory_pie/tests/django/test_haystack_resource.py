@@ -6,7 +6,7 @@ from savory_pie.tests.mock_context import mock_context
 
 
 class TestHaystackResource(unittest.TestCase):
-    
+
     def test_have_no_children(self):
         resource = HaystackResource()
         child = resource.get_child_resource(None, None)
@@ -24,7 +24,7 @@ class TestHaystackResource(unittest.TestCase):
         # Build a mock field
         field = mock.Mock()
         def handle_outgoing(ctx, source_obj, target_dict):
-           target_dict['foo'] = 'bar' 
+            target_dict['foo'] = 'bar'
         field.handle_outgoing.side_effect = handle_outgoing
 
         class Resource(HaystackResource):
@@ -45,4 +45,22 @@ class TestHaystackResource(unittest.TestCase):
             mock.sentinel.ctx,
             search_result.get_stored_fields.return_value,
             {'foo': 'bar'} # This looks odd, but the value is mutated
+        )
+
+    @mock.patch('savory_pie.django.haystack_resource.SearchQuerySet')
+    def test_search(self, SearchQuerySet):
+        class Resource(HaystackResource):
+            model = mock.sentinel.model
+            fields = []
+
+        resource = Resource()
+        result_list = resource.get(mock.sentinel.ctx, q='foo')
+
+        search_query = SearchQuerySet.return_value
+        search_query.assert_has_calls(
+            [
+                mock.call.filter(content=u'foo'),
+                mock.call.models(mock.sentinel.model)
+            ],
+            any_order=True
         )

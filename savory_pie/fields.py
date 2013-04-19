@@ -27,6 +27,55 @@ class Field(object):
         return schema
 
 
+class MapAccessField(Field):
+    """
+    Simple Field that translates an object attribute to/from a dict.
+
+        Parameters:
+
+            ``attribute``
+                attribute on the Model can be a multi-level expression - like
+                related_entity.attribute
+
+            ``type``
+                expecting type of value -- int, bool, etc.
+
+            ``published_property``
+                optional -- name exposed in the API
+
+            ``read_only``
+                optional -- this api will never try and set this value
+
+        .. code-block:: python
+
+            AttributeField('name', type=str)
+
+        .. code-block:: javascript
+
+            {'name': obj.name}
+
+        .. code-block:: python
+
+            AttributeField('other.age', type=int)
+    """
+
+    def __init__(self, attribute, type, published_property=None, ):
+        self._key = attribute
+        self._type = type
+        self._published_property = published_property
+
+    def _compute_property(self, ctx):
+        if self._published_property is not None:
+            return ctx.formatter.convert_to_public_property(self._published_property)
+        else:
+            return ctx.formatter.convert_to_public_property(self._key)
+
+    def handle_outgoing(self, ctx, source_obj, target_dict):
+        value = source_obj[self._key]
+        value = ctx.formatter.to_api_value(self._type, value)
+        target_dict[self._compute_property(ctx)] = value
+
+
 class AttributeField(Field):
     """
     Simple Field that translates an object attribute to/from a dict.

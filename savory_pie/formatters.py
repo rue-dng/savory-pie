@@ -1,4 +1,5 @@
-import json
+import simplejson as json
+#import json
 import time
 import pytz
 import string
@@ -16,7 +17,7 @@ class JSONFormatter(object):
     content_type = 'application/json'
 
     dateRegex = re.compile('(\d{4})-(\d{2})-(\d{2})(.*)')
-    
+
     def parse_datetime(self, s):
         if s is None:
             return None
