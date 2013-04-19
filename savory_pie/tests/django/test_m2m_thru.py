@@ -110,7 +110,7 @@ ZoneContent.objects.create = createZoneContent
 
 ##########
 
-class ModelResourceTest(unittest.TestCase):
+class ManyToManyThroughTest(unittest.TestCase):
 
     def setUp(self):
         createZone(name='abcd', pk=1)
@@ -121,10 +121,9 @@ class ModelResourceTest(unittest.TestCase):
         createZoneContent(zone=_zones[1], content=_contents[1], pk=6)
 
     def tearDown(self):
-        global _zones, _contents    # _segments, _zonecontents
+        global _zones, _contents, _zonecontents
         del _zones[:]
         del _contents[:]
-        # del _segments[:]
         del _zonecontents[:]
 
     def test_check_add(self):
