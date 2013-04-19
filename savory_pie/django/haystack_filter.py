@@ -16,8 +16,10 @@ class HaystackFilter(ParameterizedFilter):
     def filter(self, ctx, params, queryset):
         name = self.is_applicable(ctx, params)
         if name:
-            value = self.get_param_value(name, ctx, params)
-            hs_results = SearchQuerySet().filter(content=unicode(value)).models(queryset.model)
+            value = unicode(self.get_param_value(name, ctx, params))
+            hs_results = SearchQuerySet().models(queryset.model)
+            for word in value.split():
+                hs_results = hs_results.filter(content=word)
             pks = [result.pk for result in hs_results]
             queryset = queryset.filter(pk__in=pks)
             queryset = self.apply(self.criteria, queryset)
