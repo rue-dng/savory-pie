@@ -7,6 +7,12 @@ import logging
 logger = logging.getLogger('savory_pie')
 
 
+class ValidationException(Exception):
+    def __init__(self, resource, errors):
+        self.resource = resource
+        self.errors = errors
+
+
 class BaseValidator:
 
     """
@@ -109,6 +115,11 @@ class BaseValidator:
 
             ``resource``
                 the ModelResource instance whose data is to be validated
+
+            ``key``
+                the current path fragment of the dictionary key which will be used to store
+                any errors found in the returned dict -- in the initial call to validate,
+                this should probably be the name of the class being validated e.g. "user"
 
         Returns:
 
