@@ -382,7 +382,7 @@ class SchemaResourceTest(unittest.TestCase):
 
     def setUp(self):
         self.json_formatter = formatters.JSONFormatter()
-    
+
     def do_assert_date_equal(self, key):
         field = self.do_get()['fields'][key]
         field['default'] = date_str
