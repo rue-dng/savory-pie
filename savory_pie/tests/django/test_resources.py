@@ -52,6 +52,10 @@ class UnaddressableUserResource(resources.ModelResource):
     ]
 
 
+class SemiUnaddressableUserResource(UnaddressableUserResource):
+    parent_resource_path = 'users'
+
+
 class ComplexUserResource(resources.ModelResource):
     model_class = User
 
@@ -204,13 +208,11 @@ class ModelResourceTest(unittest.TestCase):
 
 
 class AddressableUserQuerySetResource(resources.QuerySetResource):
-    resource_path = 'users'
     resource_class = AddressableUserResource
 
 
 class SemiUnaddressableUserQuerySetResource(resources.QuerySetResource):
-    resource_path = 'users'
-    resource_class = UnaddressableUserResource
+    resource_class = SemiUnaddressableUserResource
 
 
 class FullyUnaddressableUserQuerySetResource(resources.QuerySetResource):
