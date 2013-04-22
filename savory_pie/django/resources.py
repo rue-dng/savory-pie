@@ -185,7 +185,7 @@ class ModelResource(Resource):
     #: into and read from dict-s being handled by get, post, and put
     fields = []
 
-    #: A list of Validator-s that are used to check data consistence and
+    #: A list of Validator-s that are used to check data consistency and
     #: integrity on a model.
     validators = []
 
@@ -290,6 +290,8 @@ class ModelResource(Resource):
         if not source_dict:
             return
 
+        self._previous_values = self.get(ctx, EmptyParams())
+
         for field in self.fields:
             if field.pre_save(self.model):
                 field.handle_incoming(ctx, source_dict, self.model)
@@ -300,6 +302,15 @@ class ModelResource(Resource):
         for field in self.fields:
             if not field.pre_save(self.model):
                 field.handle_incoming(ctx, source_dict, self.model)
+
+        errors = dict()
+        for validator in self.validators:
+            errors.update(validator.validate())
+        if errors:
+            raise ValidationException(self, errors)
+
+    def revert_last_put(self, ctx):
+        self.put(ctx, self._previous_values)
 
     def delete(self, ctx):
         self.model.delete()
