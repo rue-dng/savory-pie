@@ -21,7 +21,10 @@ class JSONFormatter(object):
         if s is None:
             return None
         if self.dateRegex.match(s):
-            return parser.parse(s).astimezone(pytz.utc)
+            try:
+                return parser.parse(s).astimezone(pytz.utc)
+            except ValueError:
+                return parser.parse(s).replace(tzinfo=pytz.utc)
         raise TypeError('Unable to parse ' + repr(s) + ' as a datetime')
 
     def parse_date(self, s):
