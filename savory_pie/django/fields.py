@@ -88,11 +88,6 @@ class AttributeField(base_fields.AttributeField, DjangoField):
         return True
 
 
-class ReadOnlyAttributeField(AttributeField):
-    def handle_incoming(self, ctx, source_dict, model):
-        pass
-
-
 class URIResourceField(base_fields.URIResourceField, DjangoField):
     """
     Django extension of the basic URIResourceField that adds support for optimized
