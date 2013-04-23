@@ -19,6 +19,9 @@ def savory_dispatch(root_resource, method, resource_path='', body=None, GET=None
 class User(object):
     email = 'savory-pie-tester@localhost'
 
+    def is_authenticated(self):
+        return True
+
 class Request(object):
     def __init__(self, method, host='localhost', resource_path='', body=None, GET=None, POST=None):
         self.host = host
