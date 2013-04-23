@@ -27,7 +27,6 @@ class QuerySetResource(Resource):
             model_class = Foo
 
         class FooQuerySetResource(QuerySetResource):
-            resource_path = 'foos'
             resource_class = FooResource
     """
     #: optional - if set specifies the page size for data returned during a GET
@@ -44,6 +43,10 @@ class QuerySetResource(Resource):
     @property
     def supports_paging(self):
         return self.page_size is not None
+
+    @property
+    def resource_path(self):
+        return self.resource_class.parent_resource_path
 
     def filter_queryset(self, ctx, params, queryset):
         for filter in self.filters:
@@ -168,7 +171,6 @@ class ModelResource(Resource):
             model_class = Foo
 
         class FooQuerySetResource(QuerySetResource):
-            resource_path = 'foos'
             resource_class = FooResource
     """
     # model_class

@@ -24,7 +24,6 @@ A Basic API might look something like this:
 
 
     class UserQuerySetResource(savory_pie.django.resources.QuerySetResource):
-        resource_path = 'users'
         resource_class = UserResource
 
 **URL configuration**:
