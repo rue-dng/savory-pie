@@ -101,9 +101,8 @@ class APIResource(Resource):
         """
         Register a resource into the API.
         """
-        if not self.resource_path:
-            leaf = resource.resource_path
-        elif '/' in resource.resource_path:
+        leaf = resource.resource_path
+        if '/' in resource.resource_path:
             n = resource.resource_path.index('/')
             leaf = resource.resource_path[n+1:]
 
