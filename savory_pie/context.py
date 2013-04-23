@@ -50,10 +50,7 @@ class APIContext(object):
         Given a Resource with a resource_path, provides the correspond URI.
         Raises a ValueError if the resource_path of the Resource is None.
         """
-        if isinstance(resource, QuerySetResource):
-            resource_path = resource.resource_class.parent_resource_path
-        else:
-            resource_path = resource.resource_path
+        resource_path = resource.resource_path
 
         if resource_path is None:
             raise ValueError(u'unaddressable resource')
