@@ -3,7 +3,7 @@ import unittest
 
 from savory_pie.resources import Resource
 from savory_pie.django.resources import ModelResource
-from savory_pie.fields import AttributeField, IterableField
+from savory_pie.fields import AttributeField, IterableField, SubObjectResourceField
 from savory_pie.tests.mock_context import mock_context
 
 
@@ -80,3 +80,23 @@ class IterableFieldTestCase(unittest.TestCase):
         )
 
         iterable_factory.assert_called_with(source_object.foo)
+
+
+class IterableFieldTestCase(unittest.TestCase):
+    def test_handle_incoming_pre_save_optional(self):
+        ctx = mock_context()
+        ctx.resolve_resource_uri = Mock(name='resolve_resource_uri')
+        sub_resource = ctx.resolve_resource_uri.return_value
+        Resource = Mock(name='resource')
+
+        source_dict = {
+            'foo': {
+                'resourceUri': 'foo'
+            },
+        }
+        target_obj = Mock(['save', 'pre_save'], name='target_obj',)
+        field = SubObjectResourceField('foo', Resource)
+
+        field.handle_incoming(ctx, source_dict, target_obj)
+
+        self.assertEqual(sub_resource.model, target_obj.foo)
