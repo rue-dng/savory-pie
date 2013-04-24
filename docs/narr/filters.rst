@@ -22,7 +22,6 @@ we might define filters like these::
         ]
 
     class FooQuerySetResource(QuerySetResource):
-        resource_path = 'foo'
         resource_class = FooResource
 
         filters = [

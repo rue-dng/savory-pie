@@ -463,6 +463,10 @@ class IterableField(Field):
         ``read_only``
             optional -- this api will never try and set this value
 
+        ``iterable_factory``
+            optional -- a callable which is passed the attribute and returns an
+            iterable this fields exports
+
         .. code-block:: python
 
             RelatedManagerField('others', OtherResource)
@@ -476,11 +480,13 @@ class IterableField(Field):
                  resource_class,
                  published_property=None,
                  read_only=False,
+                 iterable_factory=None,
                  validator=None):
         self._attribute = attribute
         self._resource_class = resource_class
         self._published_property = published_property
         self._read_only = read_only
+        self._iterable_factory = iterable_factory
         self.validator = validator or []
 
     def _compute_property(self, ctx):
@@ -511,9 +517,16 @@ class IterableField(Field):
     def handle_incoming(self, ctx, source_dict, target_obj):
         attribute = getattr(target_obj, self._attribute)
 
+        # We are doing this outside of get_iterable so that subclasses can not
+        # remove this override.
+        if self._iterable_factory:
+            iterable = self._iterable_factory(attribute)
+        else:
+            iterable = self.get_iterable(attribute)
+
         db_keys = set()
         db_models = {}
-        for model in self.get_iterable(attribute):
+        for model in iterable:
             resource = self._resource_class(model)
             db_models[resource.key] = model
             db_keys.add(resource.key)
@@ -562,7 +575,15 @@ class IterableField(Field):
                 return None
 
         objects = []
-        for model in self.get_iterable(attribute):
+
+        # We are doing this outside of get_iterable so that subclasses can not
+        # remove this override.
+        if self._iterable_factory:
+            iterable = self._iterable_factory(attribute)
+        else:
+            iterable = self.get_iterable(attribute)
+
+        for model in iterable:
             model_resource = self._resource_class(model)
             model_dict = model_resource.get(ctx, EmptyParams())
             # only add '_id' if there is no 'resourceUri'

@@ -1,3 +1,6 @@
+from savory_pie.django.resources import QuerySetResource
+
+
 class APIContext(object):
     """
     Context object passed as the second argument (after self) to Resources and Fields.
@@ -47,10 +50,12 @@ class APIContext(object):
         Given a Resource with a resource_path, provides the correspond URI.
         Raises a ValueError if the resource_path of the Resource is None.
         """
-        if resource.resource_path is None:
+        resource_path = resource.resource_path
+
+        if resource_path is None:
             raise ValueError(u'unaddressable resource')
 
-        return self.base_uri + resource.resource_path
+        return self.base_uri + resource_path
 
     def set_header(self, header, value):
         """

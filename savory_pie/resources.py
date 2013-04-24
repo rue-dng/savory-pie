@@ -99,13 +99,14 @@ class APIResource(Resource):
 
     def register(self, resource):
         """
-        Register a resource into the API.  The Resource must
-        have a first-level resource_path already set.
+        Register a resource into the API.
         """
+        leaf = resource.resource_path
         if '/' in resource.resource_path:
-            raise ValueError(u'resource_path should be top-level')
+            n = resource.resource_path.index('/')
+            leaf = resource.resource_path[n+1:]
 
-        self._child_resources[resource.resource_path] = resource
+        self._child_resources[leaf] = resource
         return self
 
     def register_class(self, resource_class):

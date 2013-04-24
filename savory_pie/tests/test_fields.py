@@ -1,6 +1,7 @@
-from mock import Mock, patch
+from mock import MagicMock, Mock, patch
 import unittest
 
+from savory_pie.resources import Resource
 from savory_pie.django.resources import ModelResource
 from savory_pie.fields import AttributeField, IterableField
 from savory_pie.tests.mock_context import mock_context
@@ -37,3 +38,45 @@ class IterableFieldTestCase(unittest.TestCase):
         field.handle_outgoing(mock_context(), source_object, target_dict)
         self.assertEqual([{'_id': '4', 'bar': 14}], target_dict['foo.fu'])
 
+    def test_iterable_factory_outgoing(self):
+        values = [
+            Mock(name='value1', bar=1),
+            Mock(name='value2', bar=2),
+            Mock(name='value3', bar=3),
+        ]
+        iterable = MagicMock(name='iterable')
+        iterable.__iter__.return_value = iter(values)
+
+        class MockResource(ModelResource):
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        iterable_factory = Mock(name='iterable_factory', return_value=iterable)
+
+        source_object = Mock(name='source_object')
+        target_dict = {}
+
+        field = IterableField(attribute='foo', resource_class=MockResource, iterable_factory=iterable_factory)
+
+        field.handle_outgoing(mock_context(), source_object, target_dict)
+
+        self.assertEqual(
+            target_dict['foo'],
+            [
+                {
+                    'bar': 1,
+                    '_id': str(values[0].pk),
+                },
+                {
+                    'bar': 2,
+                    '_id': str(values[1].pk),
+                },
+                {
+                    'bar': 3,
+                    '_id': str(values[2].pk),
+                },
+            ]
+        )
+
+        iterable_factory.assert_called_with(source_object.foo)
