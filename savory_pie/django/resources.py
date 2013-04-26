@@ -280,6 +280,26 @@ class ModelResource(Resource):
 
         return target_dict
 
+    def _set_pre_save_fields(self, ctx, source_dict):
+        for field in self.fields:
+            try:
+                pre_save = field.pre_save
+            except AttributeError:
+                field.handle_incoming(ctx, source_dict, self.model)
+            else:
+                if pre_save(self.model):
+                    field.handle_incoming(ctx, source_dict, self.model)
+
+    def _set_post_save_fields(self, ctx, source_dict):
+        for field in self.fields:
+            try:
+                pre_save = field.pre_save
+            except AttributeError:
+                pass
+            else:
+                if not pre_save(self.model):
+                    field.handle_incoming(ctx, source_dict, self.model)
+
     def put(self, ctx, source_dict, save=True):
         '''
         This is where we respect the 'pre_save' flag on each field.
@@ -290,18 +310,10 @@ class ModelResource(Resource):
         if not source_dict:
             return
 
-        self._previous_values = self.get(ctx, EmptyParams())
-
-        for field in self.fields:
-            if field.pre_save(self.model):
-                field.handle_incoming(ctx, source_dict, self.model)
-
+        self._set_pre_save_fields(ctx, source_dict)
         if save:
             self.model.save()
-
-        for field in self.fields:
-            if not field.pre_save(self.model):
-                field.handle_incoming(ctx, source_dict, self.model)
+        self._set_post_save_fields(ctx, source_dict)
 
         errors = dict()
         for validator in self.validators:

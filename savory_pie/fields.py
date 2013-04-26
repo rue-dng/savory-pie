@@ -391,6 +391,9 @@ class SubObjectResourceField(Field):
     def get_submodel(self, ctx, source_object):
         return getattr(source_object, self._attribute, None)
 
+    def pre_save(self, model):
+        return True
+
     @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
         if not source_dict:
