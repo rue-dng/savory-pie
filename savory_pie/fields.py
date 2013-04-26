@@ -573,7 +573,7 @@ class IterableField(Field):
         attribute = source_obj
 
         for attr in attrs:
-            attribute = getattr(attribute, attr)
+            attribute = getattr(attribute, attr, None)
             if attribute is None:
                 return None
 
