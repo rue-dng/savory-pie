@@ -3,6 +3,7 @@ import json
 
 from mock import Mock
 from savory_pie.tests.django.mock_request import savory_dispatch
+from savory_pie.django.views import _ParamsImpl
 
 def mock_resource(name=None, resource_path=None, child_resource=None):
     resource = Mock(name=name, spec=[])
@@ -157,3 +158,16 @@ class ViewTest(unittest.TestCase):
 
         self.assertEqual(response['foo1'], 'bar1')
         self.assertEqual(response.content, '{"foo2": "bar2"}')
+
+
+class DjangoPramsTest(unittest.TestCase):
+
+    def test_get_list(self):
+        get = Mock(name='mock')
+        get.getlist.return_value = ['bar', 'baz']
+        params = _ParamsImpl(get)
+
+        result = params.get_list('foo')
+
+        self.assertEqual(result, ['bar', 'baz'])
+        get.getlist.assert_called_with('foo')

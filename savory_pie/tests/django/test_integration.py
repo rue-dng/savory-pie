@@ -29,7 +29,6 @@ class UserResource(resources.ModelResource):
 
 
 class UserQuerySetResource(resources.QuerySetResource):
-    resource_path = 'users'
     resource_class = UserResource
 
 

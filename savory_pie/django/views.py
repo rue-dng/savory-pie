@@ -162,8 +162,7 @@ class _ParamsImpl(object):
         return default if value is None else type(value)
 
     def get_list(self, key):
-        list = self._GET.get(key, None)
-        return [] if list is None else list
+        return self._GET.getlist(key)
 
     def get_list_of(self, key, type):
         list = self._GET.get(key, None)
