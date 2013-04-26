@@ -311,9 +311,23 @@ class ModelResource(Resource):
             return
 
         self._set_pre_save_fields(ctx, source_dict)
+        #self._previous_values = self.get(ctx, EmptyParams())
+        #
+        #for field in self.fields:
+        #    if field.pre_save(self.model):
+        #        field.handle_incoming(ctx, source_dict, self.model)
         if save:
             self.model.save()
         self._set_post_save_fields(ctx, source_dict)
+
+        errors = dict()
+        for validator in self.validators:
+            errors.update(validator.validate())
+        if errors:
+            raise ValidationException(self, errors)
+
+    def revert_last_put(self, ctx):
+        self.put(ctx, self._previous_values)
 
         errors = dict()
         for validator in self.validators:
