@@ -236,7 +236,6 @@ class CompleteURIResourceField(Field):
         self._resource_class = resource_class
         self._read_only = read_only
 
-    @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
         pass
 
