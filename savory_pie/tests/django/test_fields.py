@@ -1,7 +1,7 @@
 import unittest
 import django
 
-from mock import Mock, MagicMock
+from mock import Mock
 
 from django.core.exceptions import ObjectDoesNotExist
 from savory_pie.django import resources, fields

@@ -209,6 +209,43 @@ class URIResourceField(Field):
         return error_dict
 
 
+class CompleteURIResourceField(Field):
+    """
+    Field that exposes just the URI of the complete entity of itself.
+    This is useful if a resource is explicitly not including resource_uris, due to recursive inclusion,
+    this field can be used, to link to the URI of the full resource version of itself.
+    It adds a hard coded 'completeResourceUri' entry to the target dictionary.
+
+    Parameters:
+
+        ``resource_class``
+            a ModelResource -- used to represent the related object needs to be
+            fully addressable
+
+        .. code-block:: python
+
+            CompleteURIResourceField('other', OtherResource)
+
+        .. code-block:: javascript
+
+            {'other': '/api/other/{pk}'}
+    """
+
+
+    def __init__(self, resource_class, read_only=False):
+        self._resource_class = resource_class
+        self._read_only = read_only
+
+    @read_only_noop
+    def handle_incoming(self, ctx, source_dict, target_obj):
+        pass
+
+    def handle_outgoing(self, ctx, source_obj, target_dict):
+        resource = self._resource_class(source_obj)
+        property_name = ctx.formatter.convert_to_public_property('complete_resource_uri')
+        target_dict[property_name] = ctx.build_resource_uri(resource)
+
+
 class URIListResourceField(Field):
     """
     Field that exposes a list of URIs of related entity, this allows for a many to many relationship.
