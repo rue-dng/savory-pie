@@ -224,11 +224,11 @@ class CompleteURIResourceField(Field):
 
         .. code-block:: python
 
-            CompleteURIResourceField('other', OtherResource)
+            CompleteURIResourceField(OtherResource)
 
         .. code-block:: javascript
 
-            {'other': '/api/other/{pk}'}
+            {'completeResourceUri': '/api/other/{pk}'}
     """
 
 
