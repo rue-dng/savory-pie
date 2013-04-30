@@ -79,6 +79,18 @@ class AttributeFieldTest(unittest.TestCase):
 
         self.assertEqual(target_object.foo, 20)
 
+    def test_save(self):
+        source_dict = {
+            'foo': 20
+        }
+
+        target_object = Mock(name='target')
+
+        field = AttributeField(attribute='foo', type=int)
+        field.save(target_object)
+
+        self.assertTrue(target_object.save.called)
+
     def test_incoming_read_only(self):
         source_dict = {
             'foo': 20

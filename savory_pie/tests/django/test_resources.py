@@ -116,6 +116,8 @@ class ModelResourceTest(unittest.TestCase):
         self.assertEqual(user.name, 'Bob')
         self.assertEqual(user.age, 20)
         self.assertTrue(user.save.called)
+
+    def test_complex_put(self):
         user = User()
         user._meta.get_field().related.field.name = 'name'
         user.owner = UserOwner()
@@ -215,6 +217,28 @@ class ModelResourceTest(unittest.TestCase):
         resource.put(mock_context(), {'foo': 'bar'})
 
         user.save.assert_called_with()
+
+    def test_save_fields(self):
+        user = Mock(name='user')
+        field = Mock(['handle_incoming', 'save'])
+        class Resource(resources.ModelResource):
+            model_class = User
+            fields = [field]
+        resource = Resource(user)
+
+        resource.put(mock_context(), {'foo': 'bar'})
+
+        self.assertTrue(field.save.called)
+
+    def test_save_fields_optional(self):
+        user = Mock(name='user')
+        field = Mock(['handle_incoming'])
+        class Resource(resources.ModelResource):
+            model_class = User
+            fields = [field]
+        resource = Resource(user)
+
+        resource.put(mock_context(), {'foo': 'bar'})
 
 
 class AddressableUserQuerySetResource(resources.QuerySetResource):
