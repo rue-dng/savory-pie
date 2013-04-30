@@ -1,7 +1,7 @@
 import unittest
 import django
 
-from mock import Mock, MagicMock
+from mock import Mock
 
 from django.core.exceptions import ObjectDoesNotExist
 from savory_pie.django import resources, fields
@@ -78,6 +78,18 @@ class AttributeFieldTest(unittest.TestCase):
         field.handle_incoming(mock_context(), source_dict, target_object)
 
         self.assertEqual(target_object.foo, 20)
+
+    def test_save(self):
+        source_dict = {
+            'foo': 20
+        }
+
+        target_object = Mock(name='target')
+
+        field = AttributeField(attribute='foo', type=int)
+        field.save(target_object)
+
+        self.assertTrue(target_object.save.called)
 
     def test_incoming_read_only(self):
         source_dict = {

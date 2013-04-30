@@ -1,9 +1,9 @@
-from mock import MagicMock, Mock, patch
 import unittest
 
-from savory_pie.resources import Resource
+from mock import MagicMock, Mock
+
 from savory_pie.django.resources import ModelResource
-from savory_pie.fields import AttributeField, IterableField, SubObjectResourceField
+from savory_pie.fields import AttributeField, IterableField, SubObjectResourceField, CompleteURIResourceField
 from savory_pie.tests.mock_context import mock_context
 
 
@@ -100,3 +100,22 @@ class IterableFieldTestCase(unittest.TestCase):
         field.handle_incoming(ctx, source_dict, target_obj)
 
         self.assertEqual(sub_resource.model, target_obj.foo)
+
+
+class CompleteURIResourceFieldTestCase(unittest.TestCase):
+    def test_outgoing(self):
+
+        class Resource(ModelResource):
+            parent_resource_path = 'resources'
+
+        field = CompleteURIResourceField(resource_class=Resource)
+
+        source_object = Mock()
+        ctx = mock_context()
+        ctx.build_resource_uri = Mock()
+        ctx.build_resource_uri.side_effect = ['uri://resources/1']
+
+        target_dict = dict()
+        field.handle_outgoing(ctx, source_object, target_dict)
+
+        self.assertEqual(target_dict['completeResourceUri'], 'uri://resources/1')
