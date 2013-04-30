@@ -300,6 +300,16 @@ class ModelResource(Resource):
                 if not pre_save(self.model):
                     field.handle_incoming(ctx, source_dict, self.model)
 
+    def _save(self):
+        self.model.save()
+        for field in self.fields:
+            try:
+                save = field.save
+            except AttributeError:
+                pass
+            else:
+                save(self.model)
+
     def put(self, ctx, source_dict, save=True):
         '''
         This is where we respect the 'pre_save' flag on each field.
@@ -312,7 +322,7 @@ class ModelResource(Resource):
 
         self._set_pre_save_fields(ctx, source_dict)
         if save:
-            self.model.save()
+            self._save()
         self._set_post_save_fields(ctx, source_dict)
 
     def delete(self, ctx):
