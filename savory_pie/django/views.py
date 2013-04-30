@@ -35,10 +35,6 @@ def api_view(root_resource):
 
         try:
             resource = ctx.resolve_resource_path(resource_path)
-            # errors = validators.BaseValidator.validate(resource,
-            #     ctx.base_uri + '.' + resource.__class__.__name__)
-            # if errors:
-            #     return _internal_error(ctx, request, errors)
 
             if resource is None:
                 return _not_found(ctx, request)

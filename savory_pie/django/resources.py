@@ -327,10 +327,10 @@ class ModelResource(Resource):
         if errors:
             raise ValidationException(self, errors)
 
+        self._set_pre_save_fields(ctx, source_dict)
+
         if save:
-            for field in self.fields:
-                field.handle_incoming(ctx, source_dict, self.model)
-            self.model.save()
+            self._save()
             logger.debug('save succeeded for %s' % self)
 
         self._set_post_save_fields(ctx, source_dict)
