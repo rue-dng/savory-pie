@@ -238,6 +238,7 @@ class ModelResourceTest(unittest.TestCase):
             fields = [field]
         resource = Resource(user)
 
+        # Tests that an attribute error is not raised
         resource.put(mock_context(), {'foo': 'bar'})
 
 

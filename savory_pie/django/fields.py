@@ -86,8 +86,8 @@ class AttributeField(base_fields.AttributeField, DjangoField):
 
     def save(self, target_obj):
         # TODO: remove this save call and track all models to save in the ctx.
-        # Also move run a topo-sort in the ctx and save models in the order.
-        # We can then remove all of the save order logic from the fields.
+        # Also run a topo-sort in the ctx and save models in the order.  We can
+        # then remove all of the save order logic from the fields.
         self._get_object(target_obj).save()
 
     def filter_by_item(self, ctx, filter_args, source_dict):
