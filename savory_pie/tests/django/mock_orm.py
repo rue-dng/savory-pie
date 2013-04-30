@@ -26,6 +26,15 @@ class QuerySet(Mock):
     def all(self):
         return QuerySet(*self._elements)
 
+    def distinct(self):
+        # remove the methods when comparing the uniqueness of the elements
+        for obj in self._elements:
+            del obj.__dict__['save']
+            del obj.__dict__['delete']
+
+        values = { tuple(obj.__dict__.items()):obj for obj in self._elements }.values()
+        return QuerySet(*values)
+
     def count(self):
         return len(self._elements)
 
