@@ -27,12 +27,14 @@ class QuerySet(Mock):
         return QuerySet(*self._elements)
 
     def distinct(self):
-        # remove the methods when comparing the uniqueness of the elements
-        for obj in self._elements:
-            del obj.__dict__['save']
-            del obj.__dict__['delete']
 
-        values = { tuple(obj.__dict__.items()):obj for obj in self._elements }.values()
+        values = \
+            {
+                tuple(
+                    # remove the methods when comparing the uniqueness of the elements
+                    [i for i in obj.__dict__.items() if i[0] not in ('save', 'delete')]
+                ): obj for obj in self._elements
+            }.values()
         return QuerySet(*values)
 
     def count(self):
