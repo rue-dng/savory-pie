@@ -1,12 +1,15 @@
 import urllib
+import logging
 
 import django.core.exceptions
 
-from savory_pie.resources import Resource
+from savory_pie.resources import EmptyParams, Resource
 from savory_pie.django.fields import DjangoField
-from savory_pie.django.utils import Related
-from savory_pie.resources import EmptyParams
 from savory_pie.django.filters import StandardFilter
+from savory_pie.django.utils import Related
+from savory_pie.django.validators import ValidationException, validate
+
+logger = logging.getLogger(__name__)
 
 
 class QuerySetResource(Resource):
@@ -310,34 +313,18 @@ class ModelResource(Resource):
         if not source_dict:
             return
 
-        #self._previous_values = self.get(ctx, EmptyParams())
-
-        # this should happen on model resources with validators, but isn't
-        #if self.validators:
-        #    import pdb
-        #    pdb.set_trace()
-
-        errors = dict()
-        for validator in self.validators:
-            errors.update(validator.validate())
+        errors = validate(ctx, self.__class__.__name__, self, source_dict)
         if errors:
             raise ValidationException(self, errors)
 
-        self._set_pre_save_fields(ctx, source_dict)
-
         if save:
+            for field in self.fields:
+                field.handle_incoming(ctx, source_dict, self.model)
             self.model.save()
+            logger.debug('save succeeded for %s' % self)
 
         self._set_post_save_fields(ctx, source_dict)
-
-        #errors = dict()
-        #for validator in self.validators:
-        #    errors.update(validator.validate())
-        #if errors:
-        #    raise ValidationException(self, errors)
-
-    #def revert_last_put(self, ctx):
-    #    self.put(ctx, self._previous_values)
+        logger.debug('put succeeded for %s' % self)
 
     def delete(self, ctx):
         self.model.delete()

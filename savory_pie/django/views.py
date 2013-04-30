@@ -35,10 +35,10 @@ def api_view(root_resource):
 
         try:
             resource = ctx.resolve_resource_path(resource_path)
-            errors = validators.BaseValidator.validate(resource,
-                ctx.base_uri + '.' + resource.__class__.__name__)
-            if errors:
-                return _internal_error(ctx, request, errors)
+            # errors = validators.BaseValidator.validate(resource,
+            #     ctx.base_uri + '.' + resource.__class__.__name__)
+            # if errors:
+            #     return _internal_error(ctx, request, errors)
 
             if resource is None:
                 return _not_found(ctx, request)
@@ -77,7 +77,7 @@ def _process_post(ctx, resource, request):
             new_resource = resource.post(ctx, ctx.formatter.read_from(request))
             return _created(ctx, request, request, new_resource)
         except validators.ValidationException, ve:
-            ve.resource.delete()
+            #ve.resource.delete()
             return _validation_errors(ctx, ve.resource, request, ve.errors)
     else:
         return _not_allowed_method(ctx, resource, request)
@@ -88,7 +88,7 @@ def _process_put(ctx, resource, request):
             resource.put(ctx,ctx.formatter.read_from(request))
             return _no_content_success(ctx, request, request)
         except validators.ValidationException, ve:
-            resource.revert_last_put(ctx)
+            #resource.revert_last_put(ctx)
             return _validation_errors(ctx, resource, request, ve.errors)
     else:
         return _not_allowed_method(ctx, resource, request)
