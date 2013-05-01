@@ -469,18 +469,7 @@ class SubObjectResourceField(Field):
                 self._resource_class(sub_model).get(ctx, EmptyParams())
 
     def validate_resource(self, ctx, key, resource, source_dict):
-        error_dict = {}
-        submodel = self.get_submodel(None, resource.model)
-        if submodel is not None:
-            subresource = self._resource_class(submodel)
-            error_dict.update(validate(ctx, key + '.' + self.name, subresource, source_dict))
-            # a validator here will be a ResourceValidator, not a FieldValidator
-            if isinstance(self.validator, collections.Iterable):
-                for validator in self.validator:
-                    validator.find_errors(error_dict, key, subresource)
-            else:
-                self.validator.find_errors(error_dict, key, subresource)
-        return error_dict
+        return validate(ctx, key + '.' + self.name, self._resource_class, source_dict)
 
 
 class IterableField(Field):

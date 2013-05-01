@@ -39,8 +39,7 @@ def validate(ctx, key, resource, source_dict):
     """
     key = ctx.formatter.convert_to_public_property(key)
     error_dict = {}
-    model = resource.model
-    if resource is not None:
+    if source_dict and resource:
         if hasattr(resource, 'fields') and \
                     isinstance(resource.fields, collections.Iterable):
             for field in resource.fields:
@@ -248,19 +247,19 @@ class DatetimeFieldSequenceValidator(ResourceValidator):
         Verify that specified datetime fields exist, and are in chronological sequence
         as expected.
         """
-        model = resource.model
         values = []
         for attr in self._date_fields:
-            ccattr = ctx.formatter.convert_to_public_property(attr)
-            if ccattr not in source_dict:
+            public_attr = ctx.formatter.convert_to_public_property(attr)
+            if public_attr not in source_dict:
                 self._add_error(error_dict, key,
                                 'Cannot find datetime field "' + attr + '"')
                 return
             values.append(ctx.formatter.to_python_value(datetime.datetime,
-                                                        source_dict[ccattr]))
+                                                        source_dict[public_attr]))
         for before, after in zip(values[:-1], values[1:]):
             if before > after:
                 self._add_error(error_dict, key, self.error_message)
+                return
 
 
 ########## Field validators ############
@@ -298,13 +297,15 @@ class StringFieldZipcodeValidator(FieldValidator):
 
     error_message = 'This should be a zipcode.'
 
+    pattern = re.compile(r'^\d{5}(-\d{4})?$')
+
     def check_value(self, value):
         """
         Verify that the value is a five-digit string.
 
         """
         try:
-            return re.compile(r'\d{5}').match(value) is not None
+            return self.pattern.match(value)
         except TypeError:
             return False
 
@@ -360,6 +361,8 @@ class IntFieldMinValidator(FieldValidator):
 
     json_name = 'int_min'
 
+    error_message = 'This value should be greater than or equal to the minimum.'
+
     def __init__(self, _min, error_message=None):
         self._min = _min
         if error_message:
@@ -390,6 +393,8 @@ class IntFieldMaxValidator(FieldValidator):
     """
 
     json_name = 'int_max'
+
+    error_message = 'This value should be less than or equal to the maximum.'
 
     def __init__(self, _max, error_message=None):
         self._max = _max
@@ -425,6 +430,8 @@ class IntFieldRangeValidator(FieldValidator):
 
     json_name = 'int_range'
 
+    error_message = 'This value should be within the allowed integer range.'
+
     def __init__(self, _min, _max, error_message=None):
         self._min = _min
         self._max = _max
@@ -457,6 +464,8 @@ class DatetimeFieldMinValidator(FieldValidator):
 
     json_name = 'datetime_min'
 
+    error_message = 'This value should be no earlier than the minimum datetime.'
+
     def __init__(self, _min, error_message=None):
         self._min = _min
         if error_message:
@@ -487,6 +496,8 @@ class DatetimeFieldMaxValidator(FieldValidator):
     """
 
     json_name = 'datetime_max'
+
+    error_message = 'This value should be no later than the maximum datetime.'
 
     def __init__(self, _max, error_message=None):
         # _max = _max.replace(microsecond=0)
