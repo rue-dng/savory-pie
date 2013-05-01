@@ -272,8 +272,23 @@ class QuerySetResourceTest(unittest.TestCase):
         })
 
         self.assertEqual(data['objects'], [
+            {'resourceUri': 'uri://users/2', 'name': 'Bob', 'age': 20},
+            {'resourceUri': 'uri://users/1', 'name': 'Alice', 'age': 31}
+        ])
+
+    def test_get_distinct(self):
+        resource = AddressableUserQuerySetResource(mock_orm.QuerySet(
+            User(pk=1, name='Alice', age=31),
+            User(pk=1, name='Alice', age=31)
+        ))
+        data = resource.get(mock_context(), EmptyParams())
+        self.assertEqual(data['meta'], {
+            'resourceUri': 'uri://users',
+            'count': 1
+        })
+
+        self.assertEqual(data['objects'], [
             {'resourceUri': 'uri://users/1', 'name': 'Alice', 'age': 31},
-            {'resourceUri': 'uri://users/2', 'name': 'Bob', 'age': 20}
         ])
 
     def test_empty_queryset(self):
@@ -388,7 +403,7 @@ class ResourcePrepareTest(unittest.TestCase):
         queryset_resource = ComplexUserResourceQuerySetResource(queryset)
 
         queryset_resource.get(mock_context(), EmptyParams())
-        calls = call.all().filter().select_related('manager').prefetch_related('reports').call_list()
+        calls = call.all().distinct().filter().select_related('manager').prefetch_related('reports').call_list()
         queryset.assert_has_calls(calls)
 
 
