@@ -73,7 +73,6 @@ def _process_post(ctx, resource, request):
             new_resource = resource.post(ctx, ctx.formatter.read_from(request))
             return _created(ctx, request, request, new_resource)
         except validators.ValidationException, ve:
-            #ve.resource.delete()
             return _validation_errors(ctx, ve.resource, request, ve.errors)
     else:
         return _not_allowed_method(ctx, resource, request)
