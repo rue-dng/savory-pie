@@ -13,6 +13,7 @@ from savory_pie.django.validators import (
     FieldValidator,
     StringFieldZipcodeValidator,
     StringFieldExactMatchValidator,
+    StringFieldMaxLengthValidator,
     IntFieldMinValidator,
     IntFieldMaxValidator,
     IntFieldRangeValidator,
@@ -360,6 +361,30 @@ class KnownValidatorsTester(ValidationTestCase):
                     ('65536', badness),
                     ('01234567890', badness),
                     ('01234-567890', badness),
+                ):
+            error_dict = {}
+            v.find_errors(error_dict, ctx, 'foo', None, field, value)
+            self.assertEqual(expected, error_dict)
+
+    def test_string_field_max_length_validator(self):
+        ctx = mock_context()
+        v = StringFieldMaxLengthValidator(80)
+        field = base_fields.Field()
+        field._attribute = 'bar'
+        field._type = str
+        badness = {'foo.bar': ['This should not exceed the expected string length.']}
+        for (value, expected) in (
+                    ('A', {}),
+                    (5 * 'A', {}),
+                    (10 * 'A', {}),
+                    (40 * 'A', {}),
+                    (79 * 'A', {}),
+                    (80 * 'A', {}),
+                    (81 * 'A', badness),
+                    (85 * 'A', badness),
+                    (100 * 'A', badness),
+                    (200 * 'A', badness),
+                    (500 * 'A', badness),
                 ):
             error_dict = {}
             v.find_errors(error_dict, ctx, 'foo', None, field, value)
