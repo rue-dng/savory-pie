@@ -1,4 +1,6 @@
 import json
+import pytz
+import mock
 import unittest
 from datetime import datetime, timedelta
 
@@ -6,10 +8,21 @@ from savory_pie import fields as base_fields
 from savory_pie.django import resources, fields
 from savory_pie.django import validators as spie_validators
 from savory_pie.tests.mock_context import mock_context
+from savory_pie.django.validators import (
+    DatetimeFieldSequenceValidator,
+    FieldValidator,
+    StringFieldZipcodeValidator,
+    StringFieldExactMatchValidator,
+    IntFieldMinValidator,
+    IntFieldMaxValidator,
+    IntFieldRangeValidator,
+    DatetimeFieldMinValidator,
+    DatetimeFieldMaxValidator,
+)
 
 from django.db import models
 
-now = datetime.now().replace(microsecond=0)
+now = datetime.now().replace(tzinfo=pytz.utc)
 long_ago = now - timedelta(hours=10)
 ancient = long_ago - timedelta(hours=1)
 later = now + timedelta(hours=1)
@@ -17,18 +30,25 @@ too_late = later + timedelta(hours=1)
 ridiculous = too_late + timedelta(hours=1)
 
 
+class Car(models.Model):
+    make = models.CharField(max_length=20)
+    year = models.IntegerField()
+    ugly = models.BooleanField()
+
+    def to_json(self):
+        return {
+            'make': self.make,
+            'year': self.year,
+            'ugly': self.ugly
+        }
+
 class User(models.Model):
     name = models.CharField(max_length=20)
     age = models.IntegerField()
     before = models.DateTimeField()
     after = models.DateTimeField()
     systolic_bp = models.IntegerField()
-
-
-class Car(models.Model):
-    make = models.CharField(max_length=20)
-    age = models.IntegerField()
-    ugly = models.BooleanField()
+    vehicle = models.ForeignKey(Car)
 
 
 class CarNotUglyValidator(spie_validators.ResourceValidator):
@@ -36,7 +56,7 @@ class CarNotUglyValidator(spie_validators.ResourceValidator):
     error_message = 'The car should not be ugly.'
 
     def check_value(self, model):
-        return not model.ugly
+        return not model['ugly']
 
 
 class IntFieldPrimeValidator(spie_validators.FieldValidator):
@@ -113,16 +133,10 @@ def create_car(make, year, ugly=False):
     return model
 
 def validate_user_resource(name, age, start, end, systolic, car=None):
-    model = User()
-    model.name = name
-    model.age = age
-    model.before = start
-    model.after = end
-    model.systolic_bp = systolic
-    model.vehicle = car
-    resource = UserTestResource(model)
-    errors = spie_validators.BaseValidator.validate(resource, 'user')
-    return errors
+    source_dict = dict(name=name, age=str(age), before=start.isoformat(), after=end.isoformat(),
+                       systolicBp=int(systolic), vehicle=(car and car.to_json()))
+    return spie_validators.validate(mock_context(), 'user',
+                                    UserTestResource(User()), source_dict)
 
 
 class ValidationTestCase(unittest.TestCase):
@@ -140,9 +154,8 @@ class NoOpField(object):
 
 class OptionalValidationTestCase(ValidationTestCase):
 
-    class OptionalResource(resources.ModelResource):
-        parent_resource_path = 'users'
-        model_class = User
+    class OptionalResource(UserTestResource):
+        validators = []
 
         fields = [
             NoOpField()
@@ -150,11 +163,12 @@ class OptionalValidationTestCase(ValidationTestCase):
 
     def test_optional_validation(self):
         """
-        Fields should not be required to have validation
+        Resources and Fields should not be required to have validation
         """
         model = User()
-        resource = UserTestResource(model)
-        errors = spie_validators.BaseValidator.validate(resource, 'user')
+        resource = self.OptionalResource(model)
+        errors = spie_validators.validate(mock_context(), 'user', resource, {})
+        self.assertEqual({}, errors)
 
 
 class SimpleValidationTestCase(ValidationTestCase):
@@ -202,14 +216,14 @@ class SimpleValidationTestCase(ValidationTestCase):
     def test_hypertensive(self):
         errors = validate_user_resource('Bob', 23, now, later, 140)
         self.assertEqual(
-            {'user.systolic_bp':
+            {'user.systolicBp':
                 ['blood pressure out of range']},
             errors)
 
     def test_hypotensive(self):
         errors = validate_user_resource('Bob', 23, now, later, 80)
         self.assertEqual(
-            {'user.systolic_bp':
+            {'user.systolicBp':
                 ['blood pressure out of range']},
             errors)
 
@@ -222,7 +236,7 @@ class SimpleValidationTestCase(ValidationTestCase):
                 ['too young to drink', 'This should be a prime number.'],
              'user.name':
                 ['This should exactly match the expected value.'],
-             'user.systolic_bp':
+             'user.systolicBp':
                 ['blood pressure out of range']},
             errors)
 
@@ -291,3 +305,156 @@ class SchemaGetTestCase(ValidationTestCase):
                 'vehicle': []
             }
             self.assertEqual(expected[field_name], validators)
+
+
+class KnownValidatorsTester(ValidationTestCase):
+
+    def test_datetime_field_sequence_validator(self):
+        ctx = mock_context()
+        v = DatetimeFieldSequenceValidator('a', 'b', 'c')
+        badness = {'foo': ['Datetimes are not in expected sequence.']}
+        for (first, second, third, expected) in (
+                    (now, later, too_late, {}),
+                    (later, now, too_late, badness),
+                    (now, too_late, later, badness),
+                    (too_late, later, now, badness)
+                ):
+            error_dict = {}
+            v.find_errors(error_dict, ctx, 'foo', None, {'a': first.isoformat(),
+                                                         'b': second.isoformat(),
+                                                         'c': third.isoformat()})
+            self.assertEqual(expected, error_dict)
+
+    def test_string_field_zipcode_validator(self):
+        ctx = mock_context()
+        v = StringFieldZipcodeValidator()
+        field = base_fields.Field()
+        field._attribute = 'bar'
+        field._type = str
+        badness = {'foo.bar': ['This should be a zipcode.']}
+        for (value, expected) in (
+                    ('02134', {}),
+                    ('01701', {}),
+                    ('01701-7627', {}),
+                    ('90210', {}),
+                    ('65536', {}),
+                    ('01234567890', badness),
+                    ('01234-567890', badness),
+                ):
+            error_dict = {}
+            v.find_errors(error_dict, ctx, 'foo', None, field, value)
+            self.assertEqual(expected, error_dict)
+
+    def test_string_field_exact_match_validator(self):
+        ctx = mock_context()
+        v = StringFieldExactMatchValidator('01701-7627')
+        field = base_fields.Field()
+        field._attribute = 'bar'
+        field._type = str
+        badness = {'foo.bar': ['This should exactly match the expected value.']}
+        for (value, expected) in (
+                    ('01701-7627', {}),
+                    ('02134', badness),
+                    ('01701', badness),
+                    ('90210', badness),
+                    ('65536', badness),
+                    ('01234567890', badness),
+                    ('01234-567890', badness),
+                ):
+            error_dict = {}
+            v.find_errors(error_dict, ctx, 'foo', None, field, value)
+            self.assertEqual(expected, error_dict)
+
+    def test_int_field_min_validator(self):
+        ctx = mock_context()
+        v = IntFieldMinValidator(11)
+        field = base_fields.Field()
+        field._attribute = 'bar'
+        field._type = int
+        badness = {'foo.bar': ['This value should be greater than or equal to the minimum.']}
+        for (value, expected) in (
+                    ('0', badness),
+                    ('5', badness),
+                    ('11', {}),
+                    ('23', {}),
+                    ('90210', {})
+                ):
+            error_dict = {}
+            v.find_errors(error_dict, ctx, 'foo', None, field, value)
+            self.assertEqual(expected, error_dict)
+
+    def test_int_field_max_validator(self):
+        ctx = mock_context()
+        v = IntFieldMaxValidator(11)
+        field = base_fields.Field()
+        field._attribute = 'bar'
+        field._type = int
+        badness = {'foo.bar': ['This value should be less than or equal to the maximum.']}
+        for (value, expected) in (
+                    ('0', {}),
+                    ('5', {}),
+                    ('11', {}),
+                    ('23', badness),
+                    ('90210', badness)
+                ):
+            error_dict = {}
+            v.find_errors(error_dict, ctx, 'foo', None, field, value)
+            self.assertEqual(expected, error_dict)
+
+    def test_int_field_range_validator(self):
+        ctx = mock_context()
+        v = IntFieldRangeValidator(4, 11)
+        field = base_fields.Field()
+        field._attribute = 'bar'
+        field._type = int
+        badness = {'foo.bar': ['This value should be within the allowed integer range.']}
+        for (value, expected) in (
+                    ('0', badness),
+                    ('3', badness),
+                    ('4', {}),
+                    ('5', {}),
+                    ('10', {}),
+                    ('11', {}),
+                    ('12', badness),
+                    ('23', badness),
+                    ('90210', badness)
+                ):
+            error_dict = {}
+            v.find_errors(error_dict, ctx, 'foo', None, field, value)
+            self.assertEqual(expected, error_dict)
+
+    def test_datetime_field_min_validator(self):
+        ctx = mock_context()
+        v = DatetimeFieldMinValidator(now)
+        field = base_fields.Field()
+        field._attribute = 'bar'
+        field._type = datetime
+        badness = {'foo.bar': ['This value should be no earlier than the minimum datetime.']}
+        for (value, expected) in (
+                    (ancient, badness),
+                    (long_ago, badness),
+                    (now, {}),
+                    (later, {}),
+                    (too_late, {})
+                ):
+            error_dict = {}
+            v.find_errors(error_dict, ctx, 'foo', None, field, value.isoformat())
+            self.assertEqual(expected, error_dict)
+
+    def test_datetime_field_max_validator(self):
+        ctx = mock_context()
+        v = DatetimeFieldMaxValidator(now)
+        field = base_fields.Field()
+        field._attribute = 'bar'
+        field._type = datetime
+        badness = {'foo.bar': ['This value should be no later than the maximum datetime.']}
+        for (value, expected) in (
+                    (ancient, {}),
+                    (long_ago, {}),
+                    (now, {}),
+                    (later, badness),
+                    (too_late, badness)
+                ):
+            error_dict = {}
+            v.find_errors(error_dict, ctx, 'foo', None, field, value.isoformat())
+            self.assertEqual(expected, error_dict)

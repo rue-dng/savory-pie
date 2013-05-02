@@ -2,9 +2,64 @@ import collections
 import datetime
 import re
 import json
-import logging
+import pytz
 
-logger = logging.getLogger('savory_pie')
+
+class ValidationException(Exception):
+    def __init__(self, resource, errors):
+        self.resource = resource
+        self.errors = errors
+
+
+def validate(ctx, key, resource, source_dict):
+    """
+    Descend through a resource, including its fields and any related resources
+    or submodels, looking for validation errors in any resources or models whose
+    validators flag issues with content therein.
+
+    Parameters:
+
+        ``ctx``
+
+        ``key``
+            the current path fragment of the dictionary key which will be used to store
+            any errors found in the returned dict -- in the initial call to validate,
+            this should probably be the name of the class being validated e.g. "user"
+
+        ``resource``
+            the ModelResource instance whose data is to be validated
+
+        ``source_dict``
+
+    Returns:
+
+        a dict mapping dotted keys (representing resources or fields) to
+        validation errors
+
+    """
+    key = ctx.formatter.convert_to_public_property(key)
+    error_dict = {}
+    if source_dict and resource:
+        if hasattr(resource, 'fields') and \
+                    isinstance(resource.fields, collections.Iterable):
+            for field in resource.fields:
+                if not hasattr(field, 'name'):
+                    continue
+                fieldname = ctx.formatter.convert_to_public_property(field.name)
+                if fieldname in source_dict:
+                    value = source_dict[fieldname]
+                    try:
+                        validate_method = field.validate_resource
+                    except AttributeError:
+                        pass
+                    else:
+                        error_dict.update(validate_method(ctx, key, resource, value))
+
+        if hasattr(resource, 'validators') and \
+                    isinstance(resource.validators, collections.Iterable):
+            for validator in resource.validators:
+                validator.find_errors(error_dict, ctx, key, resource, source_dict)
+    return error_dict
 
 
 class BaseValidator:
@@ -98,41 +153,6 @@ class BaseValidator:
     def __init__(self):
         self.populate_schema()
 
-    @classmethod
-    def validate(cls, resource, key):
-        """
-        Descend through a resource, including its fields and any related resources
-        or submodels, looking for validation errors in any resources or models whose
-        validators flag issues with content therein.
-
-        Parameters:
-
-            ``resource``
-                the ModelResource instance whose data is to be validated
-
-        Returns:
-
-            a dict mapping dotted keys (representing resources or fields) to
-            validation errors
-
-        """
-        error_dict = {}
-        if resource is not None:
-            if hasattr(resource, 'fields') and \
-                        isinstance(resource.fields, collections.Iterable):
-                for field in resource.fields:
-                    try:
-                        validate_method = field.validate_resource
-                    except AttributeError:
-                        pass
-                    else:
-                        error_dict.update(validate_method(key, resource))
-            if hasattr(resource, 'validators') and \
-                        isinstance(resource.validators, collections.Iterable):
-                for validator in resource.validators:
-                    validator.find_errors(error_dict, key, resource)
-        return error_dict
-
     def _add_error(self, error_dict, key, error):
         if key in error_dict:
             error_dict[key].append(error)
@@ -187,11 +207,11 @@ class ResourceValidator(BaseValidator):
     individually validated.
     """
 
-    def find_errors(self, error_dict, key, resource):
+    def find_errors(self, error_dict, ctx, key, resource, source_dict):
         """
         Search for validation errors in the database model underlying a resource.
         """
-        if not self.check_value(resource.model):
+        if not self.check_value(source_dict):
             self._add_error(error_dict, key, self.error_message)
 
 
@@ -222,25 +242,24 @@ class DatetimeFieldSequenceValidator(ResourceValidator):
             self.error_message =  kwargs['error_message']
         self.populate_schema(fields=','.join(date_fields))
 
-    def find_errors(self, error_dict, key, resource):
+    def find_errors(self, error_dict, ctx, key, resource, source_dict):
         """
         Verify that specified datetime fields exist, and are in chronological sequence
         as expected.
         """
-        model = resource.model
+        values = []
         for attr in self._date_fields:
-            if not hasattr(model, attr):
+            public_attr = ctx.formatter.convert_to_public_property(attr)
+            if public_attr not in source_dict:
                 self._add_error(error_dict, key,
                                 'Cannot find datetime field "' + attr + '"')
                 return
-            if not isinstance(getattr(model, attr), datetime.datetime):
-                self._add_error(error_dict, key,
-                                'Expected a datetime for field "' + attr + '"')
-                return
-        values = [getattr(model, attr) for attr in self._date_fields]
+            values.append(ctx.formatter.to_python_value(datetime.datetime,
+                                                        source_dict[public_attr]))
         for before, after in zip(values[:-1], values[1:]):
             if before > after:
                 self._add_error(error_dict, key, self.error_message)
+                return
 
 
 ########## Field validators ############
@@ -253,12 +272,14 @@ class FieldValidator(BaseValidator):
     SubObjectResourceField, IterableField
     """
 
-    def find_errors(self, error_dict, key, resource, field):
+    def find_errors(self, error_dict, ctx, key, resource, field, value):
         """
         Search for validation errors in a field of a database model.
         """
-        if not self.check_value(getattr(resource.model, field.name)):
-            self._add_error(error_dict, key + '.' + field.name,
+        fieldname = ctx.formatter.convert_to_public_property(field.name)
+        value = ctx.formatter.to_python_value(field._type, value)
+        if not self.check_value(value):
+            self._add_error(error_dict, key + '.' + fieldname,
                             self.error_message)
 
 
@@ -276,13 +297,15 @@ class StringFieldZipcodeValidator(FieldValidator):
 
     error_message = 'This should be a zipcode.'
 
+    pattern = re.compile(r'^\d{5}(-\d{4})?$')
+
     def check_value(self, value):
         """
         Verify that the value is a five-digit string.
 
         """
         try:
-            return re.compile(r'\d{5}').match(value) is not None
+            return self.pattern.match(value)
         except TypeError:
             return False
 
@@ -338,6 +361,8 @@ class IntFieldMinValidator(FieldValidator):
 
     json_name = 'int_min'
 
+    error_message = 'This value should be greater than or equal to the minimum.'
+
     def __init__(self, _min, error_message=None):
         self._min = _min
         if error_message:
@@ -368,6 +393,8 @@ class IntFieldMaxValidator(FieldValidator):
     """
 
     json_name = 'int_max'
+
+    error_message = 'This value should be less than or equal to the maximum.'
 
     def __init__(self, _max, error_message=None):
         self._max = _max
@@ -403,6 +430,8 @@ class IntFieldRangeValidator(FieldValidator):
 
     json_name = 'int_range'
 
+    error_message = 'This value should be within the allowed integer range.'
+
     def __init__(self, _min, _max, error_message=None):
         self._min = _min
         self._max = _max
@@ -435,11 +464,12 @@ class DatetimeFieldMinValidator(FieldValidator):
 
     json_name = 'datetime_min'
 
+    error_message = 'This value should be no earlier than the minimum datetime.'
+
     def __init__(self, _min, error_message=None):
-        _min = _min.replace(microsecond=0)
         self._min = _min
         if error_message:
-            self.error_message =  error_message
+            self.error_message = error_message
         self.populate_schema(value=_min.isoformat())
 
     def check_value(self, datetimevalue):
@@ -467,8 +497,9 @@ class DatetimeFieldMaxValidator(FieldValidator):
 
     json_name = 'datetime_max'
 
+    error_message = 'This value should be no later than the maximum datetime.'
+
     def __init__(self, _max, error_message=None):
-        _max = _max.replace(microsecond=0)
         self._max = _max
         if error_message:
             self.error_message =  error_message

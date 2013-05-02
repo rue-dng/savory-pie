@@ -1,12 +1,15 @@
 import urllib
+import logging
 
 import django.core.exceptions
 
-from savory_pie.resources import Resource
+from savory_pie.resources import EmptyParams, Resource
 from savory_pie.django.fields import DjangoField
-from savory_pie.django.utils import Related
-from savory_pie.resources import EmptyParams
 from savory_pie.django.filters import StandardFilter
+from savory_pie.django.utils import Related
+from savory_pie.django.validators import ValidationException, validate
+
+logger = logging.getLogger(__name__)
 
 
 class QuerySetResource(Resource):
@@ -185,7 +188,7 @@ class ModelResource(Resource):
     #: into and read from dict-s being handled by get, post, and put
     fields = []
 
-    #: A list of Validator-s that are used to check data consistence and
+    #: A list of Validator-s that are used to check data consistency and
     #: integrity on a model.
     validators = []
 
@@ -320,10 +323,18 @@ class ModelResource(Resource):
         if not source_dict:
             return
 
+        errors = validate(ctx, self.__class__.__name__, self, source_dict)
+        if errors:
+            raise ValidationException(self, errors)
+
         self._set_pre_save_fields(ctx, source_dict)
+
         if save:
             self._save()
+            logger.debug('save succeeded for %s' % self)
+
         self._set_post_save_fields(ctx, source_dict)
+        logger.debug('put succeeded for %s' % self)
 
     def delete(self, ctx):
         self.model.delete()
