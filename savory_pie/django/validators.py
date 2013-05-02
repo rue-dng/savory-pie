@@ -500,7 +500,6 @@ class DatetimeFieldMaxValidator(FieldValidator):
     error_message = 'This value should be no later than the maximum datetime.'
 
     def __init__(self, _max, error_message=None):
-        # _max = _max.replace(microsecond=0)
         self._max = _max
         if error_message:
             self.error_message =  error_message
