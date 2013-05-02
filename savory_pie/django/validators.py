@@ -343,6 +343,40 @@ class StringFieldExactMatchValidator(FieldValidator):
         return value == self._expected
 
 
+class StringFieldMaxLengthValidator(FieldValidator):
+
+    """
+    Test an AttributeField of type 'str' to make sure it does not exceed the
+    expected length.
+
+    Parameters:
+
+        ``expected_length``
+            the maximum length for an allowable string
+
+        ``error_message``
+            optional: the message to appear in the error dictionary if this
+            condition is not met
+    """
+
+    json_name = 'string_maxlen'
+
+    error_message = 'This should not exceed the expected string length.'
+
+    def __init__(self, expected_length, error_message=None):
+        self._expected_length = expected_length
+        if error_message:
+            self.error_message =  error_message
+        self.populate_schema(expected_length=expected_length)
+
+    def check_value(self, value):
+        """
+        Verify that the value is a string whose length doesn't exceed the maximum.
+        """
+        return ((isinstance(value, str) or isinstance(value, unicode))
+                and len(value) <= self._expected_length)
+
+
 class IntFieldMinValidator(FieldValidator):
 
     """
