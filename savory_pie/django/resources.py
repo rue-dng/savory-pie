@@ -327,7 +327,10 @@ class ModelResource(Resource):
         if errors:
             raise ValidationException(self, errors)
 
-        self._set_pre_save_fields(ctx, source_dict)
+        try:
+            self._set_pre_save_fields(ctx, source_dict)
+        except Exception, e:
+            raise ValidationException(self, {'invalidFieldData': str(e)})
 
         if save:
             self._save()

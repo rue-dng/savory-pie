@@ -9,6 +9,7 @@ from savory_pie.django import resources, fields
 from savory_pie.django import validators as spie_validators
 from savory_pie.tests.mock_context import mock_context
 from savory_pie.django.validators import (
+    ValidationException,
     DatetimeFieldSequenceValidator,
     FieldValidator,
     StringFieldZipcodeValidator,
@@ -35,6 +36,7 @@ class Car(models.Model):
     make = models.CharField(max_length=20)
     year = models.IntegerField()
     ugly = models.BooleanField()
+    mileage = models.DecimalField()
 
     def to_json(self):
         return {
@@ -192,6 +194,17 @@ class SimpleValidationTestCase(ValidationTestCase):
             {'user':
                 ['Datetimes are not in expected sequence.']},
             errors)
+
+    def test_bogus_decimal(self):
+        model = Car()
+        model.make = 'Toyota'
+        model.year = 2010
+        model.ugly = False
+        resource = CarTestResource(model)
+        with self.assertRaises(ValidationException):
+            resource.put(mock_context(),
+                         {'make': 'Toyota', 'year': '2010', 'ugly': 'False',
+                          'mileage':'123abc'})
 
     def test_wrong_name(self):
         errors = validate_user_resource('Jack', 23, now, later, 120)
