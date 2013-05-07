@@ -62,7 +62,7 @@ def validate(ctx, key, resource, source_dict):
     return error_dict
 
 
-class BaseValidator:
+class BaseValidator(object):
 
     """
     Validators are used to determine that the values of model fields are acceptable
@@ -150,8 +150,15 @@ class BaseValidator:
     the browser.
     """
 
-    def __init__(self):
-        self.populate_schema()
+    ignore_null = False
+    """
+    Ignore null values for any fields which should be validated.
+    """
+
+    def __init__(self, *args, **kwargs):
+        self.error_message = kwargs.pop('error_message', self.error_message)
+        self.ignore_null = kwargs.pop('ignore_null', False)
+        self.populate_schema(**kwargs)
 
     def _add_error(self, error_dict, key, error):
         if key in error_dict:
@@ -236,11 +243,10 @@ class DatetimeFieldSequenceValidator(ResourceValidator):
 
     error_message = 'Datetimes are not in expected sequence.'
 
-    def __init__(self, *date_fields, **kwargs):
-        self._date_fields = date_fields
-        if 'error_message' in kwargs:
-            self.error_message =  kwargs['error_message']
-        self.populate_schema(fields=','.join(date_fields))
+    def __init__(self, *args, **kwargs):
+        kwargs['fields'] = ','.join(args)
+        super(DatetimeFieldSequenceValidator, self).__init__(**kwargs)
+        self._date_fields = args
 
     def find_errors(self, error_dict, ctx, key, resource, source_dict):
         """
@@ -253,6 +259,8 @@ class DatetimeFieldSequenceValidator(ResourceValidator):
             if public_attr not in source_dict:
                 self._add_error(error_dict, key,
                                 'Cannot find datetime field "' + attr + '"')
+                return
+            elif self.ignore_null and source_dict[public_attr] is None:
                 return
             values.append(ctx.formatter.to_python_value(datetime.datetime,
                                                         source_dict[public_attr]))
@@ -278,9 +286,12 @@ class FieldValidator(BaseValidator):
         """
         fieldname = ctx.formatter.convert_to_public_property(field.name)
         value = ctx.formatter.to_python_value(field._type, value)
+        if value is None:
+            if self.ignore_null:
+                return
+            self._add_error(error_dict, key + '.' + fieldname, '{} is required'.format(fieldname))
         if not self.check_value(value):
-            self._add_error(error_dict, key + '.' + fieldname,
-                            self.error_message)
+            self._add_error(error_dict, key + '.' + fieldname, self.error_message)
 
 
 class StringFieldZipcodeValidator(FieldValidator):
@@ -330,11 +341,10 @@ class StringFieldExactMatchValidator(FieldValidator):
 
     error_message = 'This should exactly match the expected value.'
 
-    def __init__(self, expected, error_message=None):
+    def __init__(self, expected, **kwargs):
+        kwargs['expected'] = expected
+        super(StringFieldExactMatchValidator, self).__init__(**kwargs)
         self._expected = expected
-        if error_message:
-            self.error_message =  error_message
-        self.populate_schema(expected=expected)
 
     def check_value(self, value):
         """
@@ -363,11 +373,10 @@ class StringFieldMaxLengthValidator(FieldValidator):
 
     error_message = 'This should not exceed the expected string length.'
 
-    def __init__(self, expected_length, error_message=None):
+    def __init__(self, expected_length, **kwargs):
+        kwargs['expected_length'] = expected_length
+        super(StringFieldMaxLengthValidator, self).__init__(**kwargs)
         self._expected_length = expected_length
-        if error_message:
-            self.error_message =  error_message
-        self.populate_schema(expected_length=expected_length)
 
     def check_value(self, value):
         """
@@ -397,11 +406,10 @@ class IntFieldMinValidator(FieldValidator):
 
     error_message = 'This value should be greater than or equal to the minimum.'
 
-    def __init__(self, _min, error_message=None):
+    def __init__(self, _min, **kwargs):
+        kwargs['min'] = _min
+        super(IntFieldMinValidator, self).__init__(**kwargs)
         self._min = _min
-        if error_message:
-            self.error_message =  error_message
-        self.populate_schema(value=_min)
 
     def check_value(self, intvalue):
         """
@@ -430,11 +438,10 @@ class IntFieldMaxValidator(FieldValidator):
 
     error_message = 'This value should be less than or equal to the maximum.'
 
-    def __init__(self, _max, error_message=None):
+    def __init__(self, _max, **kwargs):
+        kwargs['max'] = _max
+        super(IntFieldMaxValidator, self).__init__(**kwargs)
         self._max = _max
-        if error_message:
-            self.error_message =  error_message
-        self.populate_schema(value=_max)
 
     def check_value(self, intvalue):
         """
@@ -466,12 +473,10 @@ class IntFieldRangeValidator(FieldValidator):
 
     error_message = 'This value should be within the allowed integer range.'
 
-    def __init__(self, _min, _max, error_message=None):
-        self._min = _min
-        self._max = _max
-        if error_message:
-            self.error_message =  error_message
-        self.populate_schema(min=_min, max=_max)
+    def __init__(self, _min, _max, **kwargs):
+        kwargs.update({'min': _min, 'max': _max})
+        super(IntFieldRangeValidator, self).__init__(**kwargs)
+        self._min, self._max = _min, _max
 
     def check_value(self, intvalue):
         """
@@ -500,11 +505,10 @@ class DatetimeFieldMinValidator(FieldValidator):
 
     error_message = 'This value should be no earlier than the minimum datetime.'
 
-    def __init__(self, _min, error_message=None):
+    def __init__(self, _min, **kwargs):
+        kwargs['min'] = _min
+        super(DatetimeFieldMinValidator, self).__init__(**kwargs)
         self._min = _min
-        if error_message:
-            self.error_message = error_message
-        self.populate_schema(value=_min.isoformat())
 
     def check_value(self, datetimevalue):
         """
@@ -533,11 +537,10 @@ class DatetimeFieldMaxValidator(FieldValidator):
 
     error_message = 'This value should be no later than the maximum datetime.'
 
-    def __init__(self, _max, error_message=None):
+    def __init__(self, _max, **kwargs):
+        kwargs['max'] = _max
+        super(DatetimeFieldMaxValidator, self).__init__(**kwargs)
         self._max = _max
-        if error_message:
-            self.error_message =  error_message
-        self.populate_schema(value=_max.isoformat())
 
     def check_value(self, datetimevalue):
         """
