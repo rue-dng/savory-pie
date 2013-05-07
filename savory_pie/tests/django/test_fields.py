@@ -16,7 +16,6 @@ from savory_pie.django.fields import (
     URIListResourceField
 )
 from savory_pie.tests.django import mock_orm
-from savory_pie.errors import SavoryPieError
 from savory_pie.tests.django.mock_request import mock_context
 
 
