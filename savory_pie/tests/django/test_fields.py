@@ -192,6 +192,24 @@ class AttributeFieldTest(unittest.TestCase):
 
 
 
+class AttributeFieldWithModelsTest(unittest.TestCase):
+    def test_simple_incoming(self):
+        class FooModel(mock_orm.Model):
+            bar = Mock()
+
+        source_dict = {
+            'bar': 20
+        }
+        field = AttributeField(attribute='foo.bar', type=int, model=FooModel)
+
+        target_object = Mock(name='target')
+
+        field.handle_incoming(mock_context(), source_dict, target_object)
+
+        self.assertEqual(target_object.foo.bar, 20)
+
+
+
 class URIResourceFieldTest(unittest.TestCase):
     def test_outgoing(self):
 
