@@ -1,3 +1,4 @@
+import exceptions
 import json
 import time
 import pytz
@@ -52,7 +53,7 @@ class JSONFormatter(object):
             elif issubclass(type_, datetime.datetime):
                 return self.parse_datetime(api_value)
             return None if api_value is None else type_(api_value)
-        except ValueError:
+        except (ValueError, exceptions.StandardError):
             raise TypeError('Expected ' + str(type_) + ', got ' + repr(api_value))
 
     # Not 100% happy with this API review pre 1.0
