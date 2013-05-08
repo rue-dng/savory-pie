@@ -96,10 +96,7 @@ class AttributeField(base_fields.AttributeField, DjangoField):
         filter_args[self._full_attribute] = source_dict[self._compute_property(ctx)]
 
     def pre_save(self, model):
-        if '.' in self._full_attribute:
-            return False
-        else:
-            return True
+        return True
 
 
 class AttributeFieldWithModel(AttributeField):
@@ -156,6 +153,11 @@ class AttributeFieldWithModel(AttributeField):
         value = self.to_python_value(ctx, source_dict[self._compute_property(ctx)])
         setattr(obj, self._bare_attribute, value)
 
+    def pre_save(self, model):
+        if '.' in self._full_attribute:
+            return False
+        else:
+            return True
 
 class URIResourceField(base_fields.URIResourceField, DjangoField):
     """
