@@ -161,14 +161,14 @@ class BaseValidator(object):
     the browser.
     """
 
-    ignore_null = False
+    null = False
     """
     Ignore null values for any fields which should be validated.
     """
 
     def __init__(self, *args, **kwargs):
         self.error_message = kwargs.pop('error_message', self.error_message)
-        self.ignore_null = kwargs.pop('ignore_null', False)
+        self.null = kwargs.pop('null', False)
         self.populate_schema(**kwargs)
 
     def _add_error(self, error_dict, key, error):
@@ -267,7 +267,7 @@ class DatetimeFieldSequenceValidator(ResourceValidator):
         values = []
         for attr in self._date_fields:
             public_attr = ctx.formatter.convert_to_public_property(attr)
-            if self.ignore_null and source_dict.get(public_attr) is None:
+            if self.null and source_dict.get(public_attr) is None:
                 return
             elif public_attr not in source_dict:
                 self._add_error(error_dict, key,
@@ -298,7 +298,7 @@ class FieldValidator(BaseValidator):
         fieldname = ctx.formatter.convert_to_public_property(field.name)
         value = ctx.formatter.to_python_value(field._type, value)
         if value is None:
-            if self.ignore_null:
+            if self.null:
                 return
             self._add_error(error_dict, key + '.' + fieldname, '{} is required'.format(fieldname))
         if not self.check_value(value):
