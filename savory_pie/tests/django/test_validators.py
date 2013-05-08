@@ -9,7 +9,7 @@ from savory_pie.django import resources, fields
 from savory_pie.django import validators as spie_validators
 from savory_pie.tests.mock_context import mock_context
 from savory_pie.django.validators import (
-    ValidationException,
+    ValidationError,
     DatetimeFieldSequenceValidator,
     FieldValidator,
     StringFieldZipcodeValidator,
@@ -201,7 +201,7 @@ class SimpleValidationTestCase(ValidationTestCase):
         model.year = 2010
         model.ugly = False
         resource = CarTestResource(model)
-        with self.assertRaises(ValidationException):
+        with self.assertRaises(ValidationError):
             resource.put(mock_context(),
                          {'make': 'Toyota', 'year': '2010', 'ugly': 'False',
                           'mileage':'123abc'})

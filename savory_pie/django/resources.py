@@ -7,7 +7,7 @@ from savory_pie.resources import EmptyParams, Resource
 from savory_pie.django.fields import DjangoField
 from savory_pie.django.filters import StandardFilter
 from savory_pie.django.utils import Related
-from savory_pie.django.validators import ValidationException, validate
+from savory_pie.django.validators import ValidationError, validate
 
 logger = logging.getLogger(__name__)
 
@@ -325,12 +325,12 @@ class ModelResource(Resource):
 
         errors = validate(ctx, self.__class__.__name__, self, source_dict)
         if errors:
-            raise ValidationException(self, errors)
+            raise ValidationError(self, errors)
 
         try:
             self._set_pre_save_fields(ctx, source_dict)
-        except Exception, e:
-            raise ValidationException(self, {'invalidFieldData': str(e)})
+        except TypeError, e:
+            raise ValidationError(self, {'invalidFieldData': e.message})
 
         if save:
             self._save()
