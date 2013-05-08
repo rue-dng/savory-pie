@@ -4,6 +4,8 @@ import re
 import json
 import pytz
 
+from django.core.exceptions import ObjectDoesNotExist
+
 
 class ValidationException(Exception):
     def __init__(self, resource, errors):
@@ -48,6 +50,21 @@ def validate(ctx, key, resource, source_dict):
                 fieldname = ctx.formatter.convert_to_public_property(field.name)
                 if fieldname in source_dict:
                     value = source_dict[fieldname]
+
+                    # ignore validation if value hasn't changed
+                    if hasattr(resource, 'model'):
+                        try:
+                            orig_value = getattr(resource.model, field.name, None)
+                            if orig_value == ctx.formatter.to_python_value(type(orig_value), value):
+                                continue
+                        except AttributeError:
+                            pass
+                        except ObjectDoesNotExist:
+                            pass
+                        except ValueError:
+                            pass
+
+                    # attempt to validate field
                     try:
                         validate_method = field.validate_resource
                     except AttributeError:
@@ -256,11 +273,11 @@ class DatetimeFieldSequenceValidator(ResourceValidator):
         values = []
         for attr in self._date_fields:
             public_attr = ctx.formatter.convert_to_public_property(attr)
-            if public_attr not in source_dict:
+            if self.ignore_null and source_dict.get(public_attr) is None:
+                return
+            elif public_attr not in source_dict:
                 self._add_error(error_dict, key,
                                 'Cannot find datetime field "' + attr + '"')
-                return
-            elif self.ignore_null and source_dict[public_attr] is None:
                 return
             values.append(ctx.formatter.to_python_value(datetime.datetime,
                                                         source_dict[public_attr]))
@@ -506,7 +523,7 @@ class DatetimeFieldMinValidator(FieldValidator):
     error_message = 'This value should be no earlier than the minimum datetime.'
 
     def __init__(self, _min, **kwargs):
-        kwargs['min'] = _min
+        kwargs['min'] = _min.isoformat()
         super(DatetimeFieldMinValidator, self).__init__(**kwargs)
         self._min = _min
 
@@ -538,7 +555,7 @@ class DatetimeFieldMaxValidator(FieldValidator):
     error_message = 'This value should be no later than the maximum datetime.'
 
     def __init__(self, _max, **kwargs):
-        kwargs['max'] = _max
+        kwargs['max'] = _max.isoformat()
         super(DatetimeFieldMaxValidator, self).__init__(**kwargs)
         self._max = _max
 

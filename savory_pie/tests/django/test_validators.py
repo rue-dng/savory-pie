@@ -293,7 +293,7 @@ class SchemaGetTestCase(ValidationTestCase):
             expected = {
                 'after': [{'name': 'datetime_max',
                            'text': 'do not be late',
-                           'max': too_late}],
+                           'max': too_late.isoformat()}],
                 'age': [{'name': 'int_min',
                          'text': 'too young to drink',
                          'min': 21},
@@ -301,7 +301,7 @@ class SchemaGetTestCase(ValidationTestCase):
                          'text': 'This should be a prime number.'}],
                 'before': [{'name': 'datetime_min',
                             'text': 'keep it recent',
-                            'min': long_ago}],
+                            'min': long_ago.isoformat()}],
                 'name': [{'expected': 'Bob',
                           'name': 'exact_string',
                           'text': 'This should exactly match the expected value.'}],
