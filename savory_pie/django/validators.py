@@ -61,7 +61,11 @@ def validate(ctx, key, resource, source_dict):
                             pass
                         except ObjectDoesNotExist:
                             pass
+                        except TypeError:
+                            pass
                         except ValueError:
+                            pass
+                        except Exception as e:
                             pass
 
                     # attempt to validate field
