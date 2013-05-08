@@ -4,8 +4,6 @@ import re
 import json
 import pytz
 
-from django.core.exceptions import ObjectDoesNotExist
-
 
 class ValidationException(Exception):
     def __init__(self, resource, errors):
@@ -57,14 +55,6 @@ def validate(ctx, key, resource, source_dict):
                             orig_value = getattr(resource.model, field.name, None)
                             if orig_value == ctx.formatter.to_python_value(type(orig_value), value):
                                 continue
-                        except AttributeError:
-                            pass
-                        except ObjectDoesNotExist:
-                            pass
-                        except TypeError:
-                            pass
-                        except ValueError:
-                            pass
                         except Exception as e:
                             pass
 
