@@ -6,10 +6,11 @@ from datetime import datetime, timedelta
 
 from savory_pie import fields as base_fields
 from savory_pie.django import resources, fields
-from savory_pie.django import validators as spie_validators
 from savory_pie.tests.mock_context import mock_context
 from savory_pie.django.validators import (
     ValidationError,
+    validate,
+    ResourceValidator,
     DatetimeFieldSequenceValidator,
     FieldValidator,
     StringFieldZipcodeValidator,
@@ -54,7 +55,7 @@ class User(models.Model):
     vehicle = models.ForeignKey(Car)
 
 
-class CarNotUglyValidator(spie_validators.ResourceValidator):
+class CarNotUglyValidator(ResourceValidator):
 
     error_message = 'The car should not be ugly.'
 
@@ -62,7 +63,7 @@ class CarNotUglyValidator(spie_validators.ResourceValidator):
         return not model['ugly']
 
 
-class IntFieldPrimeValidator(spie_validators.FieldValidator):
+class IntFieldPrimeValidator(FieldValidator):
 
     json_name = 'prime_number'
 
@@ -95,10 +96,15 @@ class CarTestResource(resources.ModelResource):
 
     fields = [
         fields.AttributeField(attribute='make', type=str,
-            validator=spie_validators.StringFieldExactMatchValidator('Toyota',
-                'why is he not driving a Toyota?')),
+            validator=StringFieldExactMatchValidator(
+                'Toyota', error_message='why is he not driving a Toyota?'
+            )
+        ),
         fields.AttributeField(attribute='year', type=int,
-            validator=spie_validators.IntFieldMinValidator(2010, 'car is too old'))
+            validator=IntFieldMinValidator(
+                2010, error_message='car is too old'
+            )
+        )
     ]
 
 
@@ -107,24 +113,24 @@ class UserTestResource(resources.ModelResource):
     model_class = User
 
     validators = [
-        spie_validators.DatetimeFieldSequenceValidator('before', 'after')
+        DatetimeFieldSequenceValidator('before', 'after')
     ]
 
     fields = [
         fields.AttributeField(attribute='name', type=str,
-            validator=spie_validators.StringFieldExactMatchValidator('Bob')),
+            validator=StringFieldExactMatchValidator('Bob')),
         fields.AttributeField(attribute='age', type=int,
-            validator=(spie_validators.IntFieldMinValidator(21, 'too young to drink'),
+            validator=(IntFieldMinValidator(21, error_message='too young to drink'),
                        IntFieldPrimeValidator(100))),
         fields.AttributeField(attribute='before', type=datetime,
-            validator=spie_validators.DatetimeFieldMinValidator(long_ago,
-                                                                'keep it recent')),
+            validator=DatetimeFieldMinValidator(long_ago,
+                                                                error_message='keep it recent')),
         fields.AttributeField(attribute='after', type=datetime,
-            validator=spie_validators.DatetimeFieldMaxValidator(too_late,
-                                                                'do not be late')),
+            validator=DatetimeFieldMaxValidator(too_late,
+                                                                error_message='do not be late')),
         fields.AttributeField(attribute='systolic_bp', type=int,
-            validator=spie_validators.IntFieldRangeValidator(100, 120,
-                'blood pressure out of range')),
+            validator=IntFieldRangeValidator(100, 120,
+                error_message='blood pressure out of range')),
         fields.SubModelResourceField('vehicle', CarTestResource)
     ]
 
@@ -138,7 +144,7 @@ def create_car(make, year, ugly=False):
 def validate_user_resource(name, age, start, end, systolic, car=None):
     source_dict = dict(name=name, age=str(age), before=start.isoformat(), after=end.isoformat(),
                        systolicBp=int(systolic), vehicle=(car and car.to_json()))
-    return spie_validators.validate(mock_context(), 'user',
+    return validate(mock_context(), 'user',
                                     UserTestResource(User()), source_dict)
 
 
@@ -170,7 +176,7 @@ class OptionalValidationTestCase(ValidationTestCase):
         """
         model = User()
         resource = self.OptionalResource(model)
-        errors = spie_validators.validate(mock_context(), 'user', resource, {})
+        errors = validate(mock_context(), 'user', resource, {})
         self.assertEqual({}, errors)
 
 
@@ -283,7 +289,7 @@ class SchemaGetTestCase(ValidationTestCase):
     def test_validation_schema_get(self):
         resource = resources.SchemaResource(UserTestResource)
         ctx = mock_context()
-        ctx.build_resource_uri = lambda resource: 'uri://user/schema/'
+        ctx.build_resource_uri = lambda resource: 'uri://users/schema/'
         result = resource.get(ctx)
         # import sys, pprint; pprint.pprint(result, stream=sys.stderr)
         self.assertEqual([{
@@ -300,15 +306,15 @@ class SchemaGetTestCase(ValidationTestCase):
             expected = {
                 'after': [{'name': 'datetime_max',
                            'text': 'do not be late',
-                           'value': too_late.isoformat()}],
+                           'max': too_late.isoformat()}],
                 'age': [{'name': 'int_min',
                          'text': 'too young to drink',
-                         'value': 21},
+                         'min': 21},
                         {'name': 'prime_number',
                          'text': 'This should be a prime number.'}],
                 'before': [{'name': 'datetime_min',
                             'text': 'keep it recent',
-                            'value': long_ago.isoformat()}],
+                            'min': long_ago.isoformat()}],
                 'name': [{'expected': 'Bob',
                           'name': 'exact_string',
                           'text': 'This should exactly match the expected value.'}],

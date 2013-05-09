@@ -9,13 +9,13 @@ from savory_pie.django.utils import Related
 from savory_pie.django.resources import ModelResource, QuerySetResource
 from savory_pie.django.fields import (
     AttributeField,
+    AttributeFieldWithModel,
     SubModelResourceField,
     RelatedManagerField,
     URIResourceField,
     URIListResourceField
 )
 from savory_pie.tests.django import mock_orm
-
 from savory_pie.tests.django.mock_request import mock_context
 
 
@@ -190,6 +190,24 @@ class AttributeFieldTest(unittest.TestCase):
 
         self.assertEqual({'foo': 3}, filter_args)
 
+
+
+class AttributeFieldWithModelsTest(unittest.TestCase):
+    def test_simple_incoming(self):
+        class FooModel(mock_orm.Model):
+            bar = Mock()
+
+        source_dict = {
+            'bar': 20
+        }
+        field = AttributeFieldWithModel(attribute='foo.bar', type=int, model=FooModel)
+
+        target_object = Mock(name='target')
+        target_object.foo.side_effect = ObjectDoesNotExist
+
+        field.handle_incoming(mock_context(), source_dict, target_object)
+
+        self.assertEqual(target_object.foo.bar, 20)
 
 
 class URIResourceFieldTest(unittest.TestCase):
