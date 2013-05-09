@@ -203,6 +203,7 @@ class AttributeFieldWithModelsTest(unittest.TestCase):
         field = AttributeFieldWithModel(attribute='foo.bar', type=int, model=FooModel)
 
         target_object = Mock(name='target')
+        target_object.foo.side_effect = ObjectDoesNotExist
 
         field.handle_incoming(mock_context(), source_dict, target_object)
 
