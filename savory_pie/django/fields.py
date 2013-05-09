@@ -3,7 +3,9 @@ import logging
 import django.core.exceptions
 from django.utils.functional import Promise
 from django.db.models.fields import FieldDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist
 from savory_pie import fields as base_fields
+from savory_pie.errors import SavoryPieError
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +98,66 @@ class AttributeField(base_fields.AttributeField, DjangoField):
     def pre_save(self, model):
         return True
 
+
+class AttributeFieldWithModel(AttributeField):
+    """
+    Django extension of the django AttributeField that adds support for setting up the multi-level expression
+    with models, so it can be properly saved/added. This should only be used for multi-level expressioned attributes.
+
+    Parameters:
+            :class:`savory_pie.fields.AttributeField`
+
+            ``model``
+                A model class that is the model of the second last attribute, used to get at the object of this model
+
+    .. code-block:: python
+
+        AttributeFieldWithModel('foo.property', type=int, model=ModelFoo)
+
+    .. code-block:: javascript
+
+        {'property': obj.foo}
+
+    .. code-block:: python
+
+        AttributeFieldWithModel('foo.bar.property', type=int, model=ModelBar)
+
+    .. code-block:: javascript
+
+        {'property': obj.foo.bar}
+
+    """
+    def __init__(self, *args, **kwargs):
+        self._model = kwargs.pop('model', {})
+        super(AttributeFieldWithModel, self).__init__(*args, **kwargs)
+
+    def _get_object_with_model(self, root_obj, source_dict):
+        obj = root_obj
+        for i, attr in enumerate(self._attrs[:-1]):
+            try:
+                obj = getattr(obj, attr)
+            except ObjectDoesNotExist:
+                # only look for the model, if we are at the second last level,
+                # i.e. if it's foo.bar.property, only do this when we are at 'bar'
+                if i == len(self._attrs)-2:
+                    new_obj = self._model.objects.get(**{self._bare_attribute: source_dict[self._bare_attribute]})
+                    setattr(obj, attr, new_obj)
+                    obj = new_obj
+                else:
+                    raise SavoryPieError(u'Unable to save attribute field: {0}'.format(self._full_attribute))
+        return obj
+
+    def handle_incoming(self, ctx, source_dict, target_obj):
+        obj = self._get_object_with_model(target_obj, source_dict)
+
+        value = self.to_python_value(ctx, source_dict[self._compute_property(ctx)])
+        setattr(obj, self._bare_attribute, value)
+
+    def pre_save(self, model):
+        if '.' in self._full_attribute:
+            return False
+        else:
+            return True
 
 class URIResourceField(base_fields.URIResourceField, DjangoField):
     """
