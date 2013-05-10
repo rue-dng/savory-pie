@@ -558,3 +558,36 @@ class DatetimeFieldMaxValidator(FieldValidator):
         Verify integer value is no greater than specified maximum.
         """
         return type(datetimevalue) is datetime.datetime and datetimevalue <= self._max
+
+
+
+class DateFieldMinValidator(FieldValidator):
+
+    """
+    Test an AttributeField of type date to make sure it is no earlier than a
+    specified minimum.
+
+    Parameters:
+
+        ``min``
+            the specified minimum
+
+        ``error_message``
+            optional: the message to appear in the error dictionary if this
+            condition is not met
+    """
+
+    json_name = 'date_min'
+
+    error_message = 'This value should be no earlier than the minimum date.'
+
+    def __init__(self, _min, **kwargs):
+        kwargs['min'] = _min.isoformat()
+        super(DateFieldMinValidator, self).__init__(**kwargs)
+        self._min = _min
+
+    def check_value(self, datevalue):
+        """
+        Verify integer value is no less than specified minimum.
+        """
+        return type(datevalue) is datetime.date and datevalue >= self._min
