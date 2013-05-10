@@ -234,7 +234,14 @@ class SubModelResourceField(base_fields.SubObjectResourceField, DjangoField):
     """
     def __init__(self, *args, **kwargs):
         self._use_prefetch = kwargs.pop('use_prefetch', False)
+        self._skip_validation = kwargs.pop('skip_validation', False)
         super(SubModelResourceField, self).__init__(*args, **kwargs)
+
+    def validate_resource(self, ctx, key, resource, source_dict):
+        if self._skip_validation:
+            return {}
+        else:
+            return super(SubModelResourceField, self).validate_resource(ctx, key, resource, source_dict)
 
     def prepare(self, ctx, related):
         if self._use_prefetch:
