@@ -8,6 +8,7 @@ from savory_pie import fields as base_fields
 from savory_pie.django import resources, fields
 from savory_pie.tests.mock_context import mock_context
 from savory_pie.django.validators import (
+    ValidationError,
     validate,
     ResourceValidator,
     DatetimeFieldSequenceValidator,
@@ -36,6 +37,7 @@ class Car(models.Model):
     make = models.CharField(max_length=20)
     year = models.IntegerField()
     ugly = models.BooleanField()
+    mileage = models.DecimalField()
 
     def to_json(self):
         return {
@@ -51,6 +53,15 @@ class User(models.Model):
     after = models.DateTimeField()
     systolic_bp = models.IntegerField()
     vehicle = models.ForeignKey(Car)
+    stolen_vehicle = models.ForeignKey(Car)
+
+
+class CarIsStolenValidator(ResourceValidator):
+
+    error_message = 'The car should not be stolen.'
+
+    def check_value(self, model):
+        return False
 
 
 class CarNotUglyValidator(ResourceValidator):
@@ -106,6 +117,21 @@ class CarTestResource(resources.ModelResource):
     ]
 
 
+# ALWAYS fail validation
+class StolenCarTestResource(resources.ModelResource):
+    parent_resource_path = 'stolencars'
+    model_class = Car
+
+    validators = [
+        CarIsStolenValidator()
+    ]
+
+    fields = [
+        fields.AttributeField(attribute='make', type=str),
+        fields.AttributeField(attribute='year', type=int)
+    ]
+
+
 class UserTestResource(resources.ModelResource):
     parent_resource_path = 'users'
     model_class = User
@@ -129,7 +155,8 @@ class UserTestResource(resources.ModelResource):
         fields.AttributeField(attribute='systolic_bp', type=int,
             validator=IntFieldRangeValidator(100, 120,
                 error_message='blood pressure out of range')),
-        fields.SubModelResourceField('vehicle', CarTestResource)
+        fields.SubModelResourceField('vehicle', CarTestResource),
+        fields.SubModelResourceField('stolen_vehicle', StolenCarTestResource, skip_validation=True),
     ]
 
 def create_car(make, year, ugly=False):
@@ -139,11 +166,11 @@ def create_car(make, year, ugly=False):
     model.ugly = ugly
     return model
 
-def validate_user_resource(name, age, start, end, systolic, car=None):
+def validate_user_resource(name, age, start, end, systolic, car=None, stolen_car=None):
     source_dict = dict(name=name, age=str(age), before=start.isoformat(), after=end.isoformat(),
-                       systolicBp=int(systolic), vehicle=(car and car.to_json()))
-    return validate(mock_context(), 'user',
-                                    UserTestResource(User()), source_dict)
+                       systolicBp=int(systolic), vehicle=(car and car.to_json()),
+                       stolenVehicle=(stolen_car and stolen_car.to_json()))
+    return validate(mock_context(), 'user', UserTestResource(User()), source_dict)
 
 
 class ValidationTestCase(unittest.TestCase):
@@ -198,6 +225,17 @@ class SimpleValidationTestCase(ValidationTestCase):
             {'user':
                 ['Datetimes are not in expected sequence.']},
             errors)
+
+    def test_bogus_decimal(self):
+        model = Car()
+        model.make = 'Toyota'
+        model.year = 2010
+        model.ugly = False
+        resource = CarTestResource(model)
+        with self.assertRaises(ValidationError):
+            resource.put(mock_context(),
+                         {'make': 'Toyota', 'year': '2010', 'ugly': 'False',
+                          'mileage':'123abc'})
 
     def test_wrong_name(self):
         errors = validate_user_resource('Jack', 23, now, later, 120)
@@ -270,6 +308,11 @@ class SubModelValidationTestCase(ValidationTestCase):
         errors = validate_user_resource('Bob', 23, now, later, 120, car)
         self.assertEqual({'user.vehicle.year': ['car is too old']}, errors)
 
+    def test_skip_validation(self):
+        stolen_car = create_car('Toyota', 2011)
+        errors = validate_user_resource('Bob', 23, now, later, 120, stolen_car=stolen_car)
+        self.assertEqual({}, errors)
+
 
 class SchemaGetTestCase(ValidationTestCase):
 
@@ -309,7 +352,8 @@ class SchemaGetTestCase(ValidationTestCase):
                                 'min': 100,
                                 'name': 'int_range',
                                 'text': 'blood pressure out of range'}],
-                'vehicle': []
+                'vehicle': [],
+                'stolenVehicle': []
             }
             self.assertEqual(expected[field_name], validators)
 

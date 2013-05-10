@@ -72,7 +72,7 @@ def _process_post(ctx, resource, request):
         try:
             new_resource = resource.post(ctx, ctx.formatter.read_from(request))
             return _created(ctx, request, request, new_resource)
-        except validators.ValidationException, ve:
+        except validators.ValidationError, ve:
             return _validation_errors(ctx, ve.resource, request, ve.errors)
     else:
         return _not_allowed_method(ctx, resource, request)
@@ -82,7 +82,7 @@ def _process_put(ctx, resource, request):
         try:
             resource.put(ctx,ctx.formatter.read_from(request))
             return _no_content_success(ctx, request, request)
-        except validators.ValidationException, ve:
+        except validators.ValidationError, ve:
             return _validation_errors(ctx, resource, request, ve.errors)
     else:
         return _not_allowed_method(ctx, resource, request)

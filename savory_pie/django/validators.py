@@ -5,7 +5,7 @@ import json
 import pytz
 
 
-class ValidationException(Exception):
+class ValidationError(Exception):
     def __init__(self, resource, errors):
         self.resource = resource
         self.errors = errors
