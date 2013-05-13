@@ -345,6 +345,9 @@ class UniqueTogetherValidator(ResourceValidator):
                 for f in filters:
                     qset = qset.filter(**f)
                 if len(qset):
+                    # if validation fails because we're re-saving an existing object, ignore
+                    if len(qset) == 1 and resource.model.pk and qset[0].pk == resource.model.pk:
+                        return
                     self._add_error(error_dict, key, self.error_message)
             except Exception as e:
                 pass
