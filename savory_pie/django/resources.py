@@ -313,7 +313,7 @@ class ModelResource(Resource):
             else:
                 save(self.model)
 
-    def put(self, ctx, source_dict, save=True):
+    def put(self, ctx, source_dict, save=True, skip_validation=False):
         '''
         This is where we respect the 'pre_save' flag on each field.
         If pre_save is true, then we set the field value, before calling save.
@@ -323,9 +323,10 @@ class ModelResource(Resource):
         if not source_dict:
             return
 
-        errors = validate(ctx, self.__class__.__name__, self, source_dict)
-        if errors:
-            raise ValidationError(self, errors)
+        if not skip_validation:
+            errors = validate(ctx, self.__class__.__name__, self, source_dict)
+            if errors:
+                raise ValidationError(self, errors)
 
         try:
             self._set_pre_save_fields(ctx, source_dict)

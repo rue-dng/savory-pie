@@ -455,7 +455,7 @@ class SubObjectResourceField(Field):
                 if not self.pre_save(target_obj):
                     setattr(target_obj, self._attribute, sub_resource.model)
 
-                sub_resource.put(ctx, sub_source_dict)
+                sub_resource.put(ctx, sub_source_dict, skip_validation=getattr(self, '_skip_validation', False))
 
                 if self.pre_save(target_obj):
                     setattr(target_obj, self._attribute, sub_resource.model)

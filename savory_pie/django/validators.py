@@ -298,7 +298,7 @@ class UniqueTogetherValidator(ResourceValidator):
     Parameters:
 
         ``*fields``
-            a list of names of AttributeFields, which as a set should be unique
+            a list of names of savory_pie Fields, which as a set should be unique
 
         ``error_message``
             optional: the message to appear in the error dictionary if this
@@ -317,8 +317,6 @@ class UniqueTogetherValidator(ResourceValidator):
     def find_errors(self, error_dict, ctx, key, resource, source_dict):
         filters = []
         values = []
-        #import pprint
-        #pprint.pprint(self._fields)
         for attr in self._fields:
             public_attr = ctx.formatter.convert_to_public_property(attr)
             if self.null and source_dict.get(public_attr) is None:
@@ -338,21 +336,17 @@ class UniqueTogetherValidator(ResourceValidator):
                         elif issubclass(field.__class__, savory_pie.django.fields.AttributeField):
                             filters.append({attr: source_dict[public_attr]})
                     except Exception as e:
-                        import pdb
-                        pdb.set_trace()
+                        pass
 
         if filters and hasattr(resource, 'model'):
             try:
                 qset = resource.model.__class__.objects.all()
-                #import pprint
-                #pprint.pprint(filters)
                 for f in filters:
                     qset = qset.filter(**f)
                 if len(qset):
                     self._add_error(error_dict, key, self.error_message)
             except Exception as e:
-                import pdb
-                pdb.set_trace()
+                pass
 
 
 ########## Field validators ############
