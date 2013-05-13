@@ -4,6 +4,8 @@ import re
 import json
 import pytz
 
+import savory_pie.django.fields
+
 
 class ValidationError(Exception):
     def __init__(self, resource, errors):
@@ -45,6 +47,11 @@ def validate(ctx, key, resource, source_dict):
             for field in resource.fields:
                 if not hasattr(field, 'name'):
                     continue
+
+                # ignore validation on non-AttributeField's
+                if not issubclass(field.__class__, savory_pie.django.fields.AttributeField):
+                    continue
+
                 fieldname = ctx.formatter.convert_to_public_property(field.name)
                 if fieldname in source_dict:
                     value = source_dict[fieldname]
@@ -279,6 +286,73 @@ class DatetimeFieldSequenceValidator(ResourceValidator):
             if before > after:
                 self._add_error(error_dict, key, self.error_message)
                 return
+
+
+class UniqueTogetherValidator(ResourceValidator):
+    """
+    Test a tuple of fields to ensure their proposed values represent a unique set
+    within the database. This validator is similar to Django ORM's 'unique together'
+    constraint, but differs in that it accepts only a single level of fields:
+        https://docs.djangoproject.com/en/dev/ref/models/options/#unique-together
+
+    Parameters:
+
+        ``*fields``
+            a list of names of AttributeFields, which as a set should be unique
+
+        ``error_message``
+            optional: the message to appear in the error dictionary if this
+            condition is not met
+    """
+
+    json_name = 'unique_together'
+
+    error_message = 'This set of fields must be unique.'
+
+    def __init__(self, *args, **kwargs):
+        kwargs['fields'] = ','.join(args)
+        super(UniqueTogetherValidator, self).__init__(**kwargs)
+        self._fields = args
+
+    def find_errors(self, error_dict, ctx, key, resource, source_dict):
+        filters = []
+        values = []
+        #import pprint
+        #pprint.pprint(self._fields)
+        for attr in self._fields:
+            public_attr = ctx.formatter.convert_to_public_property(attr)
+            if self.null and source_dict.get(public_attr) is None:
+                return
+            elif public_attr not in source_dict:
+                self._add_error(error_dict, key,
+                                'Cannot find field "' + attr + '"')
+                return
+
+            for field in resource.fields:
+                if attr == getattr(field, 'name', None):
+                    try:
+                        if field.__class__ == savory_pie.django.fields.SubModelResourceField:
+                            if 'resourceUri' in source_dict[public_attr]:
+                                pk = source_dict[public_attr]['resourceUri'].split('/')[-1]
+                                filters.append({'{}__pk'.format(attr): pk})
+                        elif issubclass(field.__class__, savory_pie.django.fields.AttributeField):
+                            filters.append({attr: source_dict[public_attr]})
+                    except Exception as e:
+                        import pdb
+                        pdb.set_trace()
+
+        if filters and hasattr(resource, 'model'):
+            try:
+                qset = resource.model.__class__.objects.all()
+                #import pprint
+                #pprint.pprint(filters)
+                for f in filters:
+                    qset = qset.filter(**f)
+                if len(qset):
+                    self._add_error(error_dict, key, self.error_message)
+            except Exception as e:
+                import pdb
+                pdb.set_trace()
 
 
 ########## Field validators ############
