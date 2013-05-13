@@ -352,3 +352,16 @@ class RelatedManagerField(base_fields.IterableField, DjangoField):
         @return: a Boolean variable used in ModelResources' put
         '''
         return False
+
+
+class ReverseField(object):
+    def __init__(self, attribute_name):
+        self.attribute_name = attribute_name
+
+    def handle_incoming(self, ctx, source_dict, target_obj):
+        if target_obj.pk is not None:
+            return
+        setattr(target_obj, self.attribute_name, ctx.peek())
+
+    def handle_outgoing(self, ctx, source_obj, target_dict):
+        pass

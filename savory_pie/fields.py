@@ -111,10 +111,11 @@ class AttributeField(Field):
 
     @read_only_noop
     def handle_incoming(self, ctx, source_dict, target_obj):
-        self._set(
-            target_obj,
-            self.to_python_value(ctx, source_dict[self._compute_property(ctx)])
-        )
+        with ctx.target(target_obj):
+            self._set(
+                target_obj,
+                self.to_python_value(ctx, source_dict[self._compute_property(ctx)])
+            )
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
         target_dict[self._compute_property(ctx)] = self.to_api_value(
@@ -455,7 +456,12 @@ class SubObjectResourceField(Field):
                 if not self.pre_save(target_obj):
                     setattr(target_obj, self._attribute, sub_resource.model)
 
-                sub_resource.put(ctx, sub_source_dict, skip_validation=getattr(self, '_skip_validation', False))
+                with ctx.target(target_obj):
+                    sub_resource.put(
+                        ctx,
+                        sub_source_dict,
+                        skip_validation=getattr(self, '_skip_validation', False)
+                    )
 
                 if self.pre_save(target_obj):
                     setattr(target_obj, self._attribute, sub_resource.model)
@@ -572,7 +578,8 @@ class IterableField(Field):
                 new_models.append(resource.model)
             else:
                 model_resource = self._resource_class.create_resource()
-                model_resource.put(ctx, model_dict, save=False)
+                with ctx.target(target_obj):
+                    model_resource.put(ctx, model_dict, save=False)
                 new_models.append(model_resource.model)
 
         if hasattr(attribute, 'add'):

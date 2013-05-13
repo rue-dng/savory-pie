@@ -138,7 +138,8 @@ class QuerySetResource(Resource):
 
     def post(self, ctx, source_dict):
         resource = self.resource_class.create_resource()
-        resource.put(ctx, source_dict)
+        with ctx.target(resource.model):
+            resource.put(ctx, source_dict)
 
         # If the newly created child_resource is not absolutely addressable on
         # its own, then fill in the address (assuming the QuerySetResource

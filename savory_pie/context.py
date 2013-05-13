@@ -1,3 +1,5 @@
+import contextlib
+
 from savory_pie.django.resources import QuerySetResource
 
 
@@ -14,6 +16,7 @@ class APIContext(object):
         self.formatter = formatter
         self.request = request
         self.headers_dict = {}
+        self.object_stack = []
 
     def resolve_resource_uri(self, uri):
         """
@@ -64,6 +67,22 @@ class APIContext(object):
         """
         self.headers_dict[header] = value
         return self.headers_dict
+
+    @contextlib.contextmanager
+    def target(self, target):
+        self.push(target)
+        yield
+        self.pop()
+
+    def push(self, target):
+        self.object_stack.append(target)
+
+    def pop(self):
+        return self.object_stack.pop()
+
+    def peek(self, n=1):
+        return self.object_stack[-n]
+
 
 def _split_resource_path(resource_path):
     path_fragments = resource_path.split('/')
