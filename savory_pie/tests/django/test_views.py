@@ -4,6 +4,7 @@ import json
 from mock import Mock
 from savory_pie.tests.django.mock_request import savory_dispatch
 from savory_pie.django.views import _ParamsImpl
+import savory_pie.django.validators
 
 def mock_resource(name=None, resource_path=None, child_resource=None):
     resource = Mock(name=name, spec=[])
@@ -141,6 +142,23 @@ class ViewTest(unittest.TestCase):
         response_json = json.loads(response.content)
         self.assertIn('error', response_json)
         self.assertEqual(response.status_code, 500)
+
+    def test_validation_handling(self):
+        root_resource = mock_resource(name='root')
+        root_resource.allowed_methods.add('PUT')
+        root_resource.put.side_effect = savory_pie.django.validators.ValidationError(
+            Mock(),
+            {
+                'class.field': 'broken',
+            }
+        )
+
+        response = savory_dispatch(root_resource, method='PUT', body='{}')
+
+        response_json = json.loads(response.content)
+        self.assertIn('validation_errors', response_json)
+        self.assertEqual(response_json['validation_errors']['class.field'], 'broken')
+        self.assertEqual(response.status_code, 400)
 
     def test_set_header(self):
         """
