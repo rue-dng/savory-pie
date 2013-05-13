@@ -333,6 +333,11 @@ class UniqueTogetherValidator(ResourceValidator):
                             if 'resourceUri' in source_dict[public_attr]:
                                 pk = source_dict[public_attr]['resourceUri'].split('/')[-1]
                                 filters.append({'{}__pk'.format(attr): pk})
+                            elif 'name' in source_dict[public_attr]:
+                                filters.append({'{}__name'.format(attr): source_dict[public_attr]['name']})
+                            else:
+                                #TODO allow lookup by fields other than id/name?
+                                return
                         elif issubclass(field.__class__, savory_pie.django.fields.AttributeField):
                             filters.append({attr: source_dict[public_attr]})
                     except Exception as e:
