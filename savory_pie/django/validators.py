@@ -48,10 +48,6 @@ def validate(ctx, key, resource, source_dict):
                 if not hasattr(field, 'name'):
                     continue
 
-                # ignore validation on non-AttributeField's
-                if not issubclass(field.__class__, savory_pie.django.fields.AttributeField):
-                    continue
-
                 fieldname = ctx.formatter.convert_to_public_property(field.name)
                 if fieldname in source_dict:
                     value = source_dict[fieldname]
