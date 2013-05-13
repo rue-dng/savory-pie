@@ -582,6 +582,14 @@ class IterableField(Field):
                     model_resource.put(ctx, model_dict, save=False)
                 new_models.append(model_resource.model)
 
+        models_to_remove = [db_models[key] for key in db_keys - request_keys]
+        # If the FK is not nullable the attribute will not have a remove
+        if hasattr(attribute, 'remove'):
+            attribute.remove(*models_to_remove)
+        else:
+            for model in models_to_remove:
+                model.delete()
+
         if hasattr(attribute, 'add'):
             attribute.add(*new_models)
         else:
@@ -591,14 +599,6 @@ class IterableField(Field):
                     attribute.target_field_name: obj
                 }
                 attribute.through.objects.create(**through_parameters)
-
-        models_to_remove = [db_models[key] for key in db_keys - request_keys]
-        # If the FK is not nullable the attribute will not have a remove
-        if hasattr(attribute, 'remove'):
-            attribute.remove(*models_to_remove)
-        else:
-            for model in models_to_remove:
-                model.delete()
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
         attrs = self._attribute.split('.')
