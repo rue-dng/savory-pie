@@ -105,7 +105,7 @@ def _not_allowed_method(ctx, resource, request):
 
 def _validation_errors(ctx, resource, request, errors):
     response = HttpResponse(status=400)
-    ctx.formatter.write_to(errors, response)
+    ctx.formatter.write_to({'validation_errors': errors}, response)
     return response
 
 def _created(ctx, resource, request, new_resource):
