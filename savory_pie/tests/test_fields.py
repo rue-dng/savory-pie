@@ -1,5 +1,6 @@
 import unittest
 
+import mock
 from mock import MagicMock, Mock
 
 from savory_pie.django.resources import ModelResource
@@ -7,7 +8,7 @@ from savory_pie.fields import AttributeField, IterableField, SubObjectResourceFi
 from savory_pie.tests.mock_context import mock_context
 
 
-class IterableFieldTestCase(unittest.TestCase):
+class IterableFieldTest(unittest.TestCase):
 
     def test_handle_outgoing_multi_level(self):
 
@@ -81,6 +82,26 @@ class IterableFieldTestCase(unittest.TestCase):
 
         iterable_factory.assert_called_with(source_object.foo)
 
+    def test_incoming_push_pop(self):
+        Resource = Mock(name='resource')
+        ctx = mock_context()
+
+        field = IterableField(attribute='foo', resource_class=Resource)
+
+        source_dict = {
+            'foo': {'bar': 20},
+        }
+
+        target_object = MagicMock()
+        target_object.__iter__ = iter([])
+        field.handle_incoming(ctx, source_dict, target_object)
+
+        
+        ctx.assert_has_calls([
+            mock.call.push(target_object),
+            mock.call.pop(),
+        ])
+
 
 class IterableFieldTestCase(unittest.TestCase):
     def test_handle_incoming_pre_save_optional(self):
@@ -100,6 +121,24 @@ class IterableFieldTestCase(unittest.TestCase):
         field.handle_incoming(ctx, source_dict, target_obj)
 
         self.assertEqual(sub_resource.model, target_obj.foo)
+
+    def test_incoming_push_pop(self):
+        Resource = Mock(name='resource')
+        ctx = mock_context()
+
+        field = SubObjectResourceField(attribute='foo', resource_class=Resource)
+
+        source_dict = {
+            'foo': {'bar': 20},
+        }
+
+        target_object = Mock()
+        field.handle_incoming(ctx, source_dict, target_object)
+
+        ctx.assert_has_calls([
+            mock.call.push(target_object),
+            mock.call.pop(),
+        ])
 
 
 class CompleteURIResourceFieldTestCase(unittest.TestCase):

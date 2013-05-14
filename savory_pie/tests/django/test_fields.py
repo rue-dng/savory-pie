@@ -1,6 +1,7 @@
 import unittest
 import django
 
+import mock
 from mock import Mock
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -78,6 +79,22 @@ class AttributeFieldTest(unittest.TestCase):
         field.handle_incoming(mock_context(), source_dict, target_object)
 
         self.assertEqual(target_object.foo, 20)
+
+    def test_incoming_pushes_and_pops(self):
+        source_dict = {
+            'foo': 20
+        }
+        ctx = mock_context()
+
+        target_object = Mock(name='target')
+
+        field = AttributeField(attribute='foo', type=int)
+        field.handle_incoming(ctx, source_dict, target_object)
+
+        ctx.assert_has_calls([
+            mock.call.push(target_object),
+            mock.call.pop(),
+        ])
 
     def test_save(self):
         source_dict = {
