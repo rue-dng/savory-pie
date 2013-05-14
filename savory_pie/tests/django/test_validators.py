@@ -12,6 +12,7 @@ from savory_pie.django.validators import (
     validate,
     ResourceValidator,
     DatetimeFieldSequenceValidator,
+    RequiredTogetherValidator,
     FieldValidator,
     StringFieldZipcodeValidator,
     StringFieldExactMatchValidator,
@@ -114,6 +115,22 @@ class CarTestResource(resources.ModelResource):
                 2010, error_message='car is too old'
             )
         )
+    ]
+
+
+class RequiredCarTestResource(resources.ModelResource):
+    parent_resource_path = 'cars'
+    model_class = Car
+
+    fields = [
+        fields.AttributeField(attribute='make', type=str),
+        fields.AttributeField(attribute='year', type=int),
+    ]
+
+    validators = [
+        RequiredTogetherValidator('make', 'year', null=True,
+            error_message=u'Make and year are required if either is provided.'
+        ),
     ]
 
 
@@ -284,6 +301,18 @@ class SimpleValidationTestCase(ValidationTestCase):
              'user.systolicBp':
                 ['blood pressure out of range']},
             errors)
+
+    def test_required_together_validator(self):
+        resource = RequiredCarTestResource(Car())
+
+        good = validate(mock_context(), 'RequiredTogether', resource, {})
+        self.assertEqual(good, {})
+
+        bad = validate(mock_context(), 'RequiredTogether', resource, {'make': 'Tesla'})
+        self.assertEqual(bad, {'RequiredTogether': [u'Make and year are required if either is provided.']})
+
+        bad = validate(mock_context(), 'RequiredTogether', resource, {'year': 2012})
+        self.assertEqual(bad, {'RequiredTogether': [u'Make and year are required if either is provided.']})
 
 
 class SubModelValidationTestCase(ValidationTestCase):

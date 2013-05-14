@@ -284,6 +284,51 @@ class DatetimeFieldSequenceValidator(ResourceValidator):
                 return
 
 
+class RequiredTogetherValidator(ResourceValidator):
+    """
+    Test a tuple of fields to ensure that if a value for one field in the set is
+    provided, that all fields in the set have values provided.
+
+    Parameters:
+
+        ``*fields``
+            a list of names of savory_pie Fields, which as a set is required if a
+            value for any single field is provided
+
+        ``error_message``
+            optional: the message to appear in the error dictionary if this
+            condition is not met
+    """
+
+    json_name = 'required_together'
+
+    error_message = 'This set of fields is required if any one is provided.'
+
+    def __init__(self, *args, **kwargs):
+        kwargs['fields'] = ','.join(args)
+        super(RequiredTogetherValidator, self).__init__(**kwargs)
+        self._fields = args
+
+    def find_errors(self, error_dict, ctx, key, resource, source_dict):
+        values = {}
+        for attr in self._fields:
+            public_attr = ctx.formatter.convert_to_public_property(attr)
+            if not self.null and public_attr not in source_dict:
+                self._add_error(error_dict, key, 'Cannot find field "' + attr + '"')
+                return
+            values[attr] = source_dict.get(public_attr)
+
+        missing = False
+        required = False
+        for value in values.values():
+            if value is None:
+                missing = True
+            else:
+                required = True
+        if required and missing:
+            self._add_error(error_dict, key, self.error_message)
+
+
 class UniqueTogetherValidator(ResourceValidator):
     """
     Test a tuple of fields to ensure their proposed values represent a unique set
@@ -312,14 +357,12 @@ class UniqueTogetherValidator(ResourceValidator):
 
     def find_errors(self, error_dict, ctx, key, resource, source_dict):
         filters = []
-        values = []
         for attr in self._fields:
             public_attr = ctx.formatter.convert_to_public_property(attr)
             if self.null and source_dict.get(public_attr) is None:
                 return
             elif public_attr not in source_dict:
-                self._add_error(error_dict, key,
-                                'Cannot find field "' + attr + '"')
+                self._add_error(error_dict, key, 'Cannot find field "' + attr + '"')
                 return
 
             for field in resource.fields:
