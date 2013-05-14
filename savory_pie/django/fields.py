@@ -355,6 +355,16 @@ class RelatedManagerField(base_fields.IterableField, DjangoField):
 
 
 class ReverseField(object):
+    """
+    Django field to handle the creation of new resources that require a foreign
+    key to the parent in the API object graph.
+
+    This field only runs on incoming requests on objects which have not been
+    saved yet.
+
+        Parameters:
+            attribute_name: the name of the backref on the model.
+    """
     def __init__(self, attribute_name):
         self.attribute_name = attribute_name
 
