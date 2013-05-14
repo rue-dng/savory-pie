@@ -579,7 +579,7 @@ class IterableField(Field):
             else:
                 model_resource = self._resource_class.create_resource()
                 with ctx.target(target_obj):
-                    model_resource.put(ctx, model_dict, save=False)
+                    model_resource.put(ctx, model_dict, save=True)
                 new_models.append(model_resource.model)
 
         models_to_remove = [db_models[key] for key in db_keys - request_keys]
