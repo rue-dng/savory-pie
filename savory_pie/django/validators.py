@@ -4,7 +4,6 @@ import re
 import json
 import pytz
 
-import savory_pie.django.fields
 
 
 class ValidationError(Exception):
@@ -356,6 +355,8 @@ class UniqueTogetherValidator(ResourceValidator):
         self._fields = args
 
     def find_errors(self, error_dict, ctx, key, resource, source_dict):
+        # Prevent circular import
+        import savory_pie.django.fields
         filters = []
         for attr in self._fields:
             public_attr = ctx.formatter.convert_to_public_property(attr)
