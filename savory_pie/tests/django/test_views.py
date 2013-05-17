@@ -38,6 +38,25 @@ class ViewTest(unittest.TestCase):
         self.assertTrue(root_resource.get.called)
         self.assertIsNotNone(root_resource.get.call_args_list[0].request)
 
+    def test_get_success_streaming(self):
+        def get(ctx, params):
+            ctx.streaming_response = True
+            return iter([
+                '{"foo": ',
+                '"bar"',
+                '}',
+            ])
+
+        root_resource = mock_resource(name='root')
+        root_resource.allowed_methods.add('GET')
+        root_resource.get = Mock(side_effect=get)
+
+        response = savory_dispatch(root_resource, method='GET')
+
+        self.assertEqual(''.join(response.streaming_content), '{"foo": "bar"}')
+        self.assertTrue(root_resource.get.called)
+        self.assertIsNotNone(root_resource.get.call_args_list[0].request)
+
     def test_get_not_supported(self):
         root_resource = mock_resource(name='root')
 
