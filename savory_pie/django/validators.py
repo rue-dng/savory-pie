@@ -396,6 +396,67 @@ class UniqueTogetherValidator(ResourceValidator):
                 pass
 
 
+class UniquePairedFieldValidator(ResourceValidator):
+    """
+    Test a pair of fields (a, b), such that for a given a, only one b can exist. However,
+    this _unique_ combination of fields can exist unlimited times.
+
+    Parameters:
+
+        ``*fields``
+            a pair of savory_pie Fields (a, b), such that for a given a,
+            only one b can exist
+
+        ``error_message``
+            optional: the message to appear in the error dictionary if this
+            condition is not met
+    """
+
+    json_name = 'unique_paired_field'
+
+    error_message = 'First field is already present in another pair.'
+
+    def __init__(self, *args, **kwargs):
+        kwargs['fields'] = ','.join(args)
+        super(UniquePairedFieldValidator, self).__init__(**kwargs)
+        self._fields = args
+
+    def find_errors(self, error_dict, ctx, key, resource, source_dict):
+        filters = []
+        for attr in self._fields:
+            public_attr = ctx.formatter.convert_to_public_property(attr)
+            if self.null and source_dict.get(public_attr) is None:
+                return
+            elif public_attr not in source_dict:
+                self._add_error(error_dict, key, 'Cannot find field "' + attr + '"')
+                return
+
+            for field in resource.fields:
+                if attr == getattr(field, 'name', None):
+                    try:
+                        if field.__class__ == savory_pie.django.fields.SubModelResourceField:
+                            if 'resourceUri' in source_dict[public_attr]:
+                                pk = source_dict[public_attr]['resourceUri'].split('/')[-1]
+                                filters.append({'{}__pk'.format(attr): pk})
+                            elif 'name' in source_dict[public_attr]:
+                                filters.append({'{}__name'.format(attr): source_dict[public_attr]['name']})
+                            else:
+                                #TODO allow lookup by fields other than id/name?
+                                return
+                        elif issubclass(field.__class__, savory_pie.django.fields.AttributeField):
+                            filters.append({attr: source_dict[public_attr]})
+                    except Exception as e:
+                        pass
+
+        if filters and hasattr(resource, 'model'):
+            try:
+                qset = resource.model.__class__.objects.filter(**filters[0]).exclude(**filters[1])
+                if len(qset):
+                    self._add_error(error_dict, key, self.error_message)
+            except Exception as e:
+                pass
+
+
 ########## Field validators ############
 
 
