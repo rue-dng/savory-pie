@@ -1,4 +1,4 @@
-from django.http import HttpResponse
+from django.http import HttpResponse, StreamingHttpResponse
 
 from savory_pie.context import APIContext
 from savory_pie.formatters import JSONFormatter
@@ -114,8 +114,17 @@ def _created(ctx, resource, request, new_resource):
     return response
 
 def _content_success(ctx, resource, request, content_dict):
-    response = HttpResponse(status=200, content_type=ctx.formatter.content_type)
-    ctx.formatter.write_to(content_dict, response)
+    if ctx.streaming_response:
+        response = StreamingHttpResponse(
+            content_dict,
+            status=200,
+            content_type=ctx.formatter.content_type)
+    else:
+        response = HttpResponse(
+            status=200,
+            content_type=ctx.formatter.content_type
+        )
+        ctx.formatter.write_to(content_dict, response)
     if ctx.headers_dict:
         for header, value in ctx.headers_dict.items():
             response[header] = value

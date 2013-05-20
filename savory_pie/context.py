@@ -9,6 +9,14 @@ class APIContext(object):
 
     The context object provides a hook into the underlying means to translates
     resources to / from URIs.
+
+    The context has a streaming_response attribute which defaults to False. If
+    this is set to True the get method of the resource should not return a
+    dict, but an iterable of strings. It is the job of the resource to make
+    sure the content_type of the request, ctx.formatter.content_type is
+    respected. This can be used as a performance improvement when returning
+    large result sets where fragments of them can be pre-computed/cached and
+    stitched in to a final result.
     """
     def __init__(self, base_uri, root_resource, formatter, request=None):
         self.base_uri = base_uri
@@ -17,6 +25,7 @@ class APIContext(object):
         self.request = request
         self.headers_dict = {}
         self.object_stack = []
+        self.streaming_response = False
 
     def resolve_resource_uri(self, uri):
         """
