@@ -154,10 +154,8 @@ class AttributeFieldWithModel(AttributeField):
         setattr(obj, self._bare_attribute, value)
 
     def pre_save(self, model):
-        if '.' in self._full_attribute:
-            return False
-        else:
-            return True
+        return True
+
 
 class URIResourceField(base_fields.URIResourceField, DjangoField):
     """

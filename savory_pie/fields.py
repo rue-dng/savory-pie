@@ -321,6 +321,15 @@ class URIListResourceField(Field):
             else:
                 raise SavoryPieError(u'Unable to resolve resource uri {0}'.format(resource_uri))
 
+        # Delete before add to prevent problems with unique constraints
+        models_to_remove = [db_models[key] for key in db_keys - request_keys]
+        # If the FK is not nullable the attribute will not have a remove
+        if hasattr(attribute, 'remove'):
+            attribute.remove(*models_to_remove)
+        else:
+            for model in models_to_remove:
+                model.delete()
+
         if hasattr(attribute, 'add'):
             attribute.add(*new_models)
         else:
@@ -330,14 +339,6 @@ class URIListResourceField(Field):
                     attribute.target_field_name: obj
                 }
                 attribute.through.objects.create(**through_parameters)
-
-        models_to_remove = [db_models[key] for key in db_keys - request_keys]
-        # If the FK is not nullable the attribute will not have a remove
-        if hasattr(attribute, 'remove'):
-            attribute.remove(*models_to_remove)
-        else:
-            for model in models_to_remove:
-                model.delete()
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
         attrs = self._attribute.split('.')
@@ -566,6 +567,7 @@ class IterableField(Field):
             db_keys.add(resource.key)
 
         new_models = []
+        new_put_data = []
         request_keys = set()
         request_models = {}
         for model_dict in source_dict[self._compute_property(ctx)]:
@@ -574,14 +576,13 @@ class IterableField(Field):
                 request_models[resource.key] = resource.model
                 request_keys.add(resource.key)
                 if resource.key in db_keys:
-                    resource.put(ctx, model_dict)
+                    with ctx.target(resource.model):
+                        resource.put(ctx, model_dict)
                 new_models.append(resource.model)
             else:
-                model_resource = self._resource_class.create_resource()
-                with ctx.target(target_obj):
-                    model_resource.put(ctx, model_dict, save=True)
-                new_models.append(model_resource.model)
+                    new_put_data.append(model_dict)
 
+        # Delete before add to prevent problems with unique constraints
         models_to_remove = [db_models[key] for key in db_keys - request_keys]
         # If the FK is not nullable the attribute will not have a remove
         if hasattr(attribute, 'remove'):
@@ -589,6 +590,14 @@ class IterableField(Field):
         else:
             for model in models_to_remove:
                 model.delete()
+
+        # Delay all the new creates untill after the deletes for unique
+        # constraints again
+        for mode_dict in new_put_data:
+            model_resource = self._resource_class.create_resource()
+            with ctx.target(target_obj):
+                model_resource.put(ctx, model_dict, save=True)
+            new_models.append(model_resource.model)
 
         if hasattr(attribute, 'add'):
             attribute.add(*new_models)
