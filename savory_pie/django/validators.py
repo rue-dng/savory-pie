@@ -4,6 +4,7 @@ import re
 import json
 import pytz
 
+import savory_pie.django.fields
 
 
 class ValidationError(Exception):
