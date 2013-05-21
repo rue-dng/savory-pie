@@ -1,5 +1,6 @@
 import unittest
 import django
+from UserDict import UserDict
 
 import mock
 from mock import Mock
@@ -12,6 +13,7 @@ from savory_pie.django.fields import (
     AttributeField,
     AttributeFieldWithModel,
     SubModelResourceField,
+    OneToOneField,
     RelatedManagerField,
     URIResourceField,
     URIListResourceField
@@ -408,8 +410,8 @@ class SubModelResourceFieldTest(unittest.TestCase):
         }
 
         target_object = Mock()
-        target_object.foo = {'bar': 4}
-
+        target_object.foo = UserDict({'bar': 4})
+        target_object.foo.pk = 1
         field.handle_incoming(mock_context(), source_dict, target_object)
 
         self.assertEqual(target_object.foo, None)
@@ -648,6 +650,57 @@ class SubModelResourceFieldTest(unittest.TestCase):
             'foo',
             'foo__bar'
         })
+
+
+class OneToOneFieldTest(unittest.TestCase):
+    def test_outgoing(self):
+
+        class Resource(ModelResource):
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        field = OneToOneField(attribute='foo', resource_class=Resource)
+
+        source_object = Mock()
+        source_object.foo.bar = 20
+
+        target_dict = dict()
+
+        field.handle_outgoing(mock_context(), source_object, target_dict)
+
+        self.assertEqual(target_dict['foo'], {'bar': 20})
+
+    def test_new_object_incoming(self):
+
+        class MockResource(ModelResource):
+            model_class = Mock()
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        field = OneToOneField(attribute='foo', resource_class=MockResource)
+
+        source_dict = {
+            'foo': {'bar': 20},
+        }
+
+        # The django ORM makes me sad that this is not a None or AttributeError
+        class MockFailsOnFooAccess(Mock):
+            def __getattr__(self, name):
+                if name == 'foo':
+                    raise ObjectDoesNotExist
+                else:
+                    return super(Mock, self).__getattr__(name)
+
+        target_object = MockFailsOnFooAccess()
+        target_object._meta.get_field().related.field.name = 'bar'
+        field.handle_incoming(mock_context(), source_dict, target_object)
+
+        self.assertEqual(20, target_object.foo.bar)
+        self.assertEqual(MockResource.model_class.return_value, target_object.foo)
+        target_object.foo.save.assert_called()
+
 
 class RelatedManagerFieldTest(unittest.TestCase):
     def test_outgoing(self):
