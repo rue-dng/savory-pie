@@ -320,6 +320,35 @@ class SubModelResourceField(base_fields.SubObjectResourceField, DjangoField):
 
         return True
 
+
+class OneToOneField(SubModelResourceField):
+    """
+    Django extension of the basic SubModelResourceField that is specifically for
+    OneToOneField.
+
+    When the resource can't be found, instead of looking it up with the source dictionary,
+    it'll create a new instance for this resource since there is a 1-to-1 constraint.
+
+    """
+
+    def get_subresource(self, ctx, source_dict, target_obj):
+        try:
+            # Look at non-null FK
+            sub_resource = super(SubModelResourceField, self).get_subresource(
+                ctx,
+                source_dict,
+                target_obj
+            )
+        except django.core.exceptions.ObjectDoesNotExist:
+            # create a new resource, since this is a one to one field
+            sub_resource = self._resource_class.create_resource()
+
+        # Make sure the new model is attached
+        if hasattr(sub_resource, 'model'):
+            setattr(target_obj, self._attribute, sub_resource.model)
+        return sub_resource
+
+
 class RelatedManagerField(base_fields.IterableField, DjangoField):
     """
     Django extension of the basic IterableField that adds support for

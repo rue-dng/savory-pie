@@ -448,7 +448,9 @@ class SubObjectResourceField(Field):
             # if you have a one-to-one field, you can't set it to None since orm doesn't like it
             # so only set the attr to None, if what's coming in is None and what's there is not already None
             if sub_source_dict is None:
-                if hasattr(target_obj, self._attribute) and getattr(target_obj, self._attribute) is not None:
+                if hasattr(target_obj, self._attribute) \
+                    and getattr(target_obj, self._attribute) is not None \
+                    and getattr(target_obj, self._attribute).pk:
                     setattr(target_obj, self._attribute, None)
             else:
                 # Use the pre_save property, to determine whether we need to set the attribute before or after put
