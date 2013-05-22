@@ -449,7 +449,7 @@ class SubObjectResourceField(Field):
             # so only set the attr to None, if what's coming in is None and what's there is not already None
             if sub_source_dict is None:
                 if hasattr(target_obj, self._attribute) \
-                    and getattr(target_obj, self._attribute) is not None\
+                    and getattr(target_obj, self._attribute) is not None \
                     and getattr(target_obj, self._attribute).pk:
                     setattr(target_obj, self._attribute, None)
             else:
