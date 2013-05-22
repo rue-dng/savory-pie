@@ -327,11 +327,15 @@ class ModelResource(Resource):
         if not skip_validation:
             errors = validate(ctx, self.__class__.__name__, self, source_dict)
             if errors:
+                logger.debug(errors)
                 raise ValidationError(self, errors)
 
         try:
             self._set_pre_save_fields(ctx, source_dict)
         except TypeError, e:
+            import traceback
+            for L in traceback.format_exc().splitlines():
+                logger.debug(L)
             raise ValidationError(self, {'invalidFieldData': e.message})
 
         if save:
