@@ -1,8 +1,17 @@
+import logging
+import pprint
+
 from django.http import HttpResponse, StreamingHttpResponse
 
 from savory_pie.context import APIContext
 from savory_pie.formatters import JSONFormatter
 from savory_pie.django import validators
+
+logger = logging.getLogger(__name__)
+hdlr = logging.StreamHandler()   # Logs to stderr by default
+formatter = logging.Formatter('%(pathname)s %(lineno)d %(funcName)s: %(message)s')
+hdlr.setFormatter(formatter)
+logger.addHandler(hdlr)
 
 
 def api_view(root_resource):
@@ -51,6 +60,7 @@ def api_view(root_resource):
                 return _not_allowed_method(ctx, resource, request)
         except:
             import traceback
+            logger.exception('OUCH')
             return _internal_error(ctx, request, traceback.format_exc())
 
     return view
@@ -63,6 +73,7 @@ def _strip_query_string(path):
 def _process_get(ctx, resource, request):
     if 'GET' in resource.allowed_methods:
         content_dict = resource.get(ctx, _ParamsImpl(request.GET))
+        logger.debug('\n' + pprint.pformat(content_dict))
         return _content_success(ctx, resource, request, content_dict)
     else:
         return _not_allowed_method(ctx, resource, request)

@@ -1,7 +1,9 @@
+import pprint
 import urllib
 import logging
 
 import django.core.exceptions
+from rue.storemanager.debugger import here
 
 from savory_pie.resources import EmptyParams, Resource
 from savory_pie.django.fields import DjangoField
@@ -10,6 +12,10 @@ from savory_pie.django.utils import Related
 from savory_pie.django.validators import ValidationError, validate
 
 logger = logging.getLogger(__name__)
+hdlr = logging.StreamHandler()   # Logs to stderr by default
+formatter = logging.Formatter('%(filename)s %(lineno)d %(funcName)s: %(message)s')
+hdlr.setFormatter(formatter)
+logger.addHandler(hdlr)
 
 
 class QuerySetResource(Resource):
@@ -302,9 +308,12 @@ class ModelResource(Resource):
                 pass
             else:
                 if not pre_save(self.model):
+                    logger.debug(self)
+                    logger.debug('\n' + pprint.pformat(source_dict))
                     field.handle_incoming(ctx, source_dict, self.model)
 
     def _save(self):
+        logger.debug(self)
         self.model.save()
         for field in self.fields:
             try:
@@ -338,6 +347,8 @@ class ModelResource(Resource):
                 logger.debug(L)
             raise ValidationError(self, {'invalidFieldData': e.message})
 
+        logger.debug('\n' + pprint.pformat(source_dict))
+        here(stack=True, stream=logger)
         if save:
             self._save()
             logger.debug('save succeeded for %s' % self)
