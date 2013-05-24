@@ -595,7 +595,7 @@ class IterableField(Field):
 
         # Delay all the new creates untill after the deletes for unique
         # constraints again
-        for mode_dict in new_put_data:
+        for model_dict in new_put_data:
             model_resource = self._resource_class.create_resource()
             with ctx.target(target_obj):
                 model_resource.put(ctx, model_dict, save=True)
