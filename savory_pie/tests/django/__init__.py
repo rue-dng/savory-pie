@@ -54,7 +54,8 @@ user_resource_schema = {
             'blank': True,
             'unique': False,
             'type': 'related',
-            'validators': []
+            'validators': [],
+            'fields': {}
         },
         'lastName': {
             'nullable': False,
@@ -105,7 +106,8 @@ user_resource_schema = {
             'blank': True,
             'unique': False,
             'type': 'related',
-            'validators': []
+            'validators': [],
+            'fields': {}
         },
         'pk': {
             'nullable': False,

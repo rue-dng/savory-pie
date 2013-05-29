@@ -370,13 +370,14 @@ class RelatedManagerField(base_fields.IterableField, DjangoField):
 
     def schema(self, ctx, **kwargs):
         dct = {'type': 'related', 'relatedType': 'to_many', 'fields': {}}
-        for f in self._resource_class.fields:
-            subkwargs = kwargs.copy()
-            subkwargs['model'] = self._resource_class.model_class
-            try:
-                dct['fields'][f._compute_property(ctx)] = f.schema(ctx, **subkwargs)
-            except Exception, e:
-                logger.exception(e)    # field name is probably broken
+        if self._resource_class:
+            for f in self._resource_class.fields:
+                subkwargs = kwargs.copy()
+                subkwargs['model'] = self._resource_class.model_class
+                try:
+                    dct['fields'][f._compute_property(ctx)] = f.schema(ctx, **subkwargs)
+                except Exception, e:
+                    logger.exception(e)    # field name is probably broken
         kwargs['schema'] = dct
         return super(RelatedManagerField, self).schema(ctx, **kwargs)
 
