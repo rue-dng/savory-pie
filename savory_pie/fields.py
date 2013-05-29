@@ -642,3 +642,6 @@ class IterableField(Field):
         error_dict = {}
         # TODO how do we validate this guy?
         return error_dict
+
+    def schema(self, ctx, **kwargs):
+        return super(IterableField, self).schema(**kwargs)

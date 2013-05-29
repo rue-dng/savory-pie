@@ -369,7 +369,15 @@ class RelatedManagerField(base_fields.IterableField, DjangoField):
         self._resource_class.prepare(ctx, related.sub_prefetch(attrs))
 
     def schema(self, ctx, **kwargs):
-        kwargs = dict(kwargs.items() + {'schema': {'type': 'related', 'relatedType': 'to_many'}}.items())
+        dct = {'type': 'related', 'relatedType': 'to_many', 'fields': {}}
+        for f in self._resource_class.fields:
+            subkwargs = kwargs.copy()
+            subkwargs['model'] = self._resource_class.model_class
+            try:
+                dct['fields'][f._compute_property(ctx)] = f.schema(ctx, **subkwargs)
+            except Exception, e:
+                logger.exception(e)    # field name is probably broken
+        kwargs['schema'] = dct
         return super(RelatedManagerField, self).schema(ctx, **kwargs)
 
     def pre_save(self, model):
