@@ -25,7 +25,7 @@ class DjangoField(base_fields.Field):
             except FieldDoesNotExist:
                 self._field = None
 
-        schema = super(DjangoField, self).schema(**kwargs)
+        schema = super(DjangoField, self).schema(ctx, **kwargs)
         if isinstance(self.validator, collections.Iterable):
             schema['validators'] = [validator.to_schema() for validator in self.validator]
         else:

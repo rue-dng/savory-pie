@@ -20,7 +20,7 @@ class Field(object):
             raise SavoryPieError(u'Unable to determine name for field: {0}'.format(self))
         return name
 
-    def schema(self, **kwargs):
+    def schema(self, ctx, **kwargs):
         schema = kwargs.pop('schema', {})
         if getattr(self, '_type', None):
             return dict({'type': self._type.__name__}.items() + schema.items())
@@ -644,4 +644,4 @@ class IterableField(Field):
         return error_dict
 
     def schema(self, ctx, **kwargs):
-        return super(IterableField, self).schema(**kwargs)
+        return super(IterableField, self).schema(ctx, **kwargs)
