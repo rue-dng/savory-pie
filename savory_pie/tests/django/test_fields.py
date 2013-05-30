@@ -294,6 +294,33 @@ class URIResourceFieldTest(unittest.TestCase):
         self.assertFalse(hasattr(target_object, 'foo'))
 
 
+class SchemaSubfieldFieldTest(unittest.TestCase):
+    def test_schema_subfield(self):
+
+        class SubResource(ModelResource):
+            model_class = Mock()
+            fields = [
+                AttributeField(attribute='foo', type=int),
+            ]
+
+        class Resource(ModelResource):
+            model_class = Mock()
+            fields = [
+                AttributeField(attribute='bar', type=int),
+                RelatedManagerField(attribute='baz', resource_class=SubResource),
+            ]
+
+        resource = resources.SchemaResource(Resource)
+        ctx = mock_context()
+        ctx.build_resource_uri = lambda resource: 'uri://user/schema/'
+        schema = resource.get(ctx)
+        self.assertTrue('fields' in schema)
+        self.assertTrue('bar' in schema['fields'])
+        self.assertTrue('baz' in schema['fields'])
+        self.assertTrue('fields' in schema['fields']['baz'])
+        self.assertTrue('foo' in schema['fields']['baz']['fields'])
+
+
 class SubModelResourceFieldTest(unittest.TestCase):
     def test_outgoing(self):
 

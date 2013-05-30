@@ -1,3 +1,14 @@
+import logging
+
+def getLogger():
+    logger = logging.getLogger(__name__)
+    formatter = logging.Formatter("[%(funcName)s: %(filename)s:%(lineno)d] %(message)s")
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    return logger
+
+
 class Related(object):
     """
     Helper object that helps build related select-s and prefetch-es.
