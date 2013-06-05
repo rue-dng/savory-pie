@@ -84,6 +84,8 @@ def _process_put(ctx, resource, request):
             return _no_content_success(ctx, request, request)
         except validators.ValidationError, ve:
             return _validation_errors(ctx, resource, request, ve.errors)
+        except KeyError, ke:
+            return _validation_errors(ctx, resource, request, {'missingData': ke.message})
     else:
         return _not_allowed_method(ctx, resource, request)
 
