@@ -1,7 +1,8 @@
+import json
 import unittest
 from mock import Mock, MagicMock, call, patch
 
-from savory_pie.django import resources, fields, validators
+from savory_pie.django import resources, fields, validators, views
 from savory_pie.tests.django import user_resource_schema, mock_orm, date_str
 from savory_pie.tests.mock_context import mock_context
 from savory_pie.resources import EmptyParams
@@ -134,6 +135,18 @@ class ModelResourceTest(unittest.TestCase):
         self.assertEqual(user.name, 'Bob')
         self.assertEqual(user.age, 20)
         self.assertEqual(user.owner.name, 'bob owner')
+
+    def test_put_with_missing_required_field(self):
+        user = User()
+        request = Mock()
+        request.read.return_value = '{"name": "Bob"}'   # no age
+        resource = AddressableUserResource(user)
+        response = views._process_put(mock_context(),
+                                      AddressableUserResource(user),
+                                      request)
+        errors = json.loads(response.content)
+        self.assertTrue('validation_errors' in errors)
+        self.assertEqual(errors['validation_errors'], {'missingData': 'age'})
 
     def test_put_with_foreign_key_none_resource(self):
         user = User()
