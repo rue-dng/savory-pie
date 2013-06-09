@@ -1,6 +1,3 @@
-import urllib
-
-
 #protocol Params:
 #   def get(key, default=None)
 #   def get_as(key, type, default=None)

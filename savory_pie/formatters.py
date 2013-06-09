@@ -1,12 +1,11 @@
 import exceptions
 import json
-import time
 import pytz
-import string
 import datetime
 import re
 
 from dateutil import parser
+
 
 class JSONFormatter(object):
     """
@@ -17,7 +16,7 @@ class JSONFormatter(object):
     content_type = 'application/json'
 
     dateRegex = re.compile('(\d{4})-(\d{2})-(\d{2})(.*)')
-    
+
     def parse_datetime(self, s):
         if s is None:
             return None

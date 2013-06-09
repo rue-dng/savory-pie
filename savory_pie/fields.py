@@ -4,6 +4,7 @@ from savory_pie.resources import EmptyParams
 from savory_pie.django.validators import validate
 from savory_pie.errors import SavoryPieError
 
+
 def read_only_noop(func):
     @functools.wraps(func)
     def inner(self, *args, **kwargs):
@@ -169,7 +170,6 @@ class URIResourceField(Field):
             {'other': '/api/other/{pk}'}
     """
 
-
     def __init__(self,
                  attribute,
                  resource_class,
@@ -231,7 +231,6 @@ class CompleteURIResourceField(Field):
 
             {'completeResourceUri': '/api/other/{pk}'}
     """
-
 
     def __init__(self, resource_class, read_only=False):
         self._resource_class = resource_class
@@ -439,7 +438,7 @@ class SubObjectResourceField(Field):
         else:
             sub_resource = self.get_subresource(ctx, source_dict, target_obj)
 
-            if not sub_resource: # creating a new resource
+            if not sub_resource:  # creating a new resource
                 sub_resource = self._resource_class.create_resource()
 
             sub_source_dict = source_dict[self._compute_property(ctx)]
@@ -449,8 +448,8 @@ class SubObjectResourceField(Field):
             # so only set the attr to None, if what's coming in is None and what's there is not already None
             if sub_source_dict is None:
                 if hasattr(target_obj, self._attribute) \
-                    and getattr(target_obj, self._attribute) is not None \
-                    and getattr(target_obj, self._attribute).pk:
+                   and getattr(target_obj, self._attribute) is not None \
+                   and getattr(target_obj, self._attribute).pk:
                     setattr(target_obj, self._attribute, None)
             else:
                 # Use the pre_save property, to determine whether we need to set the attribute before or after put
@@ -536,7 +535,7 @@ class IterableField(Field):
         resource = None
         if 'resourceUri' in model_dict:
             resource = ctx.resolve_resource_uri(model_dict['resourceUri'])
-        elif '_id' in model_dict: # TODO what if you give an id that is not in the db?
+        elif '_id' in model_dict:  # TODO what if you give an id that is not in the db?
             # TODO get key without the extra db lookup
             model = self._resource_class.get_from_queryset(self.get_iterable(attribute), model_dict['_id'])
             resource = self._resource_class(model)

@@ -1,7 +1,5 @@
 import contextlib
 
-from savory_pie.django.resources import QuerySetResource
-
 
 class APIContext(object):
     """
