@@ -67,6 +67,7 @@ def _process_get(ctx, resource, request):
     else:
         return _not_allowed_method(ctx, resource, request)
 
+
 def _process_post(ctx, resource, request):
     if 'POST' in resource.allowed_methods:
         try:
@@ -77,10 +78,11 @@ def _process_post(ctx, resource, request):
     else:
         return _not_allowed_method(ctx, resource, request)
 
+
 def _process_put(ctx, resource, request):
     if 'PUT' in resource.allowed_methods:
         try:
-            resource.put(ctx,ctx.formatter.read_from(request))
+            resource.put(ctx, ctx.formatter.read_from(request))
             return _no_content_success(ctx, request, request)
         except validators.ValidationError, ve:
             return _validation_errors(ctx, resource, request, ve.errors)
@@ -88,6 +90,7 @@ def _process_put(ctx, resource, request):
             return _validation_errors(ctx, resource, request, {'missingData': ke.message})
     else:
         return _not_allowed_method(ctx, resource, request)
+
 
 def _process_delete(ctx, resource, request):
     if 'DELETE' in resource.allowed_methods:
@@ -100,20 +103,24 @@ def _process_delete(ctx, resource, request):
 def _not_found(ctx, request):
     return HttpResponse(status=404)
 
+
 def _not_allowed_method(ctx, resource, request):
     response = HttpResponse(status=405)
     response['Allowed'] = ','.join(resource.allowed_methods)
     return response
+
 
 def _validation_errors(ctx, resource, request, errors):
     response = HttpResponse(status=400)
     ctx.formatter.write_to({'validation_errors': errors}, response)
     return response
 
+
 def _created(ctx, resource, request, new_resource):
     response = HttpResponse(status=201)
     response['Location'] = ctx.build_resource_uri(new_resource)
     return response
+
 
 def _content_success(ctx, resource, request, content_dict):
     if ctx.streaming_response:
@@ -133,15 +140,18 @@ def _content_success(ctx, resource, request, content_dict):
 
     return response
 
+
 def _no_content_success(ctx, resource, request):
     return HttpResponse(status=204)
+
 
 def _success(ctx, resource, request, content_dict=None):
     return HttpResponse(status=200)
 
+
 def _internal_error(ctx, request, error):
     response = HttpResponse(status=500, content_type=ctx.formatter.content_type)
-    error_body = { ctx.formatter.convert_to_public_property('error'): error }
+    error_body = {ctx.formatter.convert_to_public_property('error'): error}
     ctx.formatter.write_to(error_body, response)
     return response
 

@@ -4,8 +4,6 @@ import logging
 import django.core.exceptions
 
 from savory_pie.resources import EmptyParams, Resource
-from savory_pie.django.fields import DjangoField
-from savory_pie.django.filters import StandardFilter
 from savory_pie.django.utils import Related
 from savory_pie.django.validators import ValidationError, validate
 
@@ -119,7 +117,7 @@ class QuerySetResource(Resource):
 
             meta['count'] = count
 
-            if ( page + 1 ) * self.page_size < count:
+            if (page + 1) * self.page_size < count:
                 meta['next'] = self.build_page_uri(ctx, page + 1)
         else:
             # When paging is disabled the sliced_queryset is the complete queryset,

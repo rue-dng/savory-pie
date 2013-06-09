@@ -1,8 +1,6 @@
 import collections
 import datetime
 import re
-import json
-import pytz
 
 import savory_pie.django.fields
 
@@ -43,7 +41,7 @@ def validate(ctx, key, resource, source_dict):
     error_dict = {}
     if source_dict and resource:
         if hasattr(resource, 'fields') and \
-                    isinstance(resource.fields, collections.Iterable):
+           isinstance(resource.fields, collections.Iterable):
             for field in resource.fields:
                 if not hasattr(field, 'name'):
                     continue
@@ -58,7 +56,7 @@ def validate(ctx, key, resource, source_dict):
                             orig_value = getattr(resource.model, field.name, None)
                             if orig_value == ctx.formatter.to_python_value(type(orig_value), value):
                                 continue
-                        except Exception as e:
+                        except Exception:
                             pass
 
                     # attempt to validate field
@@ -70,7 +68,7 @@ def validate(ctx, key, resource, source_dict):
                         error_dict.update(validate_method(ctx, key, resource, value))
 
         if hasattr(resource, 'validators') and \
-                    isinstance(resource.validators, collections.Iterable):
+           isinstance(resource.validators, collections.Iterable):
             for validator in resource.validators:
                 validator.find_errors(error_dict, ctx, key, resource, source_dict)
     return error_dict
@@ -356,8 +354,6 @@ class UniqueTogetherValidator(ResourceValidator):
         self._fields = args
 
     def find_errors(self, error_dict, ctx, key, resource, source_dict):
-        # Prevent circular import
-        import savory_pie.django.fields
         filters = []
         for attr in self._fields:
             public_attr = ctx.formatter.convert_to_public_property(attr)
@@ -381,7 +377,7 @@ class UniqueTogetherValidator(ResourceValidator):
                                 return
                         elif issubclass(field.__class__, savory_pie.django.fields.AttributeField):
                             filters.append({attr: source_dict[public_attr]})
-                    except Exception as e:
+                    except Exception:
                         pass
 
         if filters and hasattr(resource, 'model'):
@@ -394,7 +390,7 @@ class UniqueTogetherValidator(ResourceValidator):
                     if len(qset) == 1 and resource.model.pk and qset[0].pk == resource.model.pk:
                         return
                     self._add_error(error_dict, key, self.error_message)
-            except Exception as e:
+            except Exception:
                 pass
 
 
@@ -447,7 +443,7 @@ class UniquePairedFieldValidator(ResourceValidator):
                                 return
                         elif issubclass(field.__class__, savory_pie.django.fields.AttributeField):
                             filters.append({attr: source_dict[public_attr]})
-                    except Exception as e:
+                    except Exception:
                         pass
 
         if filters and hasattr(resource, 'model'):
@@ -455,7 +451,7 @@ class UniquePairedFieldValidator(ResourceValidator):
                 qset = resource.model.__class__.objects.filter(**filters[0]).exclude(**filters[1])
                 if len(qset):
                     self._add_error(error_dict, key, self.error_message)
-            except Exception as e:
+            except Exception:
                 pass
 
 
@@ -736,7 +732,6 @@ class DatetimeFieldMaxValidator(FieldValidator):
         Verify integer value is no greater than specified maximum.
         """
         return type(datetimevalue) is datetime.datetime and datetimevalue <= self._max
-
 
 
 class DateFieldMinValidator(FieldValidator):

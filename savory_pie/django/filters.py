@@ -1,6 +1,4 @@
 import datetime
-import re
-import string
 
 
 class StandardFilter(object):

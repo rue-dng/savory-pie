@@ -1,5 +1,6 @@
 import logging
 
+
 def getLogger():
     logger = logging.getLogger(__name__)
     formatter = logging.Formatter("[%(funcName)s: %(filename)s:%(lineno)d] %(message)s")
