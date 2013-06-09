@@ -1,9 +1,7 @@
 import unittest
 import decimal
 import datetime
-import time
 import pytz
-from mock import Mock
 
 import savory_pie.formatters
 
@@ -176,10 +174,10 @@ class JSONToPython(unittest.TestCase):
                               (type(None), unparsable),
                               (datetime.datetime, unparsable)]:
             message = ('Expected a TypeError for unparsable ' + str(_type)
-                + ' with value ' + repr(svalue))
+                       + ' with value ' + repr(svalue))
             succeeded_incorrectly = False
             try:
-                value = self.json_formatter.to_python_value(_type, svalue)
+                self.json_formatter.to_python_value(_type, svalue)
                 succeeded_incorrectly = True
             except TypeError:
                 pass
@@ -187,4 +185,3 @@ class JSONToPython(unittest.TestCase):
                 self.fail(message + ', got ' + str(e.__class__))
             if succeeded_incorrectly:
                 self.fail(message)
-

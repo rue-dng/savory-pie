@@ -96,7 +96,6 @@ class IterableFieldTest(unittest.TestCase):
         target_object.__iter__ = iter([])
         field.handle_incoming(ctx, source_dict, target_object)
 
-        
         ctx.assert_has_calls([
             mock.call.push(target_object),
             mock.call.pop(),
