@@ -16,11 +16,13 @@ def savory_dispatch(root_resource, method, resource_path='', body=None, GET=None
 
     return view(request=request, resource_path=resource_path)
 
+
 class User(object):
     email = 'savory-pie-tester@localhost'
 
     def is_authenticated(self):
         return True
+
 
 class Request(object):
     def __init__(self, method, host='localhost', resource_path='', body=None, GET=None, POST=None):
@@ -48,6 +50,7 @@ class Request(object):
             self.body_file = StringIO(self.body)
 
         return self.body_file.read()
+
 
 def mock_context(*args, **kwargs):
     ctx = _mock_context(*args, **kwargs)

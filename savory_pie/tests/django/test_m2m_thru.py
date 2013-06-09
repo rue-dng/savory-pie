@@ -1,22 +1,11 @@
 import unittest
-import json
-import pprint
-import sys
-from mock import Mock, MagicMock, call, patch
-from datetime import datetime
+from mock import Mock
 
-from django.conf import settings
-from django.http import HttpRequest
-from django.db.models.query import QuerySet
 import django.core.exceptions
-from django.contrib.auth.models import User as DjangoUser
 
-from savory_pie.django import resources, fields, validators, views
-from savory_pie import resources as basic_resources
-from savory_pie.tests.django import user_resource_schema, mock_orm, date_str
+from savory_pie.django import resources, fields
+from savory_pie.tests.django import mock_orm
 from savory_pie.tests.mock_context import mock_context
-from savory_pie.resources import EmptyParams
-from savory_pie import formatters
 
 
 def createCreator(model_class, collection):
@@ -30,9 +19,11 @@ def createCreator(model_class, collection):
 
 _zones = []
 
+
 class Zone(mock_orm.Model):
     name = Mock(name='zone.name')
     pk = Mock(name='zone.pk')
+
 
 class ZoneResource(resources.ModelResource):
     parent_resource_path = 'zones'
@@ -41,6 +32,7 @@ class ZoneResource(resources.ModelResource):
     fields = [
         fields.AttributeField('name', type=str),
     ]
+
 
 class ZoneQuerySetResource(resources.QuerySetResource):
     resource_path = 'zone'
@@ -51,6 +43,7 @@ createZone = createCreator(Zone, _zones)
 ######################
 
 _contents = []
+
 
 class Content(mock_orm.Model):
     title = Mock(name='content.title')
@@ -63,6 +56,7 @@ del Content.zones.remove
 Content.zones.source_field_name = 'content'
 Content.zones.target_field_name = 'zone'
 
+
 class ContentResource(resources.ModelResource):
     parent_resource_path = 'content'
     model_class = Content
@@ -71,6 +65,7 @@ class ContentResource(resources.ModelResource):
         fields.AttributeField('title', type=str),
         fields.RelatedManagerField('zones', ZoneResource),
     ]
+
 
 class ContentQuerySetResource(resources.QuerySetResource):
     resource_path = 'content'
@@ -81,6 +76,7 @@ createContent = createCreator(Content, _contents)
 ######################
 
 _zonecontents = []
+
 
 class ZoneContent(mock_orm.Model):
     zone = Mock(django.db.models.fields.related.ReverseSingleRelatedObjectDescriptor(Mock()))
@@ -100,6 +96,7 @@ class ZoneContentResource(resources.ModelResource):
 
 Content.zones.through = ZoneContent
 
+
 class ZoneContentQuerySetResource(resources.QuerySetResource):
     resource_path = 'zonecontent'
     resource_class = ZoneContentResource
@@ -109,6 +106,7 @@ createZoneContent = createCreator(ZoneContent, _zonecontents)
 ZoneContent.objects.create = createZoneContent
 
 ##########
+
 
 class ManyToManyThroughTest(unittest.TestCase):
 
@@ -133,8 +131,9 @@ class ManyToManyThroughTest(unittest.TestCase):
 
     def test_m2m_through(self):
         ctx = mock_context()
+
         def resolve(*args):
-            prefix  = 'http://localhost:8000/api/'
+            prefix = 'http://localhost:8000/api/'
             self.assertTrue(args[0].startswith(prefix))
             arg = args[0][len(prefix):]
             if arg.startswith('zone/'):

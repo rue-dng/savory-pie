@@ -99,10 +99,6 @@ class AttributeFieldTest(unittest.TestCase):
         ])
 
     def test_save(self):
-        source_dict = {
-            'foo': 20
-        }
-
         target_object = Mock(name='target')
 
         field = AttributeField(attribute='foo', type=int)
@@ -210,7 +206,6 @@ class AttributeFieldTest(unittest.TestCase):
         self.assertEqual({'foo': 3}, filter_args)
 
 
-
 class AttributeFieldWithModelsTest(unittest.TestCase):
     def test_simple_incoming(self):
         class FooModel(mock_orm.Model):
@@ -274,8 +269,8 @@ class URIResourceFieldTest(unittest.TestCase):
 
         field = URIResourceField(
             attribute='foo',
-             resource_class=Resource,
-             read_only=True,
+            resource_class=Resource,
+            read_only=True,
         )
 
         source_dict = {
@@ -342,7 +337,6 @@ class SubModelResourceFieldTest(unittest.TestCase):
 
     def test_outgoing_with_simple_none(self):
 
-
         class Resource(ModelResource):
             fields = [
                 AttributeField(attribute='bar', type=int),
@@ -376,7 +370,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
         field = SubModelResourceField(attribute='foo', resource_class=Resource)
 
         source_object = Mock()
-        source_object.foo= None
+        source_object.foo = None
 
         target_dict = dict()
 
@@ -622,6 +616,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
         class MockFailsOnFooAccess(Mock):
             def model(self):
                 return Mock()
+
             def __getattr__(self, name):
                 if name == 'user':
                     raise ObjectDoesNotExist
@@ -856,7 +851,6 @@ class RelatedManagerFieldTest(unittest.TestCase):
         self.assertEqual(14, model.bar)
         related_manager.add.assert_called_with(bar_14.model)
 
-
     def test_incoming_delete(self):
         del mock_orm.Model._models[:]
 
@@ -932,7 +926,6 @@ class RelatedManagerFieldTest(unittest.TestCase):
             'foo': [{'_id': '4', 'bar': 15}],
         }
 
-        model_index = len(mock_orm.Model._models) + 1
         field.handle_incoming(mock_context(), source_dict, target_obj)
 
         self.assertEqual(15, related_model.bar)

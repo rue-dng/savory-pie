@@ -2,6 +2,7 @@ from mock import Mock
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 import random
 
+
 class QuerySet(Mock):
     def __init__(self, *elements):
         super(QuerySet, self).__init__()
@@ -138,8 +139,10 @@ class QuerySet(Mock):
 class Manager(Mock):
     def all(self):
         return QuerySet()
+
     def __iter__(self):
         return iter(self.all())
+
 
 class Model(object):
     class DoesNotExist(ObjectDoesNotExist):

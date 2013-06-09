@@ -2,7 +2,7 @@ import json
 import unittest
 from mock import Mock, MagicMock, call, patch
 
-from savory_pie.django import resources, fields, validators, views
+from savory_pie.django import resources, fields, views
 from savory_pie.tests.django import user_resource_schema, mock_orm, date_str
 from savory_pie.tests.mock_context import mock_context
 from savory_pie.resources import EmptyParams
@@ -12,6 +12,7 @@ from datetime import datetime
 
 import django.core.exceptions
 from django.contrib.auth.models import User as DjangoUser
+
 
 class ResourceTest(unittest.TestCase):
     def test_no_allowed_methods(self):
@@ -140,7 +141,6 @@ class ModelResourceTest(unittest.TestCase):
         user = User()
         request = Mock()
         request.read.return_value = '{"name": "Bob"}'   # no age
-        resource = AddressableUserResource(user)
         response = views._process_put(mock_context(),
                                       AddressableUserResource(user),
                                       request)
@@ -222,6 +222,7 @@ class ModelResourceTest(unittest.TestCase):
     def test_pre_save_optional(self):
         user = Mock(name='user')
         field = Mock(['handle_incoming'])
+
         class Resource(resources.ModelResource):
             model_class = User
             fields = [field]
@@ -234,6 +235,7 @@ class ModelResourceTest(unittest.TestCase):
     def test_save_fields(self):
         user = Mock(name='user')
         field = Mock(['handle_incoming', 'save'])
+
         class Resource(resources.ModelResource):
             model_class = User
             fields = [field]
@@ -246,6 +248,7 @@ class ModelResourceTest(unittest.TestCase):
     def test_save_fields_optional(self):
         user = Mock(name='user')
         field = Mock(['handle_incoming'])
+
         class Resource(resources.ModelResource):
             model_class = User
             fields = [field]

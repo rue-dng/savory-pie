@@ -6,6 +6,7 @@ from savory_pie.tests.django.mock_request import savory_dispatch
 from savory_pie.django.views import _ParamsImpl
 import savory_pie.django.validators
 
+
 def mock_resource(name=None, resource_path=None, child_resource=None):
     resource = Mock(name=name, spec=[])
     resource.resource_path = resource_path
@@ -91,7 +92,7 @@ class ViewTest(unittest.TestCase):
         response = savory_dispatch(root_resource, method='POST', body='{}')
 
         self.assertTrue(call_args_sans_context(root_resource.post), [{
-             'foo': 'bar'
+            'foo': 'bar'
         }])
         self.assertEqual(response['Location'], 'http://localhost/api/foo')
         self.assertIsNotNone(root_resource.post.call_args_list[0].request)

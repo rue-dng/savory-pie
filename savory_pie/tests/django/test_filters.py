@@ -1,11 +1,10 @@
 import datetime
 import unittest
-import sys
 
 from mock import Mock
 import pytz
 
-from savory_pie.django import  filters
+from savory_pie.django import filters
 from savory_pie.tests.django import mock_orm
 from savory_pie.tests.mock_context import mock_context
 from savory_pie.formatters import JSONFormatter
@@ -27,14 +26,14 @@ _users = mock_orm.QuerySet(
 MockUser.objects.all = Mock(return_value=_users)
 
 _filters = [
-	filters.StandardFilter('official_test_user', {'name': 'alice'}),
-	filters.StandardFilter('bogus_test_user', {'name': 'Nobody'}),
-	filters.StandardFilter('early_name', {'name__lt': 'c00000'}),
-	filters.StandardFilter('younger_only', {'age__lt': 25}),
-	filters.StandardFilter('older_only', {'age__gt': 25}),
-	filters.StandardFilter('alphabetical', {}, order_by=['name']),
-	filters.StandardFilter('reverse_alphabetical', {}, order_by=['-name']),
-	filters.ParameterizedFilter('name_exact', 'name'),
+    filters.StandardFilter('official_test_user', {'name': 'alice'}),
+    filters.StandardFilter('bogus_test_user', {'name': 'Nobody'}),
+    filters.StandardFilter('early_name', {'name__lt': 'c00000'}),
+    filters.StandardFilter('younger_only', {'age__lt': 25}),
+    filters.StandardFilter('older_only', {'age__gt': 25}),
+    filters.StandardFilter('alphabetical', {}, order_by=['name']),
+    filters.StandardFilter('reverse_alphabetical', {}, order_by=['-name']),
+    filters.ParameterizedFilter('name_exact', 'name'),
     filters.ParameterizedFilter('before', 'when__lt'),
     filters.ParameterizedFilter('no_earlier_than', 'when__gte'),
 ]
@@ -86,7 +85,7 @@ class StandardFilterTest(FilterTest):
         results = self.apply_filters({'older_only': ''})
         self.assertEqual(2, results.count())
         self.assertEqual(
-            sorted(['alice','charlie']),
+            sorted(['alice', 'charlie']),
             sorted([x.name for x in results])
         )
 

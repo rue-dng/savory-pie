@@ -1,6 +1,4 @@
-import json
 import pytz
-import mock
 import unittest
 from datetime import datetime, timedelta
 
@@ -47,6 +45,7 @@ class Car(models.Model):
             'ugly': self.ugly
         }
 
+
 class User(models.Model):
     name = models.CharField(max_length=20)
     age = models.IntegerField()
@@ -81,6 +80,7 @@ class IntFieldPrimeValidator(FieldValidator):
 
     def __init__(self, maxprime):
         self._primes = _primes = [2, 3, 5, 7]
+
         def test_prime(x, _primes=_primes):
             for p in _primes:
                 if p * p > x:
@@ -105,12 +105,16 @@ class CarTestResource(resources.ModelResource):
     ]
 
     fields = [
-        fields.AttributeField(attribute='make', type=str,
+        fields.AttributeField(
+            attribute='make',
+            type=str,
             validator=StringFieldExactMatchValidator(
                 'Toyota', error_message='why is he not driving a Toyota?'
             )
         ),
-        fields.AttributeField(attribute='year', type=int,
+        fields.AttributeField(
+            attribute='year',
+            type=int,
             validator=IntFieldMinValidator(
                 2010, error_message='car is too old'
             )
@@ -128,7 +132,10 @@ class RequiredCarTestResource(resources.ModelResource):
     ]
 
     validators = [
-        RequiredTogetherValidator('make', 'year', null=True,
+        RequiredTogetherValidator(
+            'make',
+            'year',
+            null=True,
             error_message=u'Make and year are required if either is provided.'
         ),
     ]
@@ -158,23 +165,48 @@ class UserTestResource(resources.ModelResource):
     ]
 
     fields = [
-        fields.AttributeField(attribute='name', type=str,
-            validator=StringFieldExactMatchValidator('Bob')),
-        fields.AttributeField(attribute='age', type=int,
-            validator=(IntFieldMinValidator(21, error_message='too young to drink'),
-                       IntFieldPrimeValidator(100))),
-        fields.AttributeField(attribute='before', type=datetime,
-            validator=DatetimeFieldMinValidator(long_ago,
-                                                                error_message='keep it recent')),
-        fields.AttributeField(attribute='after', type=datetime,
-            validator=DatetimeFieldMaxValidator(too_late,
-                                                                error_message='do not be late')),
-        fields.AttributeField(attribute='systolic_bp', type=int,
-            validator=IntFieldRangeValidator(100, 120,
-                error_message='blood pressure out of range')),
+        fields.AttributeField(
+            attribute='name',
+            type=str,
+            validator=StringFieldExactMatchValidator('Bob')
+        ),
+        fields.AttributeField(
+            attribute='age',
+            type=int,
+            validator=(
+                IntFieldMinValidator(21, error_message='too young to drink'),
+                IntFieldPrimeValidator(100)
+            )
+        ),
+        fields.AttributeField(
+            attribute='before',
+            type=datetime,
+            validator=DatetimeFieldMinValidator(
+                long_ago,
+                error_message='keep it recent',
+            )
+        ),
+        fields.AttributeField(
+            attribute='after',
+            type=datetime,
+            validator=DatetimeFieldMaxValidator(
+                too_late,
+                error_message='do not be late'
+            )
+        ),
+        fields.AttributeField(
+            attribute='systolic_bp',
+            type=int,
+            validator=IntFieldRangeValidator(
+                100,
+                120,
+                error_message='blood pressure out of range'
+            )
+        ),
         fields.SubModelResourceField('vehicle', CarTestResource),
         fields.SubModelResourceField('stolen_vehicle', StolenCarTestResource, skip_validation=True),
     ]
+
 
 def create_car(make, year, ugly=False):
     model = Car()
@@ -182,6 +214,7 @@ def create_car(make, year, ugly=False):
     model.year = year
     model.ugly = ugly
     return model
+
 
 def validate_user_resource(name, age, start, end, systolic, car=None, stolen_car=None):
     source_dict = dict(name=name, age=str(age), before=start.isoformat(), after=end.isoformat(),
@@ -250,9 +283,12 @@ class SimpleValidationTestCase(ValidationTestCase):
         model.ugly = False
         resource = CarTestResource(model)
         with self.assertRaises(ValidationError):
-            resource.put(mock_context(),
-                         {'make': 'Toyota', 'year': '2010', 'ugly': 'False',
-                          'mileage':'123abc'})
+            resource.put(mock_context(), {
+                'make': 'Toyota',
+                'year': '2010',
+                'ugly': 'False',
+                'mileage': '123abc'
+            })
 
     def test_wrong_name(self):
         errors = validate_user_resource('Jack', 23, now, later, 120)
@@ -351,12 +387,14 @@ class SchemaGetTestCase(ValidationTestCase):
         ctx.build_resource_uri = lambda resource: 'uri://users/schema/'
         result = resource.get(ctx)
         # import sys, pprint; pprint.pprint(result, stream=sys.stderr)
-        self.assertEqual([{
-                             'text': 'Datetimes are not in expected sequence.',
-                             'fields': 'before,after',
-                             'name': 'dates_in_sequence'
-                         }],
-                         result['validators'])
+        self.assertEqual(
+            [{
+                'text': 'Datetimes are not in expected sequence.',
+                'fields': 'before,after',
+                'name': 'dates_in_sequence'
+            }],
+            result['validators']
+        )
         for field_name in result['fields']:
             field = result['fields'][field_name]
             validators = field['validators']
@@ -394,11 +432,11 @@ class KnownValidatorsTester(ValidationTestCase):
         v = DatetimeFieldSequenceValidator('a', 'b', 'c')
         badness = {'foo': ['Datetimes are not in expected sequence.']}
         for (first, second, third, expected) in (
-                    (now, later, too_late, {}),
-                    (later, now, too_late, badness),
-                    (now, too_late, later, badness),
-                    (too_late, later, now, badness)
-                ):
+            (now, later, too_late, {}),
+            (later, now, too_late, badness),
+            (now, too_late, later, badness),
+            (too_late, later, now, badness)
+        ):
             error_dict = {}
             v.find_errors(error_dict, ctx, 'foo', None, {'a': first.isoformat(),
                                                          'b': second.isoformat(),
@@ -413,14 +451,14 @@ class KnownValidatorsTester(ValidationTestCase):
         field._type = str
         badness = {'foo.bar': ['This should be a zipcode.']}
         for (value, expected) in (
-                    ('02134', {}),
-                    ('01701', {}),
-                    ('01701-7627', {}),
-                    ('90210', {}),
-                    ('65536', {}),
-                    ('01234567890', badness),
-                    ('01234-567890', badness),
-                ):
+            ('02134', {}),
+            ('01701', {}),
+            ('01701-7627', {}),
+            ('90210', {}),
+            ('65536', {}),
+            ('01234567890', badness),
+            ('01234-567890', badness),
+        ):
             error_dict = {}
             v.find_errors(error_dict, ctx, 'foo', None, field, value)
             self.assertEqual(expected, error_dict)
@@ -433,14 +471,14 @@ class KnownValidatorsTester(ValidationTestCase):
         field._type = str
         badness = {'foo.bar': ['This should exactly match the expected value.']}
         for (value, expected) in (
-                    ('01701-7627', {}),
-                    ('02134', badness),
-                    ('01701', badness),
-                    ('90210', badness),
-                    ('65536', badness),
-                    ('01234567890', badness),
-                    ('01234-567890', badness),
-                ):
+            ('01701-7627', {}),
+            ('02134', badness),
+            ('01701', badness),
+            ('90210', badness),
+            ('65536', badness),
+            ('01234567890', badness),
+            ('01234-567890', badness),
+        ):
             error_dict = {}
             v.find_errors(error_dict, ctx, 'foo', None, field, value)
             self.assertEqual(expected, error_dict)
@@ -453,18 +491,18 @@ class KnownValidatorsTester(ValidationTestCase):
         field._type = str
         badness = {'foo.bar': ['This should not exceed the expected string length.']}
         for (value, expected) in (
-                    ('A', {}),
-                    (5 * 'A', {}),
-                    (10 * 'A', {}),
-                    (40 * 'A', {}),
-                    (79 * 'A', {}),
-                    (80 * 'A', {}),
-                    (81 * 'A', badness),
-                    (85 * 'A', badness),
-                    (100 * 'A', badness),
-                    (200 * 'A', badness),
-                    (500 * 'A', badness),
-                ):
+            ('A', {}),
+            (5 * 'A', {}),
+            (10 * 'A', {}),
+            (40 * 'A', {}),
+            (79 * 'A', {}),
+            (80 * 'A', {}),
+            (81 * 'A', badness),
+            (85 * 'A', badness),
+            (100 * 'A', badness),
+            (200 * 'A', badness),
+            (500 * 'A', badness),
+        ):
             error_dict = {}
             v.find_errors(error_dict, ctx, 'foo', None, field, value)
             self.assertEqual(expected, error_dict)
@@ -477,12 +515,12 @@ class KnownValidatorsTester(ValidationTestCase):
         field._type = int
         badness = {'foo.bar': ['This value should be greater than or equal to the minimum.']}
         for (value, expected) in (
-                    ('0', badness),
-                    ('5', badness),
-                    ('11', {}),
-                    ('23', {}),
-                    ('90210', {})
-                ):
+            ('0', badness),
+            ('5', badness),
+            ('11', {}),
+            ('23', {}),
+            ('90210', {})
+        ):
             error_dict = {}
             v.find_errors(error_dict, ctx, 'foo', None, field, value)
             self.assertEqual(expected, error_dict)
@@ -495,12 +533,12 @@ class KnownValidatorsTester(ValidationTestCase):
         field._type = int
         badness = {'foo.bar': ['This value should be less than or equal to the maximum.']}
         for (value, expected) in (
-                    ('0', {}),
-                    ('5', {}),
-                    ('11', {}),
-                    ('23', badness),
-                    ('90210', badness)
-                ):
+            ('0', {}),
+            ('5', {}),
+            ('11', {}),
+            ('23', badness),
+            ('90210', badness)
+        ):
             error_dict = {}
             v.find_errors(error_dict, ctx, 'foo', None, field, value)
             self.assertEqual(expected, error_dict)
@@ -513,16 +551,16 @@ class KnownValidatorsTester(ValidationTestCase):
         field._type = int
         badness = {'foo.bar': ['This value should be within the allowed integer range.']}
         for (value, expected) in (
-                    ('0', badness),
-                    ('3', badness),
-                    ('4', {}),
-                    ('5', {}),
-                    ('10', {}),
-                    ('11', {}),
-                    ('12', badness),
-                    ('23', badness),
-                    ('90210', badness)
-                ):
+            ('0', badness),
+            ('3', badness),
+            ('4', {}),
+            ('5', {}),
+            ('10', {}),
+            ('11', {}),
+            ('12', badness),
+            ('23', badness),
+            ('90210', badness)
+        ):
             error_dict = {}
             v.find_errors(error_dict, ctx, 'foo', None, field, value)
             self.assertEqual(expected, error_dict)
@@ -535,12 +573,12 @@ class KnownValidatorsTester(ValidationTestCase):
         field._type = datetime
         badness = {'foo.bar': ['This value should be no earlier than the minimum datetime.']}
         for (value, expected) in (
-                    (ancient, badness),
-                    (long_ago, badness),
-                    (now, {}),
-                    (later, {}),
-                    (too_late, {})
-                ):
+            (ancient, badness),
+            (long_ago, badness),
+            (now, {}),
+            (later, {}),
+            (too_late, {})
+        ):
             error_dict = {}
             v.find_errors(error_dict, ctx, 'foo', None, field, value.isoformat())
             self.assertEqual(expected, error_dict)
@@ -553,12 +591,12 @@ class KnownValidatorsTester(ValidationTestCase):
         field._type = datetime
         badness = {'foo.bar': ['This value should be no later than the maximum datetime.']}
         for (value, expected) in (
-                    (ancient, {}),
-                    (long_ago, {}),
-                    (now, {}),
-                    (later, badness),
-                    (too_late, badness)
-                ):
+            (ancient, {}),
+            (long_ago, {}),
+            (now, {}),
+            (later, badness),
+            (too_late, badness)
+        ):
             error_dict = {}
             v.find_errors(error_dict, ctx, 'foo', None, field, value.isoformat())
             self.assertEqual(expected, error_dict)
