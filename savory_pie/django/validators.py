@@ -1,8 +1,7 @@
 import collections
 import datetime
 import re
-
-import savory_pie.django.fields
+import savory_pie
 
 
 class ValidationError(Exception):
