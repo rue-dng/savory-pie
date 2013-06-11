@@ -1,4 +1,5 @@
 import logging
+import pprint
 
 
 def getLogger():
@@ -7,6 +8,10 @@ def getLogger():
     handler = logging.StreamHandler()
     handler.setFormatter(formatter)
     logger.addHandler(handler)
+    def logger_pprint(obj, logger=logger):
+        if logger.isEnabledFor(logging.DEBUG):
+            logger._log(logging.DEBUG, '\n' + pprint.pformat(obj), [], {})
+    logger.pprint = logger_pprint
     return logger
 
 
