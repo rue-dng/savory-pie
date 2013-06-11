@@ -20,6 +20,7 @@ class Related(object):
         self._prefix = prefix
         self._select = select if select is not None else set()
         self._prefetch = prefetch if prefetch is not None else set()
+        self._annotate = []
         self._force_prefetch = force_prefetch
 
     def translate(self, attribute):
@@ -86,6 +87,16 @@ class Related(object):
             force_prefetch=True
         )
 
+    def annotate(self, aggregate, *args,  **kwargs):
+        """
+        Adds an annotation to the current query set. Annotations are always
+        added to the end of the query set so all filters will be applied.
+
+        Example usage:
+            ``related.aggregate(Count, 'book')``
+        """
+        self._annotate.append(aggregate(*args, **kwargs))
+
     def prepare(self, queryset):
         """
         Should be called after all select and prefetch calls have been made to
@@ -96,5 +107,8 @@ class Related(object):
 
         if self._prefetch:
             queryset = queryset.prefetch_related(*self._prefetch)
+
+        if self._annotate:
+            queryset = queryset.annotate(*self._annotate)
 
         return queryset

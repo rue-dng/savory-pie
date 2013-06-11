@@ -12,7 +12,7 @@ def mock_context():
         yield
         ctx.pop()
 
-    ctx = Mock(name='context', spec=['push', 'pop'])
+    ctx = Mock(name='context', spec=['push', 'pop', 'peek'])
     ctx.formatter = JSONFormatter()
     ctx.build_resource_uri = lambda resource: 'uri://' + resource.resource_path
     ctx.target = target

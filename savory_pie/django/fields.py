@@ -1,9 +1,12 @@
 import collections
 import logging
+
 import django.core.exceptions
-from django.utils.functional import Promise
-from django.db.models.fields import FieldDoesNotExist
+import django.db.models
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models.fields import FieldDoesNotExist
+from django.utils.functional import Promise
+
 from savory_pie import fields as base_fields
 from savory_pie.errors import SavoryPieError
 
@@ -398,8 +401,9 @@ class ReverseField(object):
     This field only runs on incoming requests on objects which have not been
     saved yet.
 
-        Parameters:
-            attribute_name: the name of the backref on the model.
+    Parameters:
+        ``attribute_name``
+            the name of the backref on the model.
     """
     def __init__(self, attribute_name):
         self.attribute_name = attribute_name
@@ -411,3 +415,51 @@ class ReverseField(object):
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
         pass
+
+
+class RelatedCountField(object):
+    """
+    Django field to handle counting the number of related objects. This uses
+    something like annotate(Count()) under the hood.
+
+    Parameters:
+        ''attribute''
+            doted name of the field to count
+
+        ``published_property``
+            optional -- name exposed in the API
+    """
+    def __init__(self, attribute, published_property=None):
+        self._attribute = attribute
+        self._published_property = published_property
+
+    def _compute_property(self, ctx):
+        if self._published_property is not None:
+            return ctx.formatter.convert_to_public_property(self._published_property)
+        else:
+            return ctx.formatter.convert_to_public_property(self._attribute)
+
+    def _get(self, source_obj):
+        attr = self._attribute.replace('.', '__')
+        return getattr(source_obj, attr + '__count')
+
+    def prepare(self, ctx, related):
+        try:
+            ctx.peek(2)
+        except IndexError:
+            pass
+        else:
+            raise SavoryPieError('RelatedCountField can only be used on a '
+                                 'top level ModelResource')
+
+        attr = self._attribute.replace('.', '__')
+        related.annotate(django.db.models.Count, attr, distinct=True)
+
+    def handle_incoming(self, ctx, source_dict, target_obj):
+        pass
+
+    def handle_outgoing(self, ctx, source_obj, target_dict):
+        target_dict[self._compute_property(ctx)] = ctx.formatter.to_api_value(
+            int,
+            self._get(source_obj)
+        )

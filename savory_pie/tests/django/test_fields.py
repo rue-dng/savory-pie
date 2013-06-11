@@ -4,20 +4,24 @@ from UserDict import UserDict
 
 import mock
 from mock import Mock
+import django.db.models
 
 from django.core.exceptions import ObjectDoesNotExist
+
 from savory_pie.django import resources, fields
-from savory_pie.django.utils import Related
-from savory_pie.django.resources import ModelResource, QuerySetResource
 from savory_pie.django.fields import (
     AttributeField,
     AttributeFieldWithModel,
-    SubModelResourceField,
     OneToOneField,
+    RelatedCountField,
     RelatedManagerField,
+    SubModelResourceField,
+    URIListResourceField,
     URIResourceField,
-    URIListResourceField
 )
+from savory_pie.django.resources import ModelResource, QuerySetResource
+from savory_pie.django.utils import Related
+from savory_pie.errors import SavoryPieError
 from savory_pie.tests.django import mock_orm
 from savory_pie.tests.django.mock_request import mock_context
 
@@ -1110,3 +1114,48 @@ class URIListResourceFieldTestCase(unittest.TestCase):
         field.handle_outgoing(ctx, source_object, target_dict)
 
         self.assertEqual(['uri://resources/1', 'uri://resources/2'], target_dict['foos'])
+
+
+class TestRelatedCountField(unittest.TestCase):
+    def test_prepare(self):
+        ctx = mock_context()
+        ctx.peek.side_effect = IndexError
+        related = Mock(name='related')
+
+        field = RelatedCountField('name.one.two')
+        field.prepare(ctx, related)
+
+        related.annotate.assert_called_with(
+            django.db.models.Count,
+            'name__one__two',
+            distinct=True,
+        )
+
+    def test_prepare_not_top_level(self):
+        ctx = mock_context()
+        related = Mock(name='related')
+
+        field = RelatedCountField('name.one.two')
+
+        with self.assertRaises(SavoryPieError) as cm:
+            field.prepare(ctx, related)
+
+        self.assertEqual(
+            'RelatedCountField can only be used on a top level ModelResource',
+            str(cm.exception)
+        )
+
+    def test_handle_outgoing(self):
+        ctx = mock_context()
+
+        mock_model = Mock(name='model')
+        mock_model.name__count = 14
+        target_dict = {}
+
+        field = RelatedCountField('name')
+        field.handle_outgoing(ctx, mock_model, target_dict)
+
+        self.assertEqual(
+            14,
+            target_dict['name'],
+        )
