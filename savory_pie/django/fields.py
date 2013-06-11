@@ -432,6 +432,7 @@ class RelatedCountField(object):
     def __init__(self, attribute, published_property=None):
         self._attribute = attribute
         self._published_property = published_property
+        self._orm_attribute = self._attribute.replace('.', '__')
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
@@ -440,10 +441,12 @@ class RelatedCountField(object):
             return ctx.formatter.convert_to_public_property(self._attribute)
 
     def _get(self, source_obj):
-        attr = self._attribute.replace('.', '__')
-        return getattr(source_obj, attr + '__count')
+        return getattr(source_obj, self._orm_attribute + '__count')
 
     def prepare(self, ctx, related):
+        # Due to how annotate works with the django ORM, RelatedCountField can
+        # only be used on a top level resource. We peek in to the stack to see
+        # how deep we are and fail if it is too deep.
         try:
             ctx.peek(2)
         except IndexError:
@@ -452,8 +455,11 @@ class RelatedCountField(object):
             raise SavoryPieError('RelatedCountField can only be used on a '
                                  'top level ModelResource')
 
-        attr = self._attribute.replace('.', '__')
-        related.annotate(django.db.models.Count, attr, distinct=True)
+        related.annotate(
+            django.db.models.Count,
+            self._orm_attribute,
+            distinct=True,
+        )
 
     def handle_incoming(self, ctx, source_dict, target_obj):
         pass
