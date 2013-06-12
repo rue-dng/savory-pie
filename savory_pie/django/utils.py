@@ -8,6 +8,7 @@ def getLogger():
     handler = logging.StreamHandler()
     handler.setFormatter(formatter)
     logger.addHandler(handler)
+
     def logger_pprint(obj, logger=logger):
         if logger.isEnabledFor(logging.DEBUG):
             logger._log(logging.DEBUG, '\n' + pprint.pformat(obj), [], {})
