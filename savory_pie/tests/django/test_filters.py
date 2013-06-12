@@ -38,17 +38,27 @@ _filters = [
     filters.ParameterizedFilter('no_earlier_than', 'when__gte'),
 ]
 
+class Params():
+    def __init__(self, params):
+        self.params = params
+
+    def __iter__(self):
+        return iter(self.params)
+
+    def get_list(self, name):
+        return self.params[name]
+
 
 class FilterTest(unittest.TestCase):
 
     def apply_filters(self, filters):
         ctx = mock_context()
         queryset = _users
-        params = {
+        params = Params({
             ctx.formatter.convert_to_public_property(name): value
             for name, value
             in filters.items()
-        }
+        })
         for filter in _filters:
             queryset = filter.filter(ctx, params, queryset)
         return queryset

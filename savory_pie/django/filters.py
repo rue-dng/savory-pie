@@ -1,5 +1,5 @@
 import datetime
-
+from django.db.models import Q
 
 class StandardFilter(object):
     """Filters the results from a query on a :class:`savory_pie.django.resources.QuerySetResource`.
@@ -61,7 +61,7 @@ class StandardFilter(object):
     def __unicode__(self):
         return u'<' + self.__class__.__name__ + ': ' + self.name + '>'
 
-    def get_param_value(self, name, ctx, params):
+    def get_param_values(self, name, ctx, params):
         """
         *name*: The name of a parameter which is treated as a key in the *params* QueryDict.
 
@@ -100,9 +100,20 @@ class StandardFilter(object):
         # in models for a field called 'limit', so use a more specific name.
         limit = criteria.get('limit_object_count', None)
         if limit:
-            criteria = dict(filter(lambda item: item[0] != 'limit_object_count',
+                criteria = dict(filter(lambda item: item[0] != 'limit_object_count',
                                    criteria.items()))
-        queryset = queryset.filter(**criteria)
+
+        q_list = []
+        for key, values in criteria.items():
+            for value in value:
+                q_list.append(Q(**(dict(key,value))))
+
+            first_q = q_list[0]
+
+            for q in q_list[1:]:
+                first_q = first_q | q
+
+        queryset = queryset.filter(first_q)
         if self._order_by is not None:
             queryset = queryset.order_by(*self._order_by)
         if limit:
@@ -145,8 +156,7 @@ class ParameterizedFilter(StandardFilter):
         .. note::
 
             There is one special name for *paramkey*, "limit_object_count", which limits
-            the query to a specified number of elements. On the Rue La La website, using
-            this name will probably break pagination, so **BE CAREFUL**.
+            the query to a specified number of elements. This may pagination, so **BE CAREFUL**.
 
         *criteria*: A dictionary specifying a set of Django-style `filtering criteria`_.
 
@@ -170,7 +180,7 @@ class ParameterizedFilter(StandardFilter):
             float,
         ]
 
-    def get_param_value(self, name, ctx, params):
+    def get_param_values(self, name, ctx, params):
         """
         *name*: The name of a parameter which is treated as a key in the *params* QueryDict.
         The value of the parameter will be parsed as a Python object, and that key-value pair
@@ -184,21 +194,24 @@ class ParameterizedFilter(StandardFilter):
         and successfully parsed in *params*.
 
         """
-        value = params.get(name)
+        values = params.get_list(name)
 
-        if self.value_fn is not None:
-            value = self.value_fn(value)
+        def apply_value_function(value):
+            if self.value_fn is not None:
+                value = self.value_fn(value)
 
-        for _type in self.datatypes:
-            try:
-                # if a cast doesn't work, a TypeError will be raised
-                # and we'll go on to the next one. if none work, it
-                # remains a string.
-                value = ctx.formatter.to_python_value(_type, value)
-                break
-            except TypeError:
-                continue
-        return value
+            for _type in self.datatypes:
+                try:
+                    # if a cast doesn't work, a TypeError will be raised
+                    # and we'll go on to the next one. if none work, it
+                    # remains a string.
+                    value = ctx.formatter.to_python_value(_type, value)
+                    break
+                except TypeError:
+                    continue
+            return value
+
+        return [apply_value_function(value) for value in values]
 
     def filter(self, ctx, params, queryset):
         """
@@ -206,7 +219,7 @@ class ParameterizedFilter(StandardFilter):
         """
         name = self.is_applicable(ctx, params)
         if name:
-            criteria = {self.paramkey: self.get_param_value(name, ctx, params)}
+            criteria = {self.paramkey: self.get_param_values(name, ctx, params)}
             criteria.update(self.criteria)
             queryset = self.apply(criteria, queryset)
         return queryset

@@ -129,6 +129,10 @@ class QuerySet(Mock):
                 filtered_elements =\
                     [element for element in self._elements if
                         getattr(element, attr[:-5]) >= value]
+            elif attr.endswith('__in'):
+                filtered_elements =\
+                    [element for element in self._elements if
+                        getattr(element, attr[:-4]) in value]
             else:
                 filtered_elements =\
                     [element for element in self._elements if
