@@ -1,6 +1,10 @@
+import operator
+import random
+
+from django.db.models import Q
+
 from mock import Mock
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
-import random
 
 
 class QuerySet(Mock):
@@ -41,8 +45,9 @@ class QuerySet(Mock):
     def count(self):
         return len(self._elements)
 
-    def filter(self, **kwargs):
-        queryset = QuerySet(*self._filter_elements(**kwargs))
+    def filter(self, *args, **kwargs):
+        q = Q(*args, **kwargs)
+        queryset = QuerySet(*self._filter_q(q))
         queryset._selected = set(queryset._selected)
         queryset._prefetched = set(queryset._prefetched)
         return queryset
@@ -110,6 +115,25 @@ class QuerySet(Mock):
 
         return queryset
 
+    def _filter_q(self, q):
+        if q.connector == 'AND':
+            opp = operator.and_
+        else:
+            opp = operator.or_
+
+        results = None
+        for child in q.children:
+            if isinstance(child, Q):
+                r = self._filter_q(child)
+            else:
+                r = self._filter_elements(**dict([child]))
+            if results is None:
+                results = r
+            else:
+                results = opp(results, r)
+
+        return results
+
     def _filter_elements(self, **kwargs):
         filtered_elements = self._elements
         for attr, value in kwargs.iteritems():
@@ -137,7 +161,7 @@ class QuerySet(Mock):
                 filtered_elements =\
                     [element for element in self._elements if
                         getattr(element, attr) == value]
-        return filtered_elements
+        return set(filtered_elements)
 
 
 class Manager(Mock):
