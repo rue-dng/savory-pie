@@ -105,15 +105,15 @@ class StandardFilter(object):
 
         q_list = []
         for key, values in criteria.items():
-            for value in value:
-                q_list.append(Q(**(dict(key,value))))
+            for value in values:
+                q_list.append(Q(**{key: value}))
 
-            first_q = q_list[0]
+            q_filters = q_list[0]
 
             for q in q_list[1:]:
-                first_q = first_q | q
+                q_filters = q_filters | q
 
-        queryset = queryset.filter(first_q)
+        queryset = queryset.filter(q_filters)
         if self._order_by is not None:
             queryset = queryset.order_by(*self._order_by)
         if limit:
@@ -209,9 +209,10 @@ class ParameterizedFilter(StandardFilter):
                     break
                 except TypeError:
                     continue
+
             return value
 
-        return [apply_value_function(value) for value in values]
+        return [apply_value_function(v) for v in values]
 
     def filter(self, ctx, params, queryset):
         """

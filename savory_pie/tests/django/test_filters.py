@@ -59,6 +59,7 @@ class FilterTest(unittest.TestCase):
             for name, value
             in filters.items()
         })
+
         for filter in _filters:
             queryset = filter.filter(ctx, params, queryset)
         return queryset
@@ -157,8 +158,9 @@ class ParameterizedFilterTest(FilterTest):
         ctx.formatter = JSONFormatter()
         foofilter = filters.ParameterizedFilter('foo', 'bar')
         params = {'bar': 'unparsable'}
-        value = foofilter.get_param_value('bar', ctx, params)
-        self.assertEqual('unparsable', value)
+        values = foofilter.get_param_values('bar', ctx, params)
+        self.assertEquals(1, len(values))
+        self.assertEqual('unparsable', values)
         # parsable data should be parsed as a correct type
         now = datetime.datetime.now(tz=pytz.UTC).replace(microsecond=0)
         for value, svalue in [(11, '11'),
@@ -170,15 +172,15 @@ class ParameterizedFilterTest(FilterTest):
             self.assertEqual(type(value), type(othervalue))
 
     def test_before(self):
-        results = self.apply_filters({'before': now.isoformat("T")})
+        results = self.apply_filters({'before': [now.isoformat("T")]})
         self.assertEqual(1, results.count())
-        self.assertEqual(['alice'], [x.name for x in results])
-        results = self.apply_filters({'before': (now + hour).isoformat("T")})
+        self.assertEqual(set(['alice']), set([x.name for x in results]))
+        results = self.apply_filters({'before': [(now + hour).isoformat("T")]})
         self.assertEqual(2, results.count())
-        self.assertEqual(['alice', 'charlie'], [x.name for x in results])
-        results = self.apply_filters({'before': (now + 2 * hour).isoformat("T")})
+        self.assertEqual(set(['alice', 'charlie']), set([x.name for x in results]))
+        results = self.apply_filters({'before': [(now + 2 * hour).isoformat("T")]})
         self.assertEqual(3, results.count())
-        self.assertEqual(['alice', 'charlie', 'bob'], [x.name for x in results])
+        self.assertEqual(set(['alice', 'charlie', 'bob']), set([x.name for x in results]))
 
     def test_no_earlier_than(self):
         results = self.apply_filters({'no_earlier_than': now.isoformat("T")})

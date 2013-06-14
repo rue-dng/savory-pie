@@ -72,7 +72,7 @@ class QuerySet(Mock):
         return QuerySet(*elements)
 
     def get(self, **kwargs):
-        filtered_elements = self._filter_elements(**kwargs)
+        filtered_elements = list(self._filter_elements(**kwargs))
         count = len(filtered_elements)
 
         if count == 0:
