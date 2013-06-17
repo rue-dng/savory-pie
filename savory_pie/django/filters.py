@@ -106,15 +106,14 @@ class StandardFilter(object):
         """
         # Django just uses 'limit' for this but there might be legitimate uses
         # in models for a field called 'limit', so use a more specific name.
-        limit = criteria.get('limit_object_count', None)
-        if limit:
-                criteria = dict(filter(lambda item: item[0] != 'limit_object_count', criteria.items()))
+        limit = criteria.pop('limit_object_count', None)
 
         queryset = self.build_queryset(criteria, queryset)
 
         if self._order_by is not None:
             queryset = queryset.order_by(*self._order_by)
         if limit:
+            limit = limit[0]
             queryset = queryset[:limit]
         return queryset
 
