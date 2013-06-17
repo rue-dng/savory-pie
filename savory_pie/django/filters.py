@@ -1,6 +1,7 @@
 import datetime
 from django.db.models import Q
 
+
 class StandardFilter(object):
     """Filters the results from a query on a :class:`savory_pie.django.resources.QuerySetResource`.
     Each QSR defines a set of available filters for that resource. For a model :class:`Foo` with a
@@ -107,8 +108,7 @@ class StandardFilter(object):
         # in models for a field called 'limit', so use a more specific name.
         limit = criteria.get('limit_object_count', None)
         if limit:
-                criteria = dict(filter(lambda item: item[0] != 'limit_object_count',
-                                   criteria.items()))
+                criteria = dict(filter(lambda item: item[0] != 'limit_object_count', criteria.items()))
 
         queryset = self.build_queryset(criteria, queryset)
 

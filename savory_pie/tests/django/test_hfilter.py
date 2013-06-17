@@ -7,6 +7,7 @@ from savory_pie.tests.mock_context import mock_context
 from savory_pie.django.haystack_filter import HaystackFilter
 from test_filters import Params
 
+
 class TestModel(models.Model):
     pass
 
