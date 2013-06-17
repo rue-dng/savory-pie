@@ -36,6 +36,7 @@ _filters = [
     filters.ParameterizedFilter('name_exact', 'name'),
     filters.ParameterizedFilter('before', 'when__lt'),
     filters.ParameterizedFilter('no_earlier_than', 'when__gte'),
+    filters.ParameterizedFilter('names', 'name')
 ]
 
 class Params():
@@ -195,3 +196,8 @@ class ParameterizedFilterTest(FilterTest):
         self.assertEqual(['bob'], [x.name for x in results])
         results = self.apply_filters({'no_earlier_than': (now + 2 * hour).isoformat("T")})
         self.assertEqual(0, results.count())
+
+    def test_multiple_names(self):
+        results = self.apply_filters({'names': ['charlie', 'bob']})
+        self.assertEqual(2, results.count())
+        self.assertEqual(set(['charlie', 'bob']), set([x.name for x in results]))
