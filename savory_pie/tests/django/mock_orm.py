@@ -116,6 +116,9 @@ class QuerySet(Mock):
         return queryset
 
     def _filter_q(self, q):
+        if not q.children:
+            return self._elements
+
         if q.connector == 'AND':
             opp = operator.and_
         else:

@@ -46,7 +46,11 @@ class Params():
         return iter(self.params)
 
     def get_list(self, name):
-        return self.params[name]
+        value = self.params[name]
+        if isinstance(value, list):
+            return value
+        else:
+            return [value]
 
 
 class FilterTest(unittest.TestCase):
@@ -172,13 +176,13 @@ class ParameterizedFilterTest(FilterTest):
             self.assertEqual(type(value), type(othervalue))
 
     def test_before(self):
-        results = self.apply_filters({'before': [now.isoformat("T")]})
+        results = self.apply_filters({'before': now.isoformat("T")})
         self.assertEqual(1, results.count())
         self.assertEqual(set(['alice']), set([x.name for x in results]))
-        results = self.apply_filters({'before': [(now + hour).isoformat("T")]})
+        results = self.apply_filters({'before': (now + hour).isoformat("T")})
         self.assertEqual(2, results.count())
         self.assertEqual(set(['alice', 'charlie']), set([x.name for x in results]))
-        results = self.apply_filters({'before': [(now + 2 * hour).isoformat("T")]})
+        results = self.apply_filters({'before': (now + 2 * hour).isoformat("T")})
         self.assertEqual(3, results.count())
         self.assertEqual(set(['alice', 'charlie', 'bob']), set([x.name for x in results]))
 

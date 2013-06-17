@@ -103,17 +103,10 @@ class StandardFilter(object):
                 criteria = dict(filter(lambda item: item[0] != 'limit_object_count',
                                    criteria.items()))
 
-        q_list = []
-        for key, values in criteria.items():
-            for value in values:
-                q_list.append(Q(**{key: value}))
+        q = Q(**criteria)
+        q.connector = 'OR'
+        queryset = queryset.filter(q)
 
-            q_filters = q_list[0]
-
-            for q in q_list[1:]:
-                q_filters = q_filters | q
-
-        queryset = queryset.filter(q_filters)
         if self._order_by is not None:
             queryset = queryset.order_by(*self._order_by)
         if limit:
