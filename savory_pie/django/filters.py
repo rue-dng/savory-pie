@@ -92,6 +92,13 @@ class StandardFilter(object):
         else:
             return False
 
+    def build_queryset(self, criteria, queryset):
+        q = Q()
+        for key, value in criteria.items():
+            q.add((key, value), 'OR')
+        queryset = queryset.filter(q)
+        return queryset
+
     def apply(self, criteria, queryset):
         """
         Apply filtering and sorting criteria to a queryset, return a result queryset.
@@ -103,9 +110,7 @@ class StandardFilter(object):
                 criteria = dict(filter(lambda item: item[0] != 'limit_object_count',
                                    criteria.items()))
 
-        q = Q(**criteria)
-        q.connector = 'OR'
-        queryset = queryset.filter(q)
+        queryset = self.build_queryset(criteria, queryset)
 
         if self._order_by is not None:
             queryset = queryset.order_by(*self._order_by)
@@ -152,6 +157,7 @@ class ParameterizedFilter(StandardFilter):
             the query to a specified number of elements. This may pagination, so **BE CAREFUL**.
 
         *criteria*: A dictionary specifying a set of Django-style `filtering criteria`_.
+        It expects values to be a list.
 
         *order_by*: An optional list of model field names used to sort the query results.
         Preface the fiield name with a minus-sign to reverse the order.
@@ -183,7 +189,7 @@ class ParameterizedFilter(StandardFilter):
 
         *params*: A QueryDict of key-value pairs taken from a URL, wherein values are all strings.
 
-        *criteria*: A dictionary to be updated, assuming the value for key *name* can be found
+        *criteria*: A dictionary to be updated, assuming the values for key *name* can be found
         and successfully parsed in *params*.
 
         """
@@ -206,6 +212,15 @@ class ParameterizedFilter(StandardFilter):
             return value
 
         return [apply_value_function(v) for v in values]
+
+    def build_queryset(self, criteria, queryset):
+        q = Q()
+        for key, values in criteria.items():
+            for value in values:
+                q.add((key, value), 'OR')
+
+        queryset = queryset.filter(q)
+        return queryset
 
     def filter(self, ctx, params, queryset):
         """
