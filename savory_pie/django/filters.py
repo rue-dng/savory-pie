@@ -153,7 +153,7 @@ class ParameterizedFilter(StandardFilter):
         .. note::
 
             There is one special name for *paramkey*, "limit_object_count", which limits
-            the query to a specified number of elements. This may pagination, so **BE CAREFUL**.
+            the query to a specified number of elements. This may break pagination, so **BE CAREFUL**.
 
         *criteria*: A dictionary specifying a set of Django-style `filtering criteria`_.
         It expects values to be a list.
