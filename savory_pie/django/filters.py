@@ -1,4 +1,5 @@
 import datetime
+from django.db.models import Q
 
 
 class StandardFilter(object):
@@ -61,7 +62,7 @@ class StandardFilter(object):
     def __unicode__(self):
         return u'<' + self.__class__.__name__ + ': ' + self.name + '>'
 
-    def get_param_value(self, name, ctx, params):
+    def get_param_values(self, name, ctx, params):
         """
         *name*: The name of a parameter which is treated as a key in the *params* QueryDict.
 
@@ -92,20 +93,27 @@ class StandardFilter(object):
         else:
             return False
 
+    def build_queryset(self, criteria, queryset):
+        q = Q()
+        for key, value in criteria.items():
+            q.add((key, value), 'OR')
+        queryset = queryset.filter(q)
+        return queryset
+
     def apply(self, criteria, queryset):
         """
         Apply filtering and sorting criteria to a queryset, return a result queryset.
         """
         # Django just uses 'limit' for this but there might be legitimate uses
         # in models for a field called 'limit', so use a more specific name.
-        limit = criteria.get('limit_object_count', None)
-        if limit:
-            criteria = dict(filter(lambda item: item[0] != 'limit_object_count',
-                                   criteria.items()))
-        queryset = queryset.filter(**criteria)
+        limit = criteria.pop('limit_object_count', None)
+
+        queryset = self.build_queryset(criteria, queryset)
+
         if self._order_by is not None:
             queryset = queryset.order_by(*self._order_by)
         if limit:
+            limit = limit[0]
             queryset = queryset[:limit]
         return queryset
 
@@ -145,10 +153,10 @@ class ParameterizedFilter(StandardFilter):
         .. note::
 
             There is one special name for *paramkey*, "limit_object_count", which limits
-            the query to a specified number of elements. On the Rue La La website, using
-            this name will probably break pagination, so **BE CAREFUL**.
+            the query to a specified number of elements. This may break pagination, so **BE CAREFUL**.
 
         *criteria*: A dictionary specifying a set of Django-style `filtering criteria`_.
+        It expects values to be a list.
 
         *order_by*: An optional list of model field names used to sort the query results.
         Preface the fiield name with a minus-sign to reverse the order.
@@ -170,7 +178,7 @@ class ParameterizedFilter(StandardFilter):
             float,
         ]
 
-    def get_param_value(self, name, ctx, params):
+    def get_param_values(self, name, ctx, params):
         """
         *name*: The name of a parameter which is treated as a key in the *params* QueryDict.
         The value of the parameter will be parsed as a Python object, and that key-value pair
@@ -180,25 +188,38 @@ class ParameterizedFilter(StandardFilter):
 
         *params*: A QueryDict of key-value pairs taken from a URL, wherein values are all strings.
 
-        *criteria*: A dictionary to be updated, assuming the value for key *name* can be found
+        *criteria*: A dictionary to be updated, assuming the values for key *name* can be found
         and successfully parsed in *params*.
 
         """
-        value = params.get(name)
+        values = params.get_list(name)
 
-        if self.value_fn is not None:
-            value = self.value_fn(value)
+        def apply_value_function(value):
+            if self.value_fn is not None:
+                value = self.value_fn(value)
 
-        for _type in self.datatypes:
-            try:
-                # if a cast doesn't work, a TypeError will be raised
-                # and we'll go on to the next one. if none work, it
-                # remains a string.
-                value = ctx.formatter.to_python_value(_type, value)
-                break
-            except TypeError:
-                continue
-        return value
+            for _type in self.datatypes:
+                try:
+                    # if a cast doesn't work, a TypeError will be raised
+                    # and we'll go on to the next one. if none work, it
+                    # remains a string.
+                    value = ctx.formatter.to_python_value(_type, value)
+                    break
+                except TypeError:
+                    continue
+
+            return value
+
+        return [apply_value_function(v) for v in values]
+
+    def build_queryset(self, criteria, queryset):
+        q = Q()
+        for key, values in criteria.items():
+            for value in values:
+                q.add((key, value), 'OR')
+
+        queryset = queryset.filter(q)
+        return queryset
 
     def filter(self, ctx, params, queryset):
         """
@@ -206,7 +227,7 @@ class ParameterizedFilter(StandardFilter):
         """
         name = self.is_applicable(ctx, params)
         if name:
-            criteria = {self.paramkey: self.get_param_value(name, ctx, params)}
+            criteria = {self.paramkey: self.get_param_values(name, ctx, params)}
             criteria.update(self.criteria)
             queryset = self.apply(criteria, queryset)
         return queryset

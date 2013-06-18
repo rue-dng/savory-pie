@@ -36,7 +36,23 @@ _filters = [
     filters.ParameterizedFilter('name_exact', 'name'),
     filters.ParameterizedFilter('before', 'when__lt'),
     filters.ParameterizedFilter('no_earlier_than', 'when__gte'),
+    filters.ParameterizedFilter('names', 'name')
 ]
+
+
+class Params():
+    def __init__(self, params):
+        self.params = params
+
+    def __iter__(self):
+        return iter(self.params)
+
+    def get_list(self, name):
+        value = self.params[name]
+        if isinstance(value, list):
+            return value
+        else:
+            return [value]
 
 
 class FilterTest(unittest.TestCase):
@@ -44,11 +60,12 @@ class FilterTest(unittest.TestCase):
     def apply_filters(self, filters):
         ctx = mock_context()
         queryset = _users
-        params = {
+        params = Params({
             ctx.formatter.convert_to_public_property(name): value
             for name, value
             in filters.items()
-        }
+        })
+
         for filter in _filters:
             queryset = filter.filter(ctx, params, queryset)
         return queryset
@@ -139,43 +156,49 @@ class ParameterizedFilterTest(FilterTest):
     def test_name_exact_charlie(self):
         results = self.apply_filters({'name_exact': 'charlie'})
         self.assertEqual(1, results.count())
-        self.assertEqual(['charlie'], [x.name for x in results])
+        self.assertEqual(set(['charlie']), set([x.name for x in results]))
 
     def test_parameter_data_types(self):
         # get_param_value should assume unparsable data remains a string
         ctx = mock_context()
         ctx.formatter = JSONFormatter()
         foofilter = filters.ParameterizedFilter('foo', 'bar')
-        params = {'bar': 'unparsable'}
-        value = foofilter.get_param_value('bar', ctx, params)
-        self.assertEqual('unparsable', value)
+        params = Params({'bar': 'unparsable'})
+        values = foofilter.get_param_values('bar', ctx, params)
+        self.assertEquals(1, len(values))
+        self.assertEqual(set(['unparsable']), set(values))
         # parsable data should be parsed as a correct type
         now = datetime.datetime.now(tz=pytz.UTC).replace(microsecond=0)
         for value, svalue in [(11, '11'),
                               (3.14159, '3.14159'),
                               (now, now.isoformat("T"))]:
-            params = {'bar': svalue}
-            othervalue = foofilter.get_param_value('bar', ctx, params)
-            self.assertEqual(value, othervalue)
-            self.assertEqual(type(value), type(othervalue))
+            params = Params({'bar': svalue})
+            othervalues = foofilter.get_param_values('bar', ctx, params)
+            self.assertEqual(set([value]), set(othervalues))
+            self.assertEqual(type(value), type(othervalues[0]))
 
     def test_before(self):
         results = self.apply_filters({'before': now.isoformat("T")})
         self.assertEqual(1, results.count())
-        self.assertEqual(['alice'], [x.name for x in results])
+        self.assertEqual(set(['alice']), set([x.name for x in results]))
         results = self.apply_filters({'before': (now + hour).isoformat("T")})
         self.assertEqual(2, results.count())
-        self.assertEqual(['alice', 'charlie'], [x.name for x in results])
+        self.assertEqual(set(['alice', 'charlie']), set([x.name for x in results]))
         results = self.apply_filters({'before': (now + 2 * hour).isoformat("T")})
         self.assertEqual(3, results.count())
-        self.assertEqual(['alice', 'charlie', 'bob'], [x.name for x in results])
+        self.assertEqual(set(['alice', 'charlie', 'bob']), set([x.name for x in results]))
 
     def test_no_earlier_than(self):
         results = self.apply_filters({'no_earlier_than': now.isoformat("T")})
         self.assertEqual(2, results.count())
-        self.assertEqual(['charlie', 'bob'], [x.name for x in results])
+        self.assertEqual(set(['charlie', 'bob']), set([x.name for x in results]))
         results = self.apply_filters({'no_earlier_than': (now + hour).isoformat("T")})
         self.assertEqual(1, results.count())
-        self.assertEqual(['bob'], [x.name for x in results])
+        self.assertEqual(set(['bob']), set([x.name for x in results]))
         results = self.apply_filters({'no_earlier_than': (now + 2 * hour).isoformat("T")})
         self.assertEqual(0, results.count())
+
+    def test_multiple_names(self):
+        results = self.apply_filters({'names': ['charlie', 'bob']})
+        self.assertEqual(2, results.count())
+        self.assertEqual(set(['charlie', 'bob']), set([x.name for x in results]))

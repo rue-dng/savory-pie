@@ -5,6 +5,7 @@ from django.db import models
 
 from savory_pie.tests.mock_context import mock_context
 from savory_pie.django.haystack_filter import HaystackFilter
+from test_filters import Params
 
 
 class TestModel(models.Model):
@@ -29,7 +30,7 @@ class HaystackFilterTest(unittest.TestCase):
         haystack_filter = HaystackFilter()
         haystack_filter.filter(
             mock_context(),
-            {'q': 'foo'},
+            Params({'q': 'foo'}),
             queryset,
         )
 
@@ -60,7 +61,7 @@ class HaystackFilterTest(unittest.TestCase):
         haystack_filter = HaystackFilter()
         haystack_filter.filter(
             mock_context(),
-            {'q': 'foo bar baz'},
+            Params({'q': 'foo bar baz'}),
             queryset,
         )
 
