@@ -27,15 +27,17 @@ def to_list(items):
     return items
 
 
-class _ParamsDictImpl(object):
+class ParamsDict(object):
     """
-    Simple class that wraps a dictionary and returns a list, this is used since filters
-    expects a list.
+    Simple class that wraps a dictionary and returns a list.
+    This is used because filters support getting a list of values given a parameter,
+    so when using a filter within a queryset, the filter (in the format of a dict)
+    needs to support list related functions, this class acts a wrapper around the filter.
 
         Parameters:
 
             ``params``
-                This is a dictionary of params
+                This is a dictionary of parameters
     """
     def __init__(self, params):
         self._params = params
@@ -47,7 +49,10 @@ class _ParamsDictImpl(object):
         return key in self._params
 
     def __getitem__(self, key):
-        return self._params.get(key, None)
+        if key in self._params:
+            return self._params.get(key)
+        else:
+            raise KeyError
 
     def get(self, key, default=None):
         return self._params.get(key, default)
