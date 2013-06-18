@@ -156,7 +156,7 @@ class ParameterizedFilterTest(FilterTest):
     def test_name_exact_charlie(self):
         results = self.apply_filters({'name_exact': 'charlie'})
         self.assertEqual(1, results.count())
-        self.assertEqual(['charlie'], [x.name for x in results])
+        self.assertEqual(set(['charlie']), set([x.name for x in results]))
 
     def test_parameter_data_types(self):
         # get_param_value should assume unparsable data remains a string
@@ -166,7 +166,7 @@ class ParameterizedFilterTest(FilterTest):
         params = Params({'bar': 'unparsable'})
         values = foofilter.get_param_values('bar', ctx, params)
         self.assertEquals(1, len(values))
-        self.assertEqual(['unparsable'], values)
+        self.assertEqual(set(['unparsable']), set(values))
         # parsable data should be parsed as a correct type
         now = datetime.datetime.now(tz=pytz.UTC).replace(microsecond=0)
         for value, svalue in [(11, '11'),
@@ -174,7 +174,7 @@ class ParameterizedFilterTest(FilterTest):
                               (now, now.isoformat("T"))]:
             params = Params({'bar': svalue})
             othervalues = foofilter.get_param_values('bar', ctx, params)
-            self.assertEqual([value], othervalues)
+            self.assertEqual(set([value]), set(othervalues))
             self.assertEqual(type(value), type(othervalues[0]))
 
     def test_before(self):
@@ -191,10 +191,10 @@ class ParameterizedFilterTest(FilterTest):
     def test_no_earlier_than(self):
         results = self.apply_filters({'no_earlier_than': now.isoformat("T")})
         self.assertEqual(2, results.count())
-        self.assertEqual(['charlie', 'bob'], [x.name for x in results])
+        self.assertEqual(set(['charlie', 'bob']), set([x.name for x in results]))
         results = self.apply_filters({'no_earlier_than': (now + hour).isoformat("T")})
         self.assertEqual(1, results.count())
-        self.assertEqual(['bob'], [x.name for x in results])
+        self.assertEqual(set(['bob']), set([x.name for x in results]))
         results = self.apply_filters({'no_earlier_than': (now + 2 * hour).isoformat("T")})
         self.assertEqual(0, results.count())
 
