@@ -70,4 +70,3 @@ class ParamsDict(object):
             return []
         else:
             return [type(x) for x in list]
-
