@@ -113,9 +113,12 @@ class AttributeFieldWithModel(AttributeField):
             ``model``
                 A model class that is the model of the second last attribute, used to get at the object of this model
 
+            ``extras``
+                Extra values to be added to the filter call
+
     .. code-block:: python
 
-        AttributeFieldWithModel('foo.property', type=int, model=ModelFoo)
+        AttributeFieldWithModel('foo.property', type=int, model=ModelFoo, extras={'type': 'bar'})
 
     .. code-block:: javascript
 
@@ -132,6 +135,7 @@ class AttributeFieldWithModel(AttributeField):
     """
     def __init__(self, *args, **kwargs):
         self._model = kwargs.pop('model', {})
+        self._extras = kwargs.pop('extras', {})
         super(AttributeFieldWithModel, self).__init__(*args, **kwargs)
 
     def _get_object_with_model(self, root_obj, source_dict):
@@ -143,7 +147,9 @@ class AttributeFieldWithModel(AttributeField):
                 # only look for the model, if we are at the second last level,
                 # i.e. if it's foo.bar.property, only do this when we are at 'bar'
                 if i == len(self._attrs)-2:
-                    new_obj = self._model.objects.get(**{self._bare_attribute: source_dict[self._bare_attribute]})
+                    filter_parms = self._extras.copy()
+                    filter_parms[self._bare_attribute] = source_dict[self._bare_attribute]
+                    new_obj = self._model.objects.get(**filter_parms)
                     setattr(obj, attr, new_obj)
                     obj = new_obj
                 else:
