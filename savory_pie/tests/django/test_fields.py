@@ -220,12 +220,48 @@ class AttributeFieldWithModelsTest(unittest.TestCase):
         }
         field = AttributeFieldWithModel(attribute='foo.bar', type=int, model=FooModel)
 
-        target_object = Mock(name='target')
-        target_object.foo.side_effect = ObjectDoesNotExist
+        class Target(object):
+            def __getattr__(self, key):
+                if key == 'foo':
+                    raise ObjectDoesNotExist
+                return self
+
+        target_object = Target()
 
         field.handle_incoming(mock_context(), source_dict, target_object)
 
         self.assertEqual(target_object.foo.bar, 20)
+
+    def test_simple_incoming_with_extras(self):
+        class FooModel(mock_orm.Model):
+            bar = Mock()
+
+        FooModel.objects = Mock(return_value=mock_orm.QuerySet(
+            mock_orm.Model(pk=4, bar=20, other='A'),
+            mock_orm.Model(pk=4, bar=20, other='B'),
+        ))
+        source_dict = {
+            'bar': 20,
+        }
+        field = AttributeFieldWithModel(
+            attribute='foo.bar',
+            type=int,
+            model=FooModel,
+            extras={'other': 'A'}
+        )
+
+        class Target(object):
+            def __getattr__(self, key):
+                if key == 'foo':
+                    raise ObjectDoesNotExist
+                return self
+
+        target_object = Target()
+
+        field.handle_incoming(mock_context(), source_dict, target_object)
+
+        self.assertEqual(target_object.foo.bar, 20)
+        FooModel.objects.get.assert_called_with(bar=20, other='A')
 
 
 class URIResourceFieldTest(unittest.TestCase):
