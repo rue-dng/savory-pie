@@ -1,6 +1,8 @@
 import logging
 import pprint
 
+from django.db import connection
+
 
 def getLogger():
     logger = logging.getLogger(__name__)
@@ -13,6 +15,33 @@ def getLogger():
         if logger.isEnabledFor(logging.DEBUG):
             logger._log(logging.DEBUG, '\n' + pprint.pformat(obj), [], {})
     logger.pprint = logger_pprint
+
+    def logger_tb(logger=logger):
+        if logger.isEnabledFor(logging.DEBUG):
+            from traceback import extract_stack
+            logger._log(logging.DEBUG, '\n' + pprint.pformat(extract_stack()[:-1]), [], {})
+    logger.tb = logger_tb
+
+    # show database queries
+    def logger_before_queries(txt=None, logger=logger):
+        if logger.isEnabledFor(logging.DEBUG):
+            if txt is not None:
+                logger._log(logging.DEBUG, txt, [], {})
+            logger._num_queries = len(connection.queries)
+    def logger_after_queries(obj=None, logger=logger):
+        if logger.isEnabledFor(logging.DEBUG):
+            queries = connection.queries[logger._num_queries:]
+            if len(queries) > 0:
+                logger._log(logging.DEBUG, 'Database hits: %d' % len(queries), [], {})
+                for query in queries:
+                    about = 'Database hit, %s seconds\n' % query['time']
+                    logger._log(logging.DEBUG, about + query['sql'], [], {})
+            if obj is not None:
+                logger._log(logging.DEBUG, '\n' + pprint.pformat(obj), [], {})
+            logger._num_queries = len(connection.queries)
+    logger.before_queries = logger_before_queries
+    logger.after_queries = logger_after_queries
+
     return logger
 
 
