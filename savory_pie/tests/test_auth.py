@@ -1,6 +1,25 @@
 import unittest
 from mock import Mock
-from savory_pie.auth import UserPermissionValidator, authorization, AuthorizationError
+from savory_pie.auth import UserPermissionValidator, authorization, AuthorizationError, authorization_adapter
+
+
+class AuthorizationAdapterTestCase(unittest.TestCase):
+
+    def test_adapter(self):
+        field = Mock(spec=['to_python_value', '_get', '_compute_property'], name='field')
+        field._compute_property.return_value = 'source_key'
+        field.to_python_value.return_value = 'source'
+        source_dict = {'source_key': 'value-source'}
+        field._get.return_value = 'target'
+
+        args_ctx, args_target_obj, args_source, args_target = authorization_adapter(field, 'ctx', source_dict, 'target_obj')
+
+        field.to_python_value.called_with('value-source')
+
+        self.assertEqual('ctx', args_ctx)
+        self.assertEqual('target_obj', args_target_obj)
+        self.assertEqual('source', args_source)
+        self.assertEqual('target', args_target)
 
 
 class UserPermissionValidatorTestCase(unittest.TestCase):
