@@ -5,34 +5,10 @@ def authorization_adapter(field, ctx, source_dict, target_obj):
     """
     Default adapter works on single field (non iterable)
     """
-    source = field.to_python_value(ctx, source_dict[field._compute_property(ctx)])
+    name = field._compute_property(ctx)
+    source = field.to_python_value(ctx, source_dict[name])
     target = field._get(target_obj)
-    return ctx, target_obj, source, target
-
-
-class UserPermissionValidator(object):
-    """
-    Permissions Validator is used to tie into an authorization.  Is used in conjunction with the authorization decorator
-    Added to the field init method.
-    """
-    def __init__(self, permission_name):
-        self.permission_name = permission_name
-
-    def is_write_authorized(self, ctx, target_obj, source, target):
-        """
-        Leverages the users has_perm(key) method to leverage the authorization.
-        Only check if the source and target have changed.
-        """
-        user = ctx.user
-
-        if source != target:
-            return user.has_perm(self.permission_name)
-
-        return True
-
-    def fill_schema(self, schema_dict):
-        # TODO: implement fill_schema
-        pass
+    return ctx, target_obj, source, target, name
 
 
 class authorization(object):
@@ -55,10 +31,12 @@ class authorization(object):
         def inner(field, ctx, source_dict, target_obj):
             permission = field.permission
             if permission:
+                args = self.auth_adapter(field, ctx, source_dict, target_obj)
+                name = args.pop()
                 if permission.is_write_authorized(*self.auth_adapter(field, ctx, source_dict, target_obj)):
                     return fn(ctx, source_dict, target_obj)
                 else:
-                    raise AuthorizationError
+                    raise AuthorizationError(name)
             else:
                 return fn(ctx, source_dict, target_obj)
 

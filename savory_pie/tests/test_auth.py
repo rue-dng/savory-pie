@@ -1,6 +1,6 @@
 import unittest
 from mock import Mock
-from savory_pie.auth import UserPermissionValidator, authorization, authorization_adapter
+from savory_pie.auth import authorization, authorization_adapter
 from savory_pie.errors import AuthorizationError
 
 
@@ -21,23 +21,6 @@ class AuthorizationAdapterTestCase(unittest.TestCase):
         self.assertEqual('target_obj', args_target_obj)
         self.assertEqual('source', args_source)
         self.assertEqual('target', args_target)
-
-
-class UserPermissionValidatorTestCase(unittest.TestCase):
-
-    def test_target_source_changed(self):
-        validator = UserPermissionValidator('value')
-        ctx = Mock(spec=['user'])
-        ctx.user.has_perm.return_value = False
-        self.assertFalse(validator.is_write_authorized(ctx, None, 'a', 'b'))
-        ctx.user.has_perm.assert_called_with('value')
-
-    def test_target_source_not_changed(self):
-        validator = UserPermissionValidator('value')
-        ctx = Mock(spec=['user'])
-        # Should not call has_perm
-        ctx.user.has_perm.side_effect = Exception
-        self.assertTrue(validator.is_write_authorized(ctx, None, 'a', 'a'))
 
 
 class AuthorizationDecoratorTestCase(unittest.TestCase):
