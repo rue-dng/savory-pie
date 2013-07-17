@@ -56,7 +56,7 @@ class authorization(object):
         If the user does not have an the authorization raise an AuthorizationError
         """
         def inner(field, ctx, source_dict, target_obj):
-            permission = field
+            permission = field.permission
             if permission:
                 if permission.is_write_authorized(*self.auth_adapter(field, ctx, source_dict, target_obj)):
                     return fn(ctx, source_dict, target_obj)
