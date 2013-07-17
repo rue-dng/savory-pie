@@ -13,7 +13,7 @@ class AuthorizationAdapterTestCase(unittest.TestCase):
         source_dict = {'source_key': 'value-source'}
         field._get.return_value = 'target'
 
-        args_ctx, args_target_obj, args_source, args_target = authorization_adapter(field, 'ctx', source_dict, 'target_obj')
+        args_ctx, args_target_obj, args_source, args_target, args_name = authorization_adapter(field, 'ctx', source_dict, 'target_obj')
 
         field.to_python_value.called_with('value-source')
 
@@ -21,6 +21,7 @@ class AuthorizationAdapterTestCase(unittest.TestCase):
         self.assertEqual('target_obj', args_target_obj)
         self.assertEqual('source', args_source)
         self.assertEqual('target', args_target)
+        self.assertEqual('source_key', args_name)
 
 
 class AuthorizationDecoratorTestCase(unittest.TestCase):
@@ -36,7 +37,7 @@ class AuthorizationDecoratorTestCase(unittest.TestCase):
         field.permission = None
         value = auth(function)
         value(field, 'ctx', 'source_dict', 'target_object')
-        function.assert_called_with('ctx', 'source_dict', 'target_object')
+        function.assert_called_with(field, 'ctx', 'source_dict', 'target_object')
 
     def test_authorized(self):
         def adapter(*args):
@@ -50,7 +51,7 @@ class AuthorizationDecoratorTestCase(unittest.TestCase):
         value = auth(function)
         value(field, 'ctx', 'source_dict', 'target_object')
         field.permission.is_write_authorized.assert_called_with('new_args')
-        function.assert_called_with('ctx', 'source_dict', 'target_object')
+        function.assert_called_with(field, 'ctx', 'source_dict', 'target_object')
 
     def test_not_authorized(self):
         def adapter(*args):

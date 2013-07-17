@@ -51,7 +51,7 @@ def api_view(root_resource):
             else:
                 return _not_allowed_method(ctx, resource, request)
         except AuthorizationError as e:
-            return _access_denied(field_name=e.name)
+            return _access_denied(ctx, field_name=e.name)
         except:
             import traceback
             return _internal_error(ctx, request, traceback.format_exc())
@@ -111,10 +111,10 @@ def _not_found(ctx, request):
     return HttpResponse(status=404)
 
 
-def _access_denied(ctx, resource, request, field_name=''):
+def _access_denied(ctx, field_name=''):
     response = HttpResponse(status=403)
     ctx.formatter.write_to(
-        {'validation_errors': ['Modification of field %s not authorized'.format(field_name)]},
+        {'validation_errors': ['Modification of field {0} not authorized'.format(field_name)]},
         response
     )
     return response

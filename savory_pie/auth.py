@@ -34,10 +34,10 @@ class authorization(object):
                 args = self.auth_adapter(field, ctx, source_dict, target_obj)
                 name = args.pop()
                 if permission.is_write_authorized(*self.auth_adapter(field, ctx, source_dict, target_obj)):
-                    return fn(ctx, source_dict, target_obj)
+                    return fn(field, ctx, source_dict, target_obj)
                 else:
                     raise AuthorizationError(name)
             else:
-                return fn(ctx, source_dict, target_obj)
+                return fn(field, ctx, source_dict, target_obj)
 
         return inner
