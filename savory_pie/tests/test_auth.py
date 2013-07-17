@@ -1,6 +1,7 @@
 import unittest
 from mock import Mock
-from savory_pie.auth import UserPermissionValidator, authorization, AuthorizationError, authorization_adapter
+from savory_pie.auth import UserPermissionValidator, authorization, authorization_adapter
+from savory_pie.errors import AuthorizationError
 
 
 class AuthorizationAdapterTestCase(unittest.TestCase):

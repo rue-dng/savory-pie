@@ -1,5 +1,4 @@
-class AuthorizationError(Exception):
-    pass
+from savory_pie.errors import AuthorizationError
 
 
 def authorization_adapter(field, ctx, source_dict, target_obj):
