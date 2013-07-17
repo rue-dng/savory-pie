@@ -1,5 +1,3 @@
-
-
 class AuthorizationError(Exception):
     pass
 
