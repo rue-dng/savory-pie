@@ -33,11 +33,9 @@ class authorization(object):
             if permission:
                 args = self.auth_adapter(field, ctx, source_dict, target_obj)
                 name = args.pop()
-                if permission.is_write_authorized(*self.auth_adapter(field, ctx, source_dict, target_obj)):
-                    return fn(field, ctx, source_dict, target_obj)
-                else:
+                if not permission.is_write_authorized(*self.auth_adapter(field, ctx, source_dict, target_obj)):
                     raise AuthorizationError(name)
-            else:
-                return fn(field, ctx, source_dict, target_obj)
+
+            return fn(field, ctx, source_dict, target_obj)
 
         return inner
