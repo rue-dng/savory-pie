@@ -63,10 +63,6 @@ def _strip_query_string(path):
     return path.split('?', 1)[0]
 
 
-def _process_unautherized(ctx, resource, request):
-    pass
-
-
 def _process_get(ctx, resource, request):
     if 'GET' in resource.allowed_methods:
         content_dict = resource.get(ctx, _ParamsImpl(request.GET))
