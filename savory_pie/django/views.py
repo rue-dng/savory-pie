@@ -1,6 +1,7 @@
 from django.http import HttpResponse, StreamingHttpResponse
 
 from savory_pie.context import APIContext
+from savory_pie.errors import AuthorizationError
 from savory_pie.formatters import JSONFormatter
 from savory_pie.django import validators
 
@@ -49,6 +50,8 @@ def api_view(root_resource):
                 return _process_delete(ctx, resource, request)
             else:
                 return _not_allowed_method(ctx, resource, request)
+        except AuthorizationError as e:
+            return _access_denied(ctx, field_name=e.name)
         except:
             import traceback
             return _internal_error(ctx, request, traceback.format_exc())
@@ -102,6 +105,15 @@ def _process_delete(ctx, resource, request):
 
 def _not_found(ctx, request):
     return HttpResponse(status=404)
+
+
+def _access_denied(ctx, field_name=''):
+    response = HttpResponse(status=403)
+    ctx.formatter.write_to(
+        {'validation_errors': ['Modification of field {0} not authorized'.format(field_name)]},
+        response
+    )
+    return response
 
 
 def _not_allowed_method(ctx, resource, request):
