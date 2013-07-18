@@ -1,5 +1,6 @@
 import collections
 import functools
+from savory_pie.auth import authorization, authorization_adapter
 from savory_pie.resources import EmptyParams
 from savory_pie.django.validators import validate
 from savory_pie.errors import SavoryPieError
@@ -69,12 +70,14 @@ class AttributeField(Field):
                  published_property=None,
                  use_prefetch=False,
                  read_only=False,
-                 validator=None):
+                 validator=None,
+                 permission=None):
         self._full_attribute = attribute
         self._type = type
         self._published_property = published_property
         self._read_only = read_only
         self.validator = validator or []
+        self.permission = permission
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
@@ -111,6 +114,7 @@ class AttributeField(Field):
         return setattr(obj, self._bare_attribute, value)
 
     @read_only_noop
+    @authorization(authorization_adapter)
     def handle_incoming(self, ctx, source_dict, target_obj):
         with ctx.target(target_obj):
             self._set(
@@ -175,12 +179,14 @@ class URIResourceField(Field):
                  resource_class,
                  published_property=None,
                  read_only=False,
-                 validator=None):
+                 validator=None,
+                 permission=None):
         self._attribute = attribute
         self._resource_class = resource_class
         self._published_property = published_property
         self._read_only = read_only
         self.validator = validator or []
+        self.permission = permission
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
@@ -189,6 +195,7 @@ class URIResourceField(Field):
             return ctx.formatter.convert_to_public_property(self._attribute)
 
     @read_only_noop
+    @authorization(authorization_adapter)
     def handle_incoming(self, ctx, source_dict, target_obj):
         uri = source_dict[self._compute_property(ctx)]
 
@@ -232,10 +239,12 @@ class CompleteURIResourceField(Field):
             {'completeResourceUri': '/api/other/{pk}'}
     """
 
-    def __init__(self, resource_class, read_only=False):
+    def __init__(self, resource_class, read_only=False, permission=None):
         self._resource_class = resource_class
         self._read_only = read_only
+        self.permission = permission
 
+    @authorization(authorization_adapter)
     def handle_incoming(self, ctx, source_dict, target_obj):
         pass
 
@@ -280,12 +289,14 @@ class URIListResourceField(Field):
                  resource_class,
                  published_property=None,
                  read_only=False,
-                 validator=None):
+                 validator=None,
+                 permission=None):
         self._attribute = attribute
         self._resource_class = resource_class
         self._published_property = published_property
         self._read_only = read_only
         self.validator = validator or []
+        self.permission = permission
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
@@ -297,6 +308,7 @@ class URIListResourceField(Field):
         return value
 
     @read_only_noop
+    @authorization(authorization_adapter)
     def handle_incoming(self, ctx, source_dict, target_obj):
         attribute = getattr(target_obj, self._attribute)
 
@@ -391,12 +403,14 @@ class SubObjectResourceField(Field):
                  resource_class,
                  published_property=None,
                  read_only=False,
-                 validator=None):
+                 validator=None,
+                 permission=None):
         self._attribute = attribute
         self._resource_class = resource_class
         self._published_property = published_property
         self._read_only = read_only
         self.validator = validator or []
+        self.permission = permission
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
@@ -432,6 +446,7 @@ class SubObjectResourceField(Field):
         return True
 
     @read_only_noop
+    @authorization(authorization_adapter)
     def handle_incoming(self, ctx, source_dict, target_obj):
         if not source_dict:
             setattr(target_obj, self._attribute, None)
@@ -517,13 +532,15 @@ class IterableField(Field):
                  published_property=None,
                  read_only=False,
                  iterable_factory=None,
-                 validator=None):
+                 validator=None,
+                 permission=None):
         self._attribute = attribute
         self._resource_class = resource_class
         self._published_property = published_property
         self._read_only = read_only
         self._iterable_factory = iterable_factory
         self.validator = validator or []
+        self.permission = permission
 
     def _compute_property(self, ctx):
         if self._published_property is not None:
@@ -550,6 +567,7 @@ class IterableField(Field):
         return self._attribute.split('.')[-1]
 
     @read_only_noop
+    @authorization(authorization_adapter)
     def handle_incoming(self, ctx, source_dict, target_obj):
         attribute = getattr(target_obj, self._attribute)
 

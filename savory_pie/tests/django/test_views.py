@@ -2,6 +2,7 @@ import unittest
 import json
 
 from mock import Mock
+from savory_pie.errors import AuthorizationError
 from savory_pie.tests.django.mock_request import savory_dispatch
 from savory_pie.django.views import _ParamsImpl
 import savory_pie.django.validators
@@ -27,6 +28,18 @@ def call_args_sans_context(mock):
 
 
 class ViewTest(unittest.TestCase):
+
+    def test_unauthorized(self):
+        root_resource = mock_resource(name='root')
+        root_resource.allowed_methods.add('PUT')
+        root_resource.put.side_effect = AuthorizationError('foo')
+
+        response = savory_dispatch(root_resource, method='PUT', body='{"foo": "bar"}')
+        response_json = json.loads(response.content)
+
+        self.assertIn('validation_errors', response_json)
+        self.assertEqual(response_json['validation_errors'], ['Modification of field foo not authorized'])
+        self.assertEqual(response.status_code, 403)
 
     def test_get_success(self):
         root_resource = mock_resource(name='root')
