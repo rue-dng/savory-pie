@@ -212,6 +212,8 @@ class URIListResourceField(base_fields.URIListResourceField, DjangoField):
                 optional -- tells the sub-model resource field whether to save
                 before or after the related field.
     """
+    def prepare(self, ctx, related):
+        related.prefetch(self._attribute)
 
     def get_iterable(self, value):
         return value.all()
