@@ -1,14 +1,18 @@
 import collections
+import json
 import logging
 
 import django.core.exceptions
-import django.db.models
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.fields import FieldDoesNotExist
 from django.utils.functional import Promise
 
 from savory_pie import fields as base_fields
 from savory_pie.errors import SavoryPieError
+from savory_pie.context import APIContext
+from savory_pie.formatters import JSONFormatter
+
+from haystack import fields as haystack_fields
 
 logger = logging.getLogger(__name__)
 
@@ -164,6 +168,34 @@ class AttributeFieldWithModel(AttributeField):
 
     def pre_save(self, model):
         return True
+
+
+class HaystackField(haystack_fields.CharField):
+    """
+    This field can be used to store the JSON from an API call into a Haystack search database.
+    It typically wouldn't be indexed (but could be if you wanted). Typical usage:
+
+        from haystack import indexes, fields
+        from savory_pie.django.fields import HaystackField
+
+        class FooIndex(indexes.SearchIndex, indexes.Indexable):
+            foo = fields.CharField(...)
+            bar = fields.CharField(...)
+            api = HaystackField(resource=FooResource, indexed=False, stored=True)
+    """
+    def __init__(self, *args, **kwargs):
+        self._ctx = APIContext(
+            base_uri='/api/v2/',
+            root_resource=None,
+            formatter=JSONFormatter(),
+        )
+        self._resource = kwargs.pop('resource', None)
+        super(HaystackField, self).__init__(*args, **kwargs)
+
+    def prepare(self, obj):
+        api_data = self._resource(obj).get(self._ctx, {})
+        api_data['$stale'] = True
+        return json.dumps(api_data)
 
 
 class URIResourceField(base_fields.URIResourceField, DjangoField):
