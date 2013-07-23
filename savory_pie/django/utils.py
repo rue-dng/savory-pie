@@ -28,6 +28,7 @@ def getLogger():
             if txt is not None:
                 logger._log(logging.DEBUG, txt, [], {})
             logger._num_queries = len(connection.queries)
+
     def logger_after_queries(obj=None, logger=logger):
         if logger.isEnabledFor(logging.DEBUG):
             queries = connection.queries[logger._num_queries:]
@@ -39,6 +40,7 @@ def getLogger():
             if obj is not None:
                 logger._log(logging.DEBUG, '\n' + pprint.pformat(obj), [], {})
             logger._num_queries = len(connection.queries)
+
     logger.before_queries = logger_before_queries
     logger.after_queries = logger_after_queries
 
