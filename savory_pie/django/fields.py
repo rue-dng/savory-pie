@@ -481,7 +481,24 @@ class RelatedCountField(object):
             return ctx.formatter.convert_to_public_property(self._attribute)
 
     def _get(self, source_obj):
-        return getattr(source_obj, self._orm_attribute + '__count')
+        try:
+            return getattr(source_obj, self._orm_attribute + '__count')
+        except:
+            type(source_obj).objects.filter(pk=source_obj.id)\
+                .prefetch_related(self._orm_attribute)
+            objs = [source_obj]
+            for attrib in self._orm_attribute.split('__'):
+                lst = []
+                def get(obj, attrib=attrib, lst=lst):
+                    from django.db.models.manager import Manager
+                    if isinstance(obj, Manager):
+                        for x in obj.all():
+                            lst.append(getattr(x, attrib))
+                    else:
+                        lst.append(getattr(obj, attrib))
+                map(get, objs)
+                objs = lst
+            return len(objs)
 
     def prepare(self, ctx, related):
         # Due to how annotate works with the django ORM, RelatedCountField can
