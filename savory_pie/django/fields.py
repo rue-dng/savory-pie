@@ -10,7 +10,6 @@ from django.utils.functional import Promise
 from savory_pie import fields as base_fields
 from savory_pie.errors import SavoryPieError
 from savory_pie.context import APIContext
-from savory_pie.formatters import JSONFormatter
 
 from haystack import fields as haystack_fields
 
@@ -181,21 +180,31 @@ class HaystackField(haystack_fields.CharField):
         class FooIndex(indexes.SearchIndex, indexes.Indexable):
             foo = fields.CharField(...)
             bar = fields.CharField(...)
-            api = HaystackField(resource=FooResource, indexed=False, stored=True)
+            api = HaystackField(base_uri='/my/api/path/',
+                                formatter=JSONFormatter(),
+                                resource=FooResource)
     """
     def __init__(self, *args, **kwargs):
-        self._ctx = APIContext(
-            base_uri='/api/v2/',
-            root_resource=None,
-            formatter=JSONFormatter(),
-        )
+        self._formatter = kwargs.pop('formatter', None)
+        self._ctx = APIContext(kwargs.pop('base_uri', ''), None, self._formatter)
         self._resource = kwargs.pop('resource', None)
+        self.indexed = kwargs.pop('indexed', False)
+        self.stored = kwargs.pop('indexed', True)
         super(HaystackField, self).__init__(*args, **kwargs)
 
     def prepare(self, obj):
+        try:
+            import cStringIO as StringIO
+        except ImportError:
+            import StringIO
         api_data = self._resource(obj).get(self._ctx, {})
         api_data['$stale'] = True
-        return json.dumps(api_data)
+        if self._formatter is None:
+            return json.dumps(api_data)
+        else:
+            output = StringIO.StringIO()
+            self._formatter.write_to(api_data, output)
+            return output.getvalue()
 
 
 class URIResourceField(base_fields.URIResourceField, DjangoField):
@@ -481,7 +490,7 @@ class RelatedCountField(object):
             return ctx.formatter.convert_to_public_property(self._attribute)
 
     def _get(self, source_obj):
-        return type(source_obj).objects.filter(pk=source_obj.id).values(self._orm_attribute).count()
+        return source_obj.__class__.objects.filter(pk=source_obj.id).values(self._orm_attribute).count()
 
     def prepare(self, ctx, related):
         # Due to how annotate works with the django ORM, RelatedCountField can
