@@ -4,8 +4,10 @@ import pprint
 from django.db import connection
 
 
-def getLogger():
-    logger = logging.getLogger(__name__)
+def getLogger(name=None):
+    if name is None:
+        name = __name__
+    logger = logging.getLogger(name)
     formatter = logging.Formatter("[%(funcName)s: %(filename)s:%(lineno)d] %(message)s")
     handler = logging.StreamHandler()
     handler.setFormatter(formatter)
@@ -19,7 +21,10 @@ def getLogger():
     def logger_tb(logger=logger):
         if logger.isEnabledFor(logging.DEBUG):
             from traceback import extract_stack
-            logger._log(logging.DEBUG, '\n' + pprint.pformat(extract_stack()[:-1]), [], {})
+            message = ''
+            for frame_tuple in extract_stack()[:-1]:
+                message += '\n    %s: %s => %s\n      %s' % frame_tuple
+            logger._log(logging.DEBUG, message, [], {})
     logger.tb = logger_tb
 
     # show database queries
@@ -28,6 +33,7 @@ def getLogger():
             if txt is not None:
                 logger._log(logging.DEBUG, txt, [], {})
             logger._num_queries = len(connection.queries)
+
     def logger_after_queries(obj=None, logger=logger):
         if logger.isEnabledFor(logging.DEBUG):
             queries = connection.queries[logger._num_queries:]
@@ -39,6 +45,7 @@ def getLogger():
             if obj is not None:
                 logger._log(logging.DEBUG, '\n' + pprint.pformat(obj), [], {})
             logger._num_queries = len(connection.queries)
+
     logger.before_queries = logger_before_queries
     logger.after_queries = logger_after_queries
 
