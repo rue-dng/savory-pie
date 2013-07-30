@@ -1,14 +1,13 @@
 import unittest
 
 import mock
-import haystack.inputs
 
 from django.db import models
 
 from savory_pie.formatters import JSONFormatter
 from savory_pie.django.haystack_filter import HaystackFilter
 from savory_pie.django.resources import HaystackSearchResource
-from savory_pie.django.fields import HaystackField
+from savory_pie.django.haystack_field import HaystackField
 from savory_pie.tests.mock_context import mock_context
 from test_filters import Params
 
@@ -110,8 +109,8 @@ class HaystackFieldTest(unittest.TestCase):
 
     def test_haystack_field(self):
         FooResource = mock.Mock()
-        FooResource.return_value = frv =  mock.Mock()
-        frv.get.return_value = x = {'a': 'b'}
+        FooResource.return_value = frv = mock.Mock()
+        frv.get.return_value = {'a': 'b'}
         api = HaystackField(
             base_uri='/my/api/path/',
             formatter=JSONFormatter(),
