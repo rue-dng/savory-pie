@@ -82,18 +82,16 @@ class HaystackFilterTest(unittest.TestCase):
 
 class HaystackSearchResourceTest(unittest.TestCase):
 
-    @mock.patch('__builtin__.enumerate')
     @mock.patch('savory_pie.django.resources.SearchQuerySet')
-    def test_haystack_search_resource(self, haystack_qs_cls, enum_mock):
+    def test_haystack_search_resource(self, haystack_qs_cls):
         n = 3
         haystack_qs_cls.return_value = haystack_qs = mock.Mock()
         haystack_qs.filter.return_value = haystack_qs
         haystack_qs.models.return_value = haystack_qs
         haystack_qs.count.return_value = n
-
-        enum_mock.get_stored_fields.return_value = enum_mock
-        enum_mock.__getitem__.return_value = '"api-as-string"'
-        enum_mock.return_value = [(i, enum_mock) for i in range(n)]
+        result = mock.Mock()
+        result.get_stored_fields.return_value = {'api': '"api-as-string"'}
+        haystack_qs.__iter__ = mock.Mock(return_value=(result for i in range(n)))
 
         sr = HaystackSearchResource()
         sr.model_class = TestModel
