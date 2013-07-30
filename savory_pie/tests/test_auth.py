@@ -13,12 +13,10 @@ class AuthorizationAdapterTestCase(unittest.TestCase):
         source_dict = {'source_key': 'value-source'}
         field._get.return_value = 'target'
 
-        args_ctx, args_target_obj, args_source, args_target, args_name = authorization_adapter(field, 'ctx', source_dict, 'target_obj')
+        args_name, args_source, args_target = authorization_adapter(field, 'ctx', source_dict, 'target_obj')
 
         field.to_python_value.called_with('value-source')
 
-        self.assertEqual('ctx', args_ctx)
-        self.assertEqual('target_obj', args_target_obj)
         self.assertEqual('source', args_source)
         self.assertEqual('target', args_target)
         self.assertEqual('source_key', args_name)
@@ -29,7 +27,7 @@ class AuthorizationDecoratorTestCase(unittest.TestCase):
     def test_no_permission(self):
         def adapter(*args):
             self.assertEqual((field, 'ctx', 'source_dict', 'target_object'), args)
-            return ['new_args']
+            return 'field', 'source', 'target'
 
         function = Mock()
         auth = authorization(adapter)
@@ -42,7 +40,7 @@ class AuthorizationDecoratorTestCase(unittest.TestCase):
     def test_authorized(self):
         def adapter(*args):
             self.assertEqual((field, 'ctx', 'source_dict', 'target_object'), args)
-            return ['new_args']
+            return 'field', 'source', 'target'
 
         function = Mock()
         auth = authorization(adapter)
@@ -50,13 +48,13 @@ class AuthorizationDecoratorTestCase(unittest.TestCase):
         field.permission.is_write_authorized.return_value = True
         value = auth(function)
         value(field, 'ctx', 'source_dict', 'target_object')
-        field.permission.is_write_authorized.assert_called_with('new_args')
+        field.permission.is_write_authorized.assert_called_with('ctx', 'target_object', 'source', 'target')
         function.assert_called_with(field, 'ctx', 'source_dict', 'target_object')
 
     def test_not_authorized(self):
         def adapter(*args):
             self.assertEqual((field, 'ctx', 'source_dict', 'target_object'), args)
-            return ['new_args']
+            return 'field', 'source', 'target'
 
         function = Mock()
 
@@ -69,4 +67,4 @@ class AuthorizationDecoratorTestCase(unittest.TestCase):
 
         with self.assertRaises(AuthorizationError):
             value(field, 'ctx', 'source_dict', 'target_object')
-            field.permission.is_write_authorized.assert_called_with('new_args')
+            field.permission.is_write_authorized.assert_called_with('ctx', 'target_object', 'source', 'target')
