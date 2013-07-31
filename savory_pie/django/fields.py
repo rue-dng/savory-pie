@@ -2,7 +2,6 @@ import collections
 import logging
 
 import django.core.exceptions
-import django.db.models
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.fields import FieldDoesNotExist
 from django.utils.functional import Promise
@@ -449,7 +448,7 @@ class RelatedCountField(object):
             return ctx.formatter.convert_to_public_property(self._attribute)
 
     def _get(self, source_obj):
-        return getattr(source_obj, self._orm_attribute + '__count')
+        return source_obj.__class__.objects.filter(pk=source_obj.id).values(self._orm_attribute).count()
 
     def prepare(self, ctx, related):
         # Due to how annotate works with the django ORM, RelatedCountField can
