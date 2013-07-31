@@ -11,7 +11,7 @@ class DjangoUserPermissionValidator(object):
         Leverages the users has_perm(key) method to leverage the authorization.
         Only check if the source and target have changed.
         """
-        user = ctx.user
+        user = ctx.request.user
 
         if source != target:
             return user.has_perm(self.permission_name)

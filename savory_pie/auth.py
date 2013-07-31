@@ -7,8 +7,8 @@ def authorization_adapter(field, ctx, source_dict, target_obj):
     """
     name = field._compute_property(ctx)
     source = field.to_python_value(ctx, source_dict[name])
-    target = field._get(target_obj)
-    return ctx, target_obj, source, target, name
+    target = field.to_api_value(ctx, field._get(target_obj))
+    return name, source, target
 
 
 class authorization(object):
@@ -31,9 +31,8 @@ class authorization(object):
         def inner(field, ctx, source_dict, target_obj):
             permission = field.permission
             if permission:
-                args = self.auth_adapter(field, ctx, source_dict, target_obj)
-                name = args.pop()
-                if not permission.is_write_authorized(*self.auth_adapter(field, ctx, source_dict, target_obj)):
+                name, source, target = self.auth_adapter(field, ctx, source_dict, target_obj)
+                if not permission.is_write_authorized(ctx, target_obj, source, target):
                     raise AuthorizationError(name)
 
             return fn(field, ctx, source_dict, target_obj)
