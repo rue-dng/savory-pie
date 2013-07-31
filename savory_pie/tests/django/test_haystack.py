@@ -6,7 +6,7 @@ from django.db import models
 
 from savory_pie.formatters import JSONFormatter
 from savory_pie.django.haystack_filter import HaystackFilter
-from savory_pie.django.resources import HaystackSearchResource
+from savory_pie.django.haystack_resources import HaystackSearchResource
 from savory_pie.django.haystack_field import HaystackField
 from savory_pie.tests.mock_context import mock_context
 from test_filters import Params
@@ -98,7 +98,7 @@ class HaystackFieldTest(unittest.TestCase):
 
 class HaystackSearchResourceTest(unittest.TestCase):
 
-    @mock.patch('savory_pie.django.resources.SearchQuerySet')
+    @mock.patch('savory_pie.django.haystack_resources.SearchQuerySet')
     def test_haystack_search_resource(self, haystack_qs_cls):
         n = 3
         haystack_qs_cls.return_value = haystack_qs = mock.Mock()
@@ -118,7 +118,7 @@ class HaystackSearchResourceTest(unittest.TestCase):
         haystack_qs.models.assert_called_with(TestModel)
         haystack_qs.count.assert_called_with()
 
-    @mock.patch('savory_pie.django.resources.SearchQuerySet')
+    @mock.patch('savory_pie.django.haystack_resources.SearchQuerySet')
     def test_all_results(self, SearchQuerySet):
         ctx = mock.Mock(base_uri='foo')
 
@@ -149,7 +149,7 @@ class HaystackSearchResourceTest(unittest.TestCase):
             any_order=True,
         )
 
-    @mock.patch('savory_pie.django.resources.SearchQuerySet')
+    @mock.patch('savory_pie.django.haystack_resources.SearchQuerySet')
     def test_q_filter(self, SearchQuerySet):
         ctx = mock.Mock(base_uri='foo')
 
@@ -174,7 +174,7 @@ class HaystackSearchResourceTest(unittest.TestCase):
             any_order=True,
         )
 
-    @mock.patch('savory_pie.django.resources.SearchQuerySet')
+    @mock.patch('savory_pie.django.haystack_resources.SearchQuerySet')
     def test_updated_filter(self, SearchQuerySet):
         ctx = mock.Mock(base_uri='foo')
 
