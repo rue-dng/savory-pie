@@ -7,11 +7,12 @@ from savory_pie.errors import AuthorizationError
 class AuthorizationAdapterTestCase(unittest.TestCase):
 
     def test_adapter(self):
-        field = Mock(spec=['to_python_value', '_get', '_compute_property'], name='field')
+        field = Mock(spec=['to_python_value', '_get', '_compute_property', 'to_api_value'], name='field')
         field._compute_property.return_value = 'source_key'
         field.to_python_value.return_value = 'source'
         source_dict = {'source_key': 'value-source'}
         field._get.return_value = 'target'
+        field.to_api_value.return_value = 'target'
 
         args_name, args_source, args_target = authorization_adapter(field, 'ctx', source_dict, 'target_obj')
 

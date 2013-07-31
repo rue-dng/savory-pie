@@ -8,13 +8,15 @@ class DjangoUserPermissionValidatorTestCase(unittest.TestCase):
     def test_target_source_changed(self):
         validator = DjangoUserPermissionValidator('value')
         ctx = Mock(spec=['user'])
-        ctx.user.has_perm.return_value = False
+        ctx.request = Mock()
+        ctx.request.user.has_perm.return_value = False
         self.assertFalse(validator.is_write_authorized(ctx, None, 'a', 'b'))
-        ctx.user.has_perm.assert_called_with('value')
+        ctx.request.user.has_perm.assert_called_with('value')
 
     def test_target_source_not_changed(self):
         validator = DjangoUserPermissionValidator('value')
         ctx = Mock(spec=['user'])
+        ctx.request = Mock()
         # Should not call has_perm
-        ctx.user.has_perm.side_effect = Exception
+        ctx.request.user.has_perm.side_effect = Exception
         self.assertTrue(validator.is_write_authorized(ctx, None, 'a', 'a'))
