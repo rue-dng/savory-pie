@@ -25,7 +25,7 @@ class HaystackField(haystack_fields.CharField):
     """
     def __init__(self, *args, **kwargs):
         self._formatter = kwargs.pop('formatter', None)
-        self._ctx = APIContext(kwargs.pop('base_uri', ''), None, self._formatter)
+        self._ctx = APIContext('SAVORY_PIE_HOSTNAME', None, self._formatter)
         self._resource = kwargs.pop('resource', None)
         self.indexed = kwargs.pop('indexed', False)
         self.stored = kwargs.pop('indexed', True)

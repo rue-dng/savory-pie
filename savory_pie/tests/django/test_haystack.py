@@ -16,6 +16,10 @@ class TestModel(models.Model):
     pass
 
 
+class TestSearchResource(HaystackSearchResource):
+    model_class = TestModel
+
+
 class HaystackFilterTest(unittest.TestCase):
 
     @mock.patch('savory_pie.django.haystack_filter.SearchQuerySet')
@@ -80,6 +84,18 @@ class HaystackFilterTest(unittest.TestCase):
         )
 
 
+class HaystackFieldTest(unittest.TestCase):
+
+    def test_haystack_field(self):
+        FooResource = mock.Mock()
+        FooResource.return_value = frv = mock.Mock()
+        frv.get.return_value = {'a': 'b'}
+        api = HaystackField(
+            formatter=JSONFormatter(),
+            resource=FooResource)
+        self.assertEqual(api.prepare(None), '{"a": "b", "$stale": true}')
+
+
 class HaystackSearchResourceTest(unittest.TestCase):
 
     @mock.patch('savory_pie.django.resources.SearchQuerySet')
@@ -95,22 +111,89 @@ class HaystackSearchResourceTest(unittest.TestCase):
 
         sr = HaystackSearchResource()
         sr.model_class = TestModel
-        ctx = mock.Mock()
+        ctx = mock.Mock(base_uri='foo')
         self.assertEqual(
             ''.join([x for x in sr.get(ctx, {'q': 'foo'})]),
             '{"meta":{"count":3},"objects":["api-as-string","api-as-string","api-as-string"]}')
         haystack_qs.models.assert_called_with(TestModel)
         haystack_qs.count.assert_called_with()
 
+    @mock.patch('savory_pie.django.resources.SearchQuerySet')
+    def test_all_results(self, SearchQuerySet):
+        ctx = mock.Mock(base_uri='foo')
 
-class HaystackFieldTest(unittest.TestCase):
+        result1 = mock.Mock()
+        result1.get_stored_fields.return_value = {'api': '{"json":1}'}
 
-    def test_haystack_field(self):
-        FooResource = mock.Mock()
-        FooResource.return_value = frv = mock.Mock()
-        frv.get.return_value = {'a': 'b'}
-        api = HaystackField(
-            base_uri='/my/api/path/',
-            formatter=JSONFormatter(),
-            resource=FooResource)
-        self.assertEqual(api.prepare(None), '{"a": "b", "$stale": true}')
+        result2 = mock.Mock()
+        result2.get_stored_fields.return_value = {'api': '{"json":2}'}
+
+        qs = SearchQuerySet.return_value
+        qs.models.return_value = qs
+        qs.filter.return_value = qs
+        qs.__iter__ = mock.Mock(return_value=iter([result1, result2]))
+        qs.count.return_value = 2
+
+        resource = TestSearchResource()
+        result = resource.get(ctx, {})
+        print result
+
+        self.assertEqual(
+            ''.join(result),
+            '{"meta":{"count":2},"objects":[{"json":1},{"json":2}]}'
+        )
+
+        self.assertTrue(ctx.streaming_response)
+        qs.assert_has_call(
+            mock.call.models(TestModel),
+            any_order=True,
+        )
+
+    @mock.patch('savory_pie.django.resources.SearchQuerySet')
+    def test_q_filter(self, SearchQuerySet):
+        ctx = mock.Mock(base_uri='foo')
+
+        qs = SearchQuerySet.return_value
+        qs.models.return_value = qs
+        qs.filter.return_value = qs
+        qs.__iter__ = mock.Mock(return_value=iter([]))
+        qs.count.return_value = 0
+
+        resource = TestSearchResource()
+        result = resource.get(ctx, {'q': 'foo bar'})
+        print result
+
+        self.assertEqual(
+            ''.join(result),
+            '{"meta":{"count":0},"objects":[]}'
+        )
+
+        qs.assert_has_call(
+            mock.call.filter('foo'),
+            mock.call.filter('bar'),
+            any_order=True,
+        )
+
+    @mock.patch('savory_pie.django.resources.SearchQuerySet')
+    def test_updated_filter(self, SearchQuerySet):
+        ctx = mock.Mock(base_uri='foo')
+
+        qs = SearchQuerySet.return_value
+        qs.models.return_value = qs
+        qs.filter.return_value = qs
+        qs.__iter__ = mock.Mock(return_value=iter([]))
+        qs.count.return_value = 0
+
+        resource = TestSearchResource()
+        result = resource.get(ctx, {'updatedSince': '2012-01-01'})
+        print result
+
+        self.assertEqual(
+            ''.join(result),
+            '{"meta":{"count":0},"objects":[]}'
+        )
+
+        qs.assert_has_call(
+            mock.call.filter('2012-01-01'),
+            any_order=True,
+        )

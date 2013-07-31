@@ -409,7 +409,10 @@ class HaystackSearchResource(Resource):
             yield str(count)
             yield '},"objects":['
             for i, result in enumerate(qs):
-                yield result.get_stored_fields()['api']
+                # TODO document this ugliness
+                apistring = result.get_stored_fields()['api']
+                apistring.replace('SAVORY_PIE_HOSTNAME', ctx.base_uri)
+                yield apistring
                 if i != last:
                     yield ','
             yield ']}'
