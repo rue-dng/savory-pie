@@ -3,7 +3,6 @@ import logging
 
 import django.core.exceptions
 
-import haystack.inputs
 from haystack.query import SearchQuerySet
 
 from savory_pie.resources import EmptyParams, Resource
@@ -398,6 +397,7 @@ class HaystackSearchResource(Resource):
         ctx.streaming_response = True
         qs = SearchQuerySet().models(self.model_class)
         if 'q' in params:
+            import haystack.inputs
             qs = qs.filter(content=haystack.inputs.AutoQuery(params.get('q')))
         self._filter_qs(params, qs)
 
