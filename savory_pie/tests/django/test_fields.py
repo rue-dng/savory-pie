@@ -1185,11 +1185,18 @@ class TestRelatedCountField(unittest.TestCase):
         ctx = mock_context()
 
         mock_model = Mock(name='model')
-        mock_model.name__count = 14
+        mock_model.__class__.objects = Mock()
+        mock_model.__class__.objects.filter.return_value = fr = Mock()
+        fr.values.return_value = vr = Mock()
+        vr.count.return_value = 14
         target_dict = {}
 
         field = RelatedCountField('name')
         field.handle_outgoing(ctx, mock_model, target_dict)
+
+        fr.assert_has_calls([
+            mock.call.values('name')
+        ])
 
         self.assertEqual(
             14,
