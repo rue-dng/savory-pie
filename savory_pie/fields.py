@@ -1,5 +1,6 @@
 import collections
 import functools
+import importlib
 from savory_pie.auth import authorization, authorization_adapter
 from savory_pie.resources import EmptyParams
 from savory_pie.django.validators import validate
@@ -12,6 +13,30 @@ def read_only_noop(func):
         if not self._read_only:
             return func(self, *args, **kwargs)
     return inner
+
+
+class ResourceClassUser(type):
+    def __new__(cls, name, bases, d):
+
+        def init_resource_class(self, rclass):
+            if isinstance(rclass, str) or isinstance(rclass, unicode):
+                self._arg_resource_class = rclass
+                self._real_resource_class = None
+            else:
+                self._real_resource_class = rclass
+
+        def getter(self):
+            if self._real_resource_class is None:
+                rclass = self._arg_resource_class
+                n = rclass.rindex('.')
+                module = importlib.import_module(rclass[:n])
+                self._real_resource_class = getattr(module, rclass[n+1:])
+            return self._real_resource_class
+
+        setter = deler = None
+        d['init_resource_class'] = init_resource_class
+        d['_resource_class'] = property(getter, setter, deler, '')
+        return type.__new__(cls, name, bases, d)
 
 
 class Field(object):
@@ -173,6 +198,7 @@ class URIResourceField(Field):
 
             {'other': '/api/other/{pk}'}
     """
+    __metaclass__ = ResourceClassUser
 
     def __init__(self,
                  attribute,
@@ -182,7 +208,7 @@ class URIResourceField(Field):
                  validator=None,
                  permission=None):
         self._attribute = attribute
-        self._resource_class = resource_class
+        self.init_resource_class(resource_class)
         self._published_property = published_property
         self._read_only = read_only
         self.validator = validator or []
@@ -238,9 +264,10 @@ class CompleteURIResourceField(Field):
 
             {'completeResourceUri': '/api/other/{pk}'}
     """
+    __metaclass__ = ResourceClassUser
 
     def __init__(self, resource_class, read_only=False, permission=None):
-        self._resource_class = resource_class
+        self.init_resource_class(resource_class)
         self._read_only = read_only
         self.permission = permission
 
@@ -283,6 +310,7 @@ class URIListResourceField(Field):
 
             {'others': ['/api/other/{pk_1}', '/api/other/{pk_2}']
     """
+    __metaclass__ = ResourceClassUser
 
     def __init__(self,
                  attribute,
@@ -292,7 +320,7 @@ class URIListResourceField(Field):
                  validator=None,
                  permission=None):
         self._attribute = attribute
-        self._resource_class = resource_class
+        self.init_resource_class(resource_class)
         self._published_property = published_property
         self._read_only = read_only
         self.validator = validator or []
@@ -398,6 +426,8 @@ class SubObjectResourceField(Field):
 
             {'other': {'age': 9}}
     """
+    __metaclass__ = ResourceClassUser
+
     def __init__(self,
                  attribute,
                  resource_class,
@@ -406,7 +436,7 @@ class SubObjectResourceField(Field):
                  validator=None,
                  permission=None):
         self._attribute = attribute
-        self._resource_class = resource_class
+        self.init_resource_class(resource_class)
         self._published_property = published_property
         self._read_only = read_only
         self.validator = validator or []
@@ -526,6 +556,8 @@ class IterableField(Field):
 
             {'others': [{'age': 6}, {'age': 1}]}
     """
+    __metaclass__ = ResourceClassUser
+
     def __init__(self,
                  attribute,
                  resource_class,
@@ -535,7 +567,7 @@ class IterableField(Field):
                  validator=None,
                  permission=None):
         self._attribute = attribute
-        self._resource_class = resource_class
+        self.init_resource_class(resource_class)
         self._published_property = published_property
         self._read_only = read_only
         self._iterable_factory = iterable_factory
