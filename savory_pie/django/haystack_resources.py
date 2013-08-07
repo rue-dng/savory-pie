@@ -13,14 +13,14 @@ class HaystackSearchResource(Resource):
     model_class = None
 
     def _filter_qs(self, params, qs):
-        pass
+        return qs
 
     def get(self, ctx, params):
         ctx.streaming_response = True
         qs = SearchQuerySet().models(self.model_class)
         if 'q' in params:
             qs = qs.filter(content=haystack.inputs.AutoQuery(params.get('q')))
-        self._filter_qs(params, qs)
+        qs = self._filter_qs(params, qs)
 
         def result(qs):
             # Use a result generator so we can avoid string concatenation
@@ -32,8 +32,7 @@ class HaystackSearchResource(Resource):
             for i, result in enumerate(qs):
                 # TODO document this ugliness
                 apistring = result.get_stored_fields()['api']
-                apistring.replace('SAVORY_PIE_HOSTNAME', ctx.base_uri)
-                yield apistring
+                yield apistring.replace('SAVORY_PIE_HOSTNAME', ctx.base_uri)
                 if i != last:
                     yield ','
             yield ']}'
