@@ -14,7 +14,7 @@ class DjangoUserPermissionValidator(object):
         user = ctx.request.user
 
         if source != target:
-            return user.has_perm(self.permission_name)
+            return user.is_superuser or user.has_perm(self.permission_name)
 
         return True
 

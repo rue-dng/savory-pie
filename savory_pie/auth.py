@@ -1,3 +1,7 @@
+from datetime import datetime
+
+import savory_pie.fields
+
 from savory_pie.errors import AuthorizationError
 
 
@@ -6,8 +10,20 @@ def authorization_adapter(field, ctx, source_dict, target_obj):
     Default adapter works on single field (non iterable)
     """
     name = field._compute_property(ctx)
-    source = field.to_python_value(ctx, source_dict[name])
-    target = field.to_api_value(ctx, field._get(target_obj))
+    if isinstance(field, savory_pie.fields.SubObjectResourceField):
+        #TODO should we move this to savory_pie.fields.SubObjectResourceField
+        ##### and add _get(), to_api_value() and to_python_value() methods?
+        try:    source = int(source_dict[name]['pk'])
+        except: source = int(source_dict[name]['resourceUri'].split('/')[-1])
+        try:    target = int(getattr(target_obj, field.name).pk)
+        except: target = None
+    elif field._type == datetime:
+        # this allows direct comparison of datetime::datetime
+        source = field.to_python_value(ctx, source_dict[name])
+        target = field._get(target_obj)
+    else:
+        source = field.to_python_value(ctx, source_dict[name])
+        target = field.to_api_value(ctx, field._get(target_obj))
     return name, source, target
 
 
