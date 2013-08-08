@@ -228,18 +228,22 @@ class URIResourceField(Field):
     @authorization(authorization_adapter)
     def handle_incoming(self, ctx, source_dict, target_obj):
         uri = source_dict[self._compute_property(ctx)]
+        if uri is not None:
+            resource = ctx.resolve_resource_uri(uri)
+            if resource is None:
+                raise ValueError('invalid URI {0}: '.format(uri))
 
-        resource = ctx.resolve_resource_uri(uri)
-        if resource is None:
-            raise ValueError('invalid URI {0}: '.format(uri))
-
-        setattr(target_obj, self._attribute, resource.model)
+            setattr(target_obj, self._attribute, resource.model)
+        else:
+            setattr(target_obj, self._attribute, None)
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
         sub_model = getattr(source_obj, self._attribute)
-        resource = self._resource_class(sub_model)
-
-        target_dict[self._compute_property(ctx)] = ctx.build_resource_uri(resource)
+        if sub_model is not None:
+            resource = self._resource_class(sub_model)
+            target_dict[self._compute_property(ctx)] = ctx.build_resource_uri(resource)
+        else:
+            target_dict[self._compute_property(ctx)] = None
 
     def validate_resource(self, ctx, key, resource, source_dict):
         error_dict = {}
