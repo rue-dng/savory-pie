@@ -19,21 +19,25 @@ class ResourceClassUser(type):
     def __new__(cls, name, bases, d):
 
         def init_resource_class(self, rclass):
+            self._arg_resource_class = rclass
             if isinstance(rclass, str) or isinstance(rclass, unicode):
-                self._arg_resource_class = rclass
                 self._real_resource_class = None
             else:
                 self._real_resource_class = rclass
 
         def getter(self):
-            if self._real_resource_class is None:
+            if self._real_resource_class is None and \
+                    self._arg_resource_class is not None:
                 rclass = self._arg_resource_class
                 n = rclass.rindex('.')
                 module = importlib.import_module(rclass[:n])
                 self._real_resource_class = getattr(module, rclass[n+1:])
             return self._real_resource_class
 
-        setter = deler = None
+        def setter(self, value):
+            self._real_resource_class = value
+
+        deler = None
         d['init_resource_class'] = init_resource_class
         d['_resource_class'] = property(getter, setter, deler, '')
         return type.__new__(cls, name, bases, d)
