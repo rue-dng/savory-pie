@@ -11,14 +11,11 @@ def authorization_adapter(field, ctx, source_dict, target_obj):
     """
     name = field._compute_property(ctx)
     if isinstance(field, savory_pie.fields.SubObjectResourceField):
-        #TODO should we move this to savory_pie.fields.SubObjectResourceField
-        ##### and add _get(), to_api_value() and to_python_value() methods?
-        try:    source = int(source_dict[name]['pk'])
-        except: source = int(source_dict[name]['resourceUri'].split('/')[-1])
-        try:    target = int(getattr(target_obj, field.name).pk)
-        except: target = None
+        source = source_dict[name]['resourceUri']
+        # this is essentially the same logic as in field.get_subresource(), but
+        # ignores source_dict as we're only looking for target's resourceUri
+        target = ctx.build_resource_uri(field._resource_class(getattr(target_obj, field.name)))
     elif field._type == datetime:
-        # this allows direct comparison of datetime::datetime
         source = field.to_python_value(ctx, source_dict[name])
         target = field._get(target_obj)
     else:
