@@ -46,6 +46,7 @@ class AuthorizationDecoratorTestCase(unittest.TestCase):
         function = Mock()
         auth = authorization(adapter)
         field = Mock(name='field', spec=['permission'])
+        field.permission.auth_adapter = None
         field.permission.is_write_authorized.return_value = True
         value = auth(function)
         value(field, 'ctx', 'source_dict', 'target_object')
@@ -63,6 +64,7 @@ class AuthorizationDecoratorTestCase(unittest.TestCase):
         function.side_effect = Exception
         auth = authorization(adapter)
         field = Mock(name='field', spec=['permission'])
+        field.permission.auth_adapter = None
         field.permission.is_write_authorized.return_value = False
         value = auth(function)
 

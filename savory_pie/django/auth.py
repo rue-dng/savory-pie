@@ -3,8 +3,9 @@ class DjangoUserPermissionValidator(object):
     Permissions Validator is used to tie into an authorization.  Is used in conjunction with the authorization decorator
     Added to the field init method.
     """
-    def __init__(self, permission_name):
+    def __init__(self, permission_name, auth_adapter=None):
         self.permission_name = permission_name
+        self.auth_adapter = auth_adapter
 
     def is_write_authorized(self, ctx, target_obj, source, target):
         """
