@@ -1,5 +1,3 @@
-import savory_pie.fields
-
 from savory_pie.errors import AuthorizationError
 
 
