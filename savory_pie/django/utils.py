@@ -1,5 +1,7 @@
 import logging
 import pprint
+import sys
+import traceback
 
 from django.db import connection
 
@@ -18,7 +20,7 @@ def getLogger(name=None):
         if hasattr(f, 'im_func'):
             f = f.im_func
         fc = f.func_code
-        info = '%s:%d %s' % (fc.co_filename, fc.co_firstlineno, fc.co_name)
+        info = '{0}:{1} {2}'.format(fc.co_filename, fc.co_firstlineno, fc.co_name)
         logger._log(logging.DEBUG, info, [], {})
     logger.callable = logger_callable
 
@@ -27,16 +29,11 @@ def getLogger(name=None):
             logger._log(logging.DEBUG, '\n' + pprint.pformat(obj), [], {})
     logger.pprint = logger_pprint
 
-    def logger_tb(exc=None, logger=logger):
+    def logger_tb(logger=logger):
         if logger.isEnabledFor(logging.DEBUG):
-            from traceback import format_exc, extract_stack
-            if exc is not None:
-                message = '\n' + format_exc()
-            else:
-                message = ''
-                for frame_tuple in extract_stack()[:-1]:
-                    message += '\n    %s: %s => %s\n      %s' % frame_tuple
-            logger._log(logging.DEBUG, message, [], {})
+            etype, value, tb = sys.exc_info()
+            message = ''.join(traceback.format_exception(etype, value, tb))
+            logger._log(logging.DEBUG, '\n' + message, [], {})
     logger.tb = logger_tb
 
     # show database queries
@@ -50,9 +47,9 @@ def getLogger(name=None):
         if logger.isEnabledFor(logging.DEBUG):
             queries = connection.queries[logger._num_queries:]
             if len(queries) > 0:
-                logger._log(logging.DEBUG, 'Database hits: %d' % len(queries), [], {})
+                logger._log(logging.DEBUG, 'Database hits: {0}'.format(len(queries)), [], {})
                 for query in queries:
-                    about = 'Database hit, %s seconds\n' % query['time']
+                    about = 'Database hit, {0} seconds\n'.format(query['time'])
                     logger._log(logging.DEBUG, about + query['sql'], [], {})
             if obj is not None:
                 logger._log(logging.DEBUG, '\n' + pprint.pformat(obj), [], {})
