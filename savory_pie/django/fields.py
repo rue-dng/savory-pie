@@ -415,6 +415,10 @@ class ReverseField(object):
     def __init__(self, attribute_name):
         self.attribute_name = attribute_name
 
+    @property
+    def name(self):
+        return self.attribute_name
+
     def handle_incoming(self, ctx, source_dict, target_obj):
         if target_obj.pk is not None:
             return
