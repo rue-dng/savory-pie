@@ -13,17 +13,29 @@ def getLogger(name=None):
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
+    def logger_callable(f, logger=logger):
+        assert callable(f)
+        if hasattr(f, 'im_func'):
+            f = f.im_func
+        fc = f.func_code
+        info = '%s:%d %s' % (fc.co_filename, fc.co_firstlineno, fc.co_name)
+        logger._log(logging.DEBUG, info, [], {})
+    logger.callable = logger_callable
+
     def logger_pprint(obj, logger=logger):
         if logger.isEnabledFor(logging.DEBUG):
             logger._log(logging.DEBUG, '\n' + pprint.pformat(obj), [], {})
     logger.pprint = logger_pprint
 
-    def logger_tb(logger=logger):
+    def logger_tb(exc=None, logger=logger):
         if logger.isEnabledFor(logging.DEBUG):
-            from traceback import extract_stack
-            message = ''
-            for frame_tuple in extract_stack()[:-1]:
-                message += '\n    %s: %s => %s\n      %s' % frame_tuple
+            from traceback import format_exc, extract_stack
+            if exc is not None:
+                message = '\n' + format_exc()
+            else:
+                message = ''
+                for frame_tuple in extract_stack()[:-1]:
+                    message += '\n    %s: %s => %s\n      %s' % frame_tuple
             logger._log(logging.DEBUG, message, [], {})
     logger.tb = logger_tb
 
