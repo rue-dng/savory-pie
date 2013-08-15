@@ -428,6 +428,47 @@ class ReverseField(object):
         pass
 
 
+class ReverseRelatedManagerField(object):
+    """
+    Where ReverseField works with one-to-one relationships, this works with
+    many-to-one relationships. So if Django model A has a foreign key to model B,
+    you would have a RelatedField('b') in AResource so that during a PUT/POST
+    to B, the AResource.bfield.handle_incoming call can peek up the stack
+    (ctx.peek) to find the A instance, and set that A's relevant attribute to the
+    B instance.
+
+    In one-to-many cases, multiple A models all point to the same B. The PUT
+    operation on AResource includes an embedded JSON chunk for a BResource, and
+    when the PUT is executed, the BResource and its underlying B model are
+    created. In this case, BResource.afield.handle_incoming needs to peek up
+    the stack to get the A model, and set the B attribute on the A model to
+    the B model in question.
+    """
+    from savory_pie.fields import ResourceClassUser
+    __metaclass__ = ResourceClassUser
+
+    def __init__(self, attribute_name, resource_class):
+        self.attribute_name = attribute_name
+        self.init_resource_class(resource_class)
+
+    @property
+    def name(self):
+        return self.attribute_name
+
+    def handle_outgoing(self, ctx, source_obj, target_dict):
+        pass
+
+    def pre_save(self, model):
+        return True
+
+    def handle_incoming(self, ctx, source_dict, target_obj):
+        if target_obj.pk is not None:
+            target = ctx.peek()
+            a_model_type = self._resource_class.model_class
+            assert type(target) == a_model_type
+            setattr(target, self.attribute_name, target_obj)
+
+
 class RelatedCountField(object):
     """
     Django field to handle counting the number of related objects. This uses
