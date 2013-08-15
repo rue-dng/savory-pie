@@ -19,21 +19,25 @@ class ResourceClassUser(type):
     def __new__(cls, name, bases, d):
 
         def init_resource_class(self, rclass):
+            self._arg_resource_class = rclass
             if isinstance(rclass, str) or isinstance(rclass, unicode):
-                self._arg_resource_class = rclass
                 self._real_resource_class = None
             else:
                 self._real_resource_class = rclass
 
         def getter(self):
-            if self._real_resource_class is None:
+            if self._real_resource_class is None and \
+                    self._arg_resource_class is not None:
                 rclass = self._arg_resource_class
                 n = rclass.rindex('.')
                 module = importlib.import_module(rclass[:n])
                 self._real_resource_class = getattr(module, rclass[n+1:])
             return self._real_resource_class
 
-        setter = deler = None
+        def setter(self, value):
+            self._real_resource_class = value
+
+        deler = None
         d['init_resource_class'] = init_resource_class
         d['_resource_class'] = property(getter, setter, deler, '')
         return type.__new__(cls, name, bases, d)
@@ -42,7 +46,7 @@ class ResourceClassUser(type):
 class Field(object):
     @property
     def name(self):
-        name = getattr(self, '_attribute', getattr(self, '_full_attribute', None))
+        name = getattr(self, '_attribute', None) or getattr(self, '_full_attribute', None)
         if not name:
             raise SavoryPieError(u'Unable to determine name for field: {0}'.format(self))
         return name
@@ -224,18 +228,22 @@ class URIResourceField(Field):
     @authorization(authorization_adapter)
     def handle_incoming(self, ctx, source_dict, target_obj):
         uri = source_dict[self._compute_property(ctx)]
+        if uri is not None:
+            resource = ctx.resolve_resource_uri(uri)
+            if resource is None:
+                raise ValueError('invalid URI {0}: '.format(uri))
 
-        resource = ctx.resolve_resource_uri(uri)
-        if resource is None:
-            raise ValueError('invalid URI {0}: '.format(uri))
-
-        setattr(target_obj, self._attribute, resource.model)
+            setattr(target_obj, self._attribute, resource.model)
+        else:
+            setattr(target_obj, self._attribute, None)
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
         sub_model = getattr(source_obj, self._attribute)
-        resource = self._resource_class(sub_model)
-
-        target_dict[self._compute_property(ctx)] = ctx.build_resource_uri(resource)
+        if sub_model is not None:
+            resource = self._resource_class(sub_model)
+            target_dict[self._compute_property(ctx)] = ctx.build_resource_uri(resource)
+        else:
+            target_dict[self._compute_property(ctx)] = None
 
     def validate_resource(self, ctx, key, resource, source_dict):
         error_dict = {}

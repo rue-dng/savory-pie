@@ -415,6 +415,10 @@ class ReverseField(object):
     def __init__(self, attribute_name):
         self.attribute_name = attribute_name
 
+    @property
+    def name(self):
+        return self.attribute_name
+
     def handle_incoming(self, ctx, source_dict, target_obj):
         if target_obj.pk is not None:
             return
@@ -422,6 +426,41 @@ class ReverseField(object):
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
         pass
+
+
+class ReverseRelatedManagerField(object):
+    """
+    Where ReverseField works with one-to-one relationships, this works with
+    many-to-one relationships where multiple A models all point to the same B.
+    The PUT operation on AResource includes an embedded JSON chunk for a
+    BResource, and when the PUT is executed, the BResource and its underlying
+    B model are created. In this case, BResource.afield.handle_incoming needs
+    to peek up the stack to get the A model, and set the B attribute on that
+    A model to this B model.
+    """
+    from savory_pie.fields import ResourceClassUser
+    __metaclass__ = ResourceClassUser
+
+    def __init__(self, attribute_name, resource_class):
+        self.attribute_name = attribute_name
+        self.init_resource_class(resource_class)
+
+    @property
+    def name(self):
+        return self.attribute_name
+
+    def handle_outgoing(self, ctx, source_obj, target_dict):
+        pass
+
+    def pre_save(self, model):
+        return True
+
+    def handle_incoming(self, ctx, source_dict, target_obj):
+        if target_obj.pk is not None:
+            target = ctx.peek()
+            a_model_type = self._resource_class.model_class
+            assert type(target) == a_model_type
+            setattr(target, self.attribute_name, target_obj)
 
 
 class RelatedCountField(object):
@@ -448,7 +487,10 @@ class RelatedCountField(object):
             return ctx.formatter.convert_to_public_property(self._attribute)
 
     def _get(self, source_obj):
-        return source_obj.__class__.objects.filter(pk=source_obj.id).values(self._orm_attribute).count()
+        try:
+            return getattr(source_obj, self._orm_attribute + '__count')
+        except AttributeError:
+            return source_obj.__class__.objects.filter(pk=source_obj.id).values(self._orm_attribute).count()
 
     def prepare(self, ctx, related):
         # Due to how annotate works with the django ORM, RelatedCountField can

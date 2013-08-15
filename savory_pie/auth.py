@@ -11,6 +11,28 @@ def authorization_adapter(field, ctx, source_dict, target_obj):
     return name, source, target
 
 
+def datetime_auth_adapter(field, ctx, source_dict, target_obj):
+    """
+    Adapter for fields of date/datetime/time
+    """
+    name = field._compute_property(ctx)
+    source = field.to_python_value(ctx, source_dict[name])
+    target = field._get(target_obj)
+    return name, source, target
+
+
+def subobject_auth_adapter(field, ctx, source_dict, target_obj):
+    """
+    Adapter for fields of savory_pie.fields.SubObjectResourceField, or subclasses thereof
+    """
+    name = field._compute_property(ctx)
+    source = source_dict[name]['resourceUri']
+    # this is essentially the same logic as in field.get_subresource(), but
+    # ignores source_dict as we're only interested in target's resourceUri
+    target = ctx.build_resource_uri(field._resource_class(getattr(target_obj, field.name)))
+    return name, source, target
+
+
 class authorization(object):
     """
     Authorization decorator, takes a permission dictionary key and an adapter function
@@ -31,7 +53,8 @@ class authorization(object):
         def inner(field, ctx, source_dict, target_obj):
             permission = field.permission
             if permission:
-                name, source, target = self.auth_adapter(field, ctx, source_dict, target_obj)
+                auth_adapter = getattr(permission, 'auth_adapter', None) or self.auth_adapter
+                name, source, target = auth_adapter(field, ctx, source_dict, target_obj)
                 if not permission.is_write_authorized(ctx, target_obj, source, target):
                     raise AuthorizationError(name)
 
