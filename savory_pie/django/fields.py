@@ -431,18 +431,12 @@ class ReverseField(object):
 class ReverseRelatedManagerField(object):
     """
     Where ReverseField works with one-to-one relationships, this works with
-    many-to-one relationships. So if Django model A has a foreign key to model B,
-    you would have a RelatedField('b') in AResource so that during a PUT/POST
-    to B, the AResource.bfield.handle_incoming call can peek up the stack
-    (ctx.peek) to find the A instance, and set that A's relevant attribute to the
-    B instance.
-
-    In one-to-many cases, multiple A models all point to the same B. The PUT
-    operation on AResource includes an embedded JSON chunk for a BResource, and
-    when the PUT is executed, the BResource and its underlying B model are
-    created. In this case, BResource.afield.handle_incoming needs to peek up
-    the stack to get the A model, and set the B attribute on the A model to
-    the B model in question.
+    many-to-one relationships where multiple A models all point to the same B.
+    The PUT operation on AResource includes an embedded JSON chunk for a
+    BResource, and when the PUT is executed, the BResource and its underlying
+    B model are created. In this case, BResource.afield.handle_incoming needs
+    to peek up the stack to get the A model, and set the B attribute on that
+    A model to this B model.
     """
     from savory_pie.fields import ResourceClassUser
     __metaclass__ = ResourceClassUser
