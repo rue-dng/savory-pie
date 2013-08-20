@@ -8,6 +8,7 @@ from django.utils.functional import Promise
 
 from savory_pie import fields as base_fields
 from savory_pie.errors import SavoryPieError
+from savory_pie.django.validators import ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -412,8 +413,11 @@ class ReverseField(object):
         ``attribute_name``
             the name of the backref on the model.
     """
-    def __init__(self, attribute_name):
+    __metaclass__ = base_fields.ResourceClassUser
+
+    def __init__(self, attribute_name, resource_class=None):
         self.attribute_name = attribute_name
+        self.init_resource_class(resource_class)
 
     @property
     def name(self):
@@ -422,7 +426,20 @@ class ReverseField(object):
     def handle_incoming(self, ctx, source_dict, target_obj):
         if target_obj.pk is not None:
             return
-        setattr(target_obj, self.attribute_name, ctx.peek())
+        container = ctx.peek()
+        if container is not target_obj:
+            setattr(target_obj, self.attribute_name, container)
+        else:
+            published_property = ctx.formatter.convert_to_public_property(self.attribute_name)
+            if published_property in source_dict:
+                sub_dict = source_dict.get(published_property)
+                if self._resource_class and isinstance(sub_dict, dict) and 'pk' in sub_dict:
+                    pk = sub_dict.get('pk')
+                    qs = self._resource_class.model_class.objects.filter(pk=pk)
+                    if qs.count() == 1:
+                        setattr(target_obj, self.attribute_name, qs[0])
+                    else:
+                        raise ValidationError('cannot find target {0}'.format(self._resource_class))
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
         pass
