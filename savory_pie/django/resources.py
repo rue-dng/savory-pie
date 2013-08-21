@@ -282,14 +282,37 @@ class ModelResource(Resource):
 
         return target_dict
 
+    def _call_down(self, ctx, field, source_dict):
+        if True:
+            from savory_pie.django.utils import getLogger
+            from pprint import pformat
+            try:
+                fname = field.name
+            except:
+                fname = type(field).__name__
+            getLogger().debug(
+                '{0} handle_incoming {1}\n{2}'
+                .format(
+                    type(self.model).__name__,
+                    fname,
+                    pformat(
+                        source_dict.get(
+                            ctx.formatter.convert_to_public_property(fname)
+                        )
+                    )
+                )
+            )
+
     def _set_pre_save_fields(self, ctx, source_dict):
         for field in self.fields:
             try:
                 pre_save = field.pre_save
             except AttributeError:
+                self._call_down(ctx, field, source_dict)
                 field.handle_incoming(ctx, source_dict, self.model)
             else:
                 if pre_save(self.model):
+                    self._call_down(ctx, field, source_dict)
                     field.handle_incoming(ctx, source_dict, self.model)
 
     def _set_post_save_fields(self, ctx, source_dict):
@@ -300,6 +323,7 @@ class ModelResource(Resource):
                 pass
             else:
                 if not pre_save(self.model):
+                    self._call_down(ctx, field, source_dict)
                     field.handle_incoming(ctx, source_dict, self.model)
 
     def _save(self):
@@ -331,9 +355,8 @@ class ModelResource(Resource):
         try:
             self._set_pre_save_fields(ctx, source_dict)
         except TypeError, e:
-            import traceback
-            for L in traceback.format_exc().splitlines():
-                logger.debug(L)
+            from savory_pie.django.utils import getLogger
+            getLogger().tb()
             raise ValidationError(self, {'invalidFieldData': e.message})
 
         if save:
