@@ -96,6 +96,8 @@ class AttributeField(base_fields.AttributeField, DjangoField):
         self._get_object(target_obj).save()
 
     def filter_by_item(self, ctx, filter_args, source_dict):
+        from savory_pie.django.utils import getLogger
+        getLogger().pprint((self, filter_args, source_dict))
         filter_args[self._full_attribute] = source_dict[self._compute_property(ctx)]
 
     def pre_save(self, model):
@@ -275,7 +277,10 @@ class SubModelResourceField(base_fields.SubObjectResourceField, DjangoField):
             )
         except django.core.exceptions.ObjectDoesNotExist:
             # Search by the source dict
-            sub_resource = self._resource_class.get_by_source_dict(ctx, sub_source_dict)
+            if sub_source_dict:
+                sub_resource = self._resource_class.get_by_source_dict(ctx, sub_source_dict)
+            else:
+                sub_resource = None
 
         # Make sure the new model is attached
         if hasattr(sub_resource, 'model'):
