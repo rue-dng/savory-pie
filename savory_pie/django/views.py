@@ -83,14 +83,38 @@ def _process_post(ctx, resource, request):
 
 
 def _process_put(ctx, resource, request):
+    import sys
+    import traceback
     if 'PUT' in resource.allowed_methods:
         try:
             resource.put(ctx, ctx.formatter.read_from(request))
             return _no_content_success(ctx, request, request)
-        except validators.ValidationError, ve:
-            return _validation_errors(ctx, resource, request, ve.errors)
-        except KeyError, ke:
-            return _validation_errors(ctx, resource, request, {'missingData': ke.message})
+        except validators.ValidationError as ve:
+            etype, value, tb = sys.exc_info()
+            dct = {
+                ctx.formatter.convert_to_public_property(
+                    'trace_back'
+                ): ''.join(traceback.format_exception(etype, value, tb))
+            }
+            if isinstance(ve.errors, dict):
+                dct.update(ve.errors)
+            else:
+                dct['errors'] = ve.errors
+            if ve.extra:
+                dct['extra'] = ve.extra
+            return _validation_errors(ctx, resource, request, dct)
+        except KeyError as ke:
+            etype, value, tb = sys.exc_info()
+            dct = {
+                '{0}({1})'.format(
+                    ctx.formatter.convert_to_public_property('missing_data'),
+                    type(resource).__name__
+                ): ke.message,
+                ctx.formatter.convert_to_public_property(
+                    'trace_back'
+                ): ''.join(traceback.format_exception(etype, value, tb))
+            }
+            return _validation_errors(ctx, resource, request, dct)
     else:
         return _not_allowed_method(ctx, resource, request)
 

@@ -5,9 +5,10 @@ import savory_pie
 
 
 class ValidationError(Exception):
-    def __init__(self, resource, errors):
+    def __init__(self, resource, errors, extra=None):
         self.resource = resource
         self.errors = errors
+        self.extra = extra
 
 
 def validate(ctx, key, resource, source_dict):
