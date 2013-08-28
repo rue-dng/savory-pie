@@ -695,9 +695,10 @@ class IterableField(Field):
             objects.append(model_dict)
         target_dict[self._compute_property(ctx)] = objects
 
-    def validate_resource(self, ctx, key, resource, source_dict):
+    def validate_resource(self, ctx, key, resource, source_dict_list):
         error_dict = {}
-        # TODO how do we validate this guy?
+        if self.validator:
+            self.validator.find_errors(error_dict, ctx, key, resource, self, source_dict_list)
         return error_dict
 
     def schema(self, ctx, **kwargs):
