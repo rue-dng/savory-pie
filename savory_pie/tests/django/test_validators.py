@@ -31,8 +31,16 @@ later = now + timedelta(hours=1)
 too_late = later + timedelta(hours=1)
 ridiculous = too_late + timedelta(hours=1)
 
+model_save_attempted = False
 
-class Car(models.Model):
+
+class NonSavingModel(models.Model):
+    def save(self, *args, **kwargs):
+        global model_save_attempted
+        model_save_attempted = True
+
+
+class Car(NonSavingModel):
     make = models.CharField(max_length=20)
     year = models.IntegerField()
     ugly = models.BooleanField()
@@ -44,6 +52,11 @@ class Car(models.Model):
             'year': self.year,
             'ugly': self.ugly
         }
+
+
+class BugOnWindshield(NonSavingModel):
+    car = models.ForeignKey(Car, related_name='bugs')
+    color = models.CharField(max_length=20)
 
 
 class User(models.Model):
@@ -96,6 +109,36 @@ class IntFieldPrimeValidator(FieldValidator):
         return value in self._primes
 
 
+class BugOnWindshieldResource(resources.ModelResource):
+    parent_resource_path = 'bug'
+    model_class = BugOnWindshield
+    fields = [
+        fields.AttributeField(attribute='color', type=str),
+        fields.ReverseField('car')
+    ]
+
+
+class BugValidator(FieldValidator):
+    '''
+    This is a validator on a ``RelatedManagerField``. We are validating a list of
+    subresources embedded in a containing resource. Since we might need to look
+    at the source_dict for the containing resource to perform a correct validation,
+    it is provided to the ``find_errors`` method in the ``parent_dict`` attribute
+    of the last argument, which would otherwise just be a list of source_dicts for
+    the subresources. All the normal list behaviors are still available.
+    '''
+
+    json_name = 'no_green_bugs_on_new_cars'   # other color bugs are OK
+
+    error_message = 'New cars should not have green bugs on the windshield.'
+
+    def find_errors(self, error_dict, ctx, key, resource, field, source_dict_list):
+        car_year = source_dict_list.parent_dict['year']
+        green_bugs = filter(lambda bug: bug['color'] == 'green', source_dict_list)
+        if car_year >= 2013 and len(green_bugs) > 0:
+            self._add_error(error_dict, key, self.error_message)
+
+
 class CarTestResource(resources.ModelResource):
     parent_resource_path = 'cars'
     model_class = Car
@@ -118,6 +161,11 @@ class CarTestResource(resources.ModelResource):
             validator=IntFieldMinValidator(
                 2010, error_message='car is too old'
             )
+        ),
+        fields.RelatedManagerField(
+            attribute='bugs',
+            resource_class=BugOnWindshieldResource,
+            validator=BugValidator()
         )
     ]
 
@@ -377,6 +425,92 @@ class SubModelValidationTestCase(ValidationTestCase):
         stolen_car = create_car('Toyota', 2011)
         errors = validate_user_resource('Bob', 23, now, later, 120, stolen_car=stolen_car)
         self.assertEqual({}, errors)
+
+
+class RelatedManagerFieldValidationTestCase(ValidationTestCase):
+
+    def setUp(self):
+        global model_save_attempted
+        self.ctx = mock_context()
+        self.model = Car()
+        self.resource = CarTestResource(self.model)
+        self.ctx.peek.return_value = self.model
+        model_save_attempted = False
+
+    def test_old_car_with_zero_bugs(self):
+        self.resource.put(self.ctx, {
+            'make': 'Toyota',
+            'year': 2010,
+            'ugly': False,
+            'bugs': []
+        })
+        self.assertTrue(model_save_attempted)
+
+    def test_old_car_with_green_bugs(self):
+        self.resource.put(self.ctx, {
+            'make': 'Toyota',
+            'year': 2010,
+            'ugly': False,
+            'bugs': [
+                {'color': 'green'},
+                {'color': 'red'},
+                {'color': 'green'},
+                {'color': 'yellow'},
+                {'color': 'green'}
+            ]
+        })
+        self.assertTrue(model_save_attempted)
+
+    def test_old_car_with_non_green_bugs(self):
+        self.resource.put(self.ctx, {
+            'make': 'Toyota',
+            'year': 2010,
+            'ugly': False,
+            'bugs': [
+                {'color': 'red'},
+                {'color': 'yellow'},
+                {'color': 'blue'}
+            ]
+        })
+        self.assertTrue(model_save_attempted)
+
+    def test_new_car_with_zero_bugs(self):
+        self.resource.put(self.ctx, {
+            'make': 'Toyota',
+            'year': 2013,
+            'ugly': False,
+            'bugs': []
+        })
+        self.assertTrue(model_save_attempted)
+
+    def test_new_car_with_green_bugs(self):
+        with self.assertRaises(ValidationError):
+            self.resource.put(self.ctx, {
+                'make': 'Toyota',
+                'year': 2013,
+                'ugly': False,
+                'bugs': [
+                    {'color': 'green'},
+                    {'color': 'red'},
+                    {'color': 'green'},
+                    {'color': 'yellow'},
+                    {'color': 'green'}
+                ]
+            })
+        self.assertFalse(model_save_attempted)
+
+    def test_new_car_with_non_green_bugs(self):
+        self.resource.put(self.ctx, {
+            'make': 'Toyota',
+            'year': 2013,
+            'ugly': False,
+            'bugs': [
+                {'color': 'red'},
+                {'color': 'yellow'},
+                {'color': 'blue'}
+            ]
+        })
+        self.assertTrue(model_save_attempted)
 
 
 class SchemaGetTestCase(ValidationTestCase):
