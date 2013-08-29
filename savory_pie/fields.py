@@ -629,7 +629,7 @@ class IterableField(Field):
         new_put_data = []
         request_keys = set()
         request_models = {}
-        for model_dict in source_dict[self._compute_property(ctx)]:
+        for model_dict in source_dict.get(self._compute_property(ctx), []):
             resource = self._get_resource(ctx, attribute, model_dict)
             if resource:
                 request_models[resource.key] = resource.model
