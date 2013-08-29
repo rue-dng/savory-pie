@@ -48,6 +48,14 @@ def validate(ctx, key, resource, source_dict):
                 fieldname = ctx.formatter.convert_to_public_property(field.name)
                 if fieldname in source_dict:
                     value = source_dict[fieldname]
+                    if isinstance(value, list):
+                        # RelatedManagerField validator might want to examine parent dict
+                        class SourceDictList(list):
+                            def __init__(self, source_dicts, parent_dict):
+                                self[:] = source_dicts
+                                self.parent_dict = parent_dict
+
+                        value = SourceDictList(value, source_dict)
 
                     # ignore validation if value hasn't changed
                     if hasattr(resource, 'model'):
@@ -59,12 +67,14 @@ def validate(ctx, key, resource, source_dict):
                             pass
 
                     # attempt to validate field
-                    try:
-                        validate_method = field.validate_resource
-                    except AttributeError:
-                        pass
-                    else:
-                        error_dict.update(validate_method(ctx, key, resource, value))
+                    if field.validator:
+                        if isinstance(field.validator, collections.Iterable):
+                            for validator in field.validator:
+                                validator.find_errors(error_dict, ctx, key, resource, field, value)
+                        else:
+                            field.validator.find_errors(error_dict, ctx, key, resource, field, value)
+                    if hasattr(field, 'validate_resource'):
+                        error_dict.update(field.validate_resource(ctx, key, resource, value))
 
         if hasattr(resource, 'validators') and \
            isinstance(resource.validators, collections.Iterable):
