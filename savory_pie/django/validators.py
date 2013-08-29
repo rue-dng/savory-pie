@@ -291,6 +291,34 @@ class DatetimeFieldSequenceValidator(ResourceValidator):
                 return
 
 
+class RequiredFieldValidator(ResourceValidator):
+    """
+    Ensure that a particular field of a resource exists.
+
+    Parameters:
+
+        ``field``
+            the name of the required field
+
+        ``error_message``
+            optional: the message to appear in the error dictionary if this
+            condition is not met
+    """
+
+    json_name = 'required_field'
+
+    error_message = 'This field is required'
+
+    def __init__(self, field, *args, **kwargs):
+        self.field = field
+        super(RequiredFieldValidator, self).__init__(**kwargs)
+
+    def find_errors(self, error_dict, ctx, key, resource, source_dict):
+        json_key = ctx.formatter.convert_to_public_property(self.field)
+        if not source_dict.get(json_key):
+            self._add_error(error_dict, key, self.error_message + ': ' + json_key)
+
+
 class RequiredTogetherValidator(ResourceValidator):
     """
     Test a tuple of fields to ensure that if a value for one field in the set is
