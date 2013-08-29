@@ -95,7 +95,7 @@ class AttributeField(base_fields.AttributeField, DjangoField):
         self._get_object(target_obj).save()
 
     def filter_by_item(self, ctx, filter_args, source_dict):
-        filter_args[self._full_attribute] = source_dict[self._compute_property(ctx)]
+        filter_args[self._full_attribute] = source_dict.get(self._compute_property(ctx))
 
     def pre_save(self, model):
         return True
@@ -264,7 +264,7 @@ class SubModelResourceField(base_fields.SubObjectResourceField, DjangoField):
         return super(SubModelResourceField, self).schema(ctx, **kwargs)
 
     def get_subresource(self, ctx, source_dict, target_obj):
-        sub_source_dict = source_dict[self._compute_property(ctx)]
+        sub_source_dict = source_dict.get(self._compute_property(ctx)) or {}
         try:
             # Look at non-null FK
             sub_resource = super(SubModelResourceField, self).get_subresource(
