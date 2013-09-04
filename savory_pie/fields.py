@@ -3,7 +3,7 @@ import functools
 import importlib
 from savory_pie.auth import authorization, authorization_adapter
 from savory_pie.resources import EmptyParams
-from savory_pie.django.validators import validate
+from savory_pie.django.validators import validate, ValidationError
 from savory_pie.errors import SavoryPieError
 
 
@@ -145,6 +145,9 @@ class AttributeField(Field):
     @read_only_noop
     @authorization(authorization_adapter)
     def handle_incoming(self, ctx, source_dict, target_obj):
+        attr = self._compute_property(ctx)
+        if attr not in source_dict:
+            raise ValidationError(self, {'missingField': attr})
         with ctx.target(target_obj):
             self._set(
                 target_obj,
