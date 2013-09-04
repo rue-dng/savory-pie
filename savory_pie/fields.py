@@ -147,7 +147,8 @@ class AttributeField(Field):
     def handle_incoming(self, ctx, source_dict, target_obj):
         attr = self._compute_property(ctx)
         if attr not in source_dict:
-            raise ValidationError(self, {'missingField': attr})
+            raise ValidationError(self, {'missingField': attr,
+                                         'target': type(target_obj).__name__})
         with ctx.target(target_obj):
             self._set(
                 target_obj,
