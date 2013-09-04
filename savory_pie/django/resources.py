@@ -5,6 +5,7 @@ import django.core.exceptions
 
 from savory_pie.resources import EmptyParams, Resource
 from savory_pie.django.utils import Related
+from savory_pie.django.fields import ReverseField
 from savory_pie.django.validators import ValidationError, validate
 
 logger = logging.getLogger(__name__)
@@ -136,6 +137,9 @@ class QuerySetResource(Resource):
 
     def post(self, ctx, source_dict):
         resource = self.resource_class.create_resource()
+        if filter(lambda field: isinstance(field, ReverseField), resource.fields):
+            raise ValidationError(resource, {'do not post a resource with a ReverseField':
+                                             type(resource).__name__})
         with ctx.target(resource.model):
             resource.put(ctx, source_dict)
 
