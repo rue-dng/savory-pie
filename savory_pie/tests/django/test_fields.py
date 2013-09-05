@@ -18,7 +18,6 @@ from savory_pie.django.fields import (
     SubModelResourceField,
     URIListResourceField,
     URIResourceField,
-    PrimaryKeyResourceField,
 )
 from savory_pie.django.resources import ModelResource, QuerySetResource
 from savory_pie.django.utils import Related
@@ -265,7 +264,7 @@ class AttributeFieldWithModelsTest(unittest.TestCase):
         FooModel.objects.get.assert_called_with(bar=20, other='A')
 
 
-class URIResourceFieldTestCase(unittest.TestCase):
+class URIResourceFieldTest(unittest.TestCase):
     def test_outgoing(self):
 
         class Resource(ModelResource):
@@ -328,23 +327,6 @@ class URIResourceFieldTestCase(unittest.TestCase):
 
         self.assertFalse(ctx.resolve_resource_uri.called)
         self.assertFalse(hasattr(target_object, 'foo'))
-
-
-class PrimaryKeyResourceFieldTestCase(unittest.TestCase):
-    def test_outgoing(self):
-
-        class Resource(ModelResource):
-            parent_resource_path = 'resources'
-
-        field = PrimaryKeyResourceField(attribute='foo', resource_class=Resource)
-
-        source_object = Mock()
-        source_object.foo = mock_orm.Model(pk=2)
-
-        target_dict = dict()
-        field.handle_outgoing(mock_context(), source_object, target_dict)
-
-        self.assertEqual(target_dict['foo'], 2)
 
 
 class SchemaSubfieldFieldTest(unittest.TestCase):
@@ -1170,7 +1152,7 @@ class URIListResourceFieldTestCase(unittest.TestCase):
         self.assertEqual(['uri://resources/1', 'uri://resources/2'], target_dict['foos'])
 
 
-class RelatedCountFieldTestCase(unittest.TestCase):
+class TestRelatedCountField(unittest.TestCase):
     def test_prepare(self):
         ctx = mock_context()
         ctx.peek.side_effect = IndexError

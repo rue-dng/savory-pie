@@ -200,41 +200,6 @@ class URIResourceField(base_fields.URIResourceField, DjangoField):
         return True
 
 
-class PrimaryKeyResourceField(base_fields.PrimaryKeyResourceField, DjangoField):
-    """
-    Django extension of the basic PrimaryKeyResourceField that adds support for optimized
-    select_related or prefetch_related calls.
-
-    Parameters:
-            :class:`savory_pie.fields.URIResourceField`
-
-            ``use_prefetch``
-                optional -- tells the attribute field to use
-                prefetch_related rather than a select_related.  Defaults to false.
-
-                There are two reasons you might need to do this...
-
-                - select_related will not work when the foreign key allows null.
-                - select_related will not work when the foreign key is a GenericForeignKey.
-
-                See https://docs.djangoproject.com/en/dev/ref/models/querysets/
-
-                This parameter is meaningless for top-level attributes.
-    """
-    def __init__(self, *args, **kwargs):
-        self._use_prefetch = kwargs.pop('use_prefetch', False)
-        super(PrimaryKeyResourceField, self).__init__(*args, **kwargs)
-
-    def prepare(self, ctx, related):
-        if self._use_prefetch:
-            related.sub_prefetch(self._attribute)
-        else:
-            related.sub_select(self._attribute)
-
-    def pre_save(self, model):
-        return True
-
-
 class URIListResourceField(base_fields.URIListResourceField, DjangoField):
     """
     Django extension of the basic URIListResourceField

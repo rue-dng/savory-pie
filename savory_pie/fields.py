@@ -196,7 +196,7 @@ class URIResourceField(Field):
             optional -- name exposed in the API
 
         ``read_only``
-            optional -- this api will never try to set this value
+            optional -- this api will never try and set this value
 
         .. code-block:: python
 
@@ -250,63 +250,9 @@ class URIResourceField(Field):
             target_dict[self._compute_property(ctx)] = None
 
     def validate_resource(self, ctx, key, resource, source_dict):
-        return {}
-
-
-class PrimaryKeyResourceField(Field):
-    """
-    Field that exposes just the primary key of related entity
-
-
-    Parameters:
-
-        ``attribute``
-            name of the relationship between the parent object and the related
-            object may only be single level
-
-        ``resource_class``
-            a ModelResource -- used to represent the related object needs to be
-            fully addressable
-
-        ``published_property``
-            optional -- name exposed in the API
-
-        ``read_only``
-            optional -- this api will never try to set this value
-
-        .. code-block:: python
-
-            PrimaryKeyResourceField('other', OtherResource)
-
-        .. code-block:: javascript
-
-            {'other': {pk}}
-    """
-    __metaclass__ = ResourceClassUser
-
-    def __init__(self,
-                 attribute,
-                 resource_class,
-                 published_property=None):
-        self._attribute = attribute
-        self.init_resource_class(resource_class)
-        self._published_property = published_property
-
-    def _compute_property(self, ctx):
-        if self._published_property is not None:
-            return ctx.formatter.convert_to_public_property(self._published_property)
-        else:
-            return ctx.formatter.convert_to_public_property(self._attribute)
-
-    def handle_incoming(self, ctx, source_dict, target_obj):
-        pass
-
-    def handle_outgoing(self, ctx, source_obj, target_dict):
-        sub_model = getattr(source_obj, self._attribute)
-        target_dict[self._compute_property(ctx)] = sub_model and sub_model.pk
-
-    def validate_resource(self, ctx, key, resource, source_dict):
-        return {}
+        error_dict = {}
+        # TODO how do we validate this guy?
+        return error_dict
 
 
 class CompleteURIResourceField(Field):
