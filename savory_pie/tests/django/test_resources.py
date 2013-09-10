@@ -146,7 +146,7 @@ class ModelResourceTest(unittest.TestCase):
                                       request)
         errors = json.loads(response.content)
         self.assertTrue('validation_errors' in errors)
-        self.assertEqual(errors['validation_errors'], {'missingData': 'age'})
+        self.assertEqual(errors['validation_errors'], {'missingField': 'age', 'target': 'User'})
 
     def test_put_with_foreign_key_none_resource(self):
         user = User()

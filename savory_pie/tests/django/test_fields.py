@@ -22,6 +22,7 @@ from savory_pie.django.fields import (
 from savory_pie.django.resources import ModelResource, QuerySetResource
 from savory_pie.django.utils import Related
 from savory_pie.errors import SavoryPieError
+from savory_pie.django.validators import ValidationError
 from savory_pie.tests.django import mock_orm
 from savory_pie.tests.django.mock_request import mock_context
 
@@ -140,7 +141,7 @@ class AttributeFieldTest(unittest.TestCase):
         target_object = Mock(name='target')
 
         field = AttributeField(attribute='foo', type=int)
-        with self.assertRaises(KeyError):
+        with self.assertRaises(ValidationError):
             field.handle_incoming(mock_context(), source_dict, target_object)
 
     def test_alternate_name_outgoing(self):
