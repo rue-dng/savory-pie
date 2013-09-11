@@ -26,10 +26,17 @@ def subobject_auth_adapter(field, ctx, source_dict, target_obj):
     Adapter for fields of savory_pie.fields.SubObjectResourceField, or subclasses thereof
     """
     name = field._compute_property(ctx)
-    source = source_dict[name]['resourceUri']
+    if source_dict[name] is not None:
+        source = source_dict[name]['resourceUri']
+    else:
+        source = None
     # this is essentially the same logic as in field.get_subresource(), but
     # ignores source_dict as we're only interested in target's resourceUri
-    target = ctx.build_resource_uri(field._resource_class(getattr(target_obj, field.name)))
+    target_subobject = getattr(target_obj, field.name)
+    if target_subobject is not None:
+        target = ctx.build_resource_uri(field._resource_class(target_subobject))
+    else:
+        target = None
     return name, source, target
 
 
