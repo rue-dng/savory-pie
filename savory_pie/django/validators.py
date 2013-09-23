@@ -67,7 +67,7 @@ def validate(ctx, key, resource, source_dict):
                             pass
 
                     # attempt to validate field
-                    if field.validator:
+                    if hasattr(field, 'validator') and field.validator:
                         if isinstance(field.validator, collections.Iterable):
                             for validator in field.validator:
                                 validator.find_errors(error_dict, ctx, key, resource, field, value)
