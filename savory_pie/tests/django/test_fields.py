@@ -13,18 +13,18 @@ from savory_pie.django.fields import (
     AttributeField,
     AttributeFieldWithModel,
     OneToOneField,
-    RelatedCountField,
     RelatedManagerField,
     SubModelResourceField,
     URIListResourceField,
     URIResourceField,
-)
+    AggregateField)
 from savory_pie.django.resources import ModelResource, QuerySetResource
 from savory_pie.django.utils import Related
 from savory_pie.errors import SavoryPieError
 from savory_pie.django.validators import ValidationError
 from savory_pie.tests.django import mock_orm
 from savory_pie.tests.django.mock_request import mock_context
+
 
 
 class AttributeFieldTest(unittest.TestCase):
@@ -1154,12 +1154,101 @@ class URIListResourceFieldTestCase(unittest.TestCase):
 
 
 class TestRelatedCountField(unittest.TestCase):
+    pass
+
+
+class StubModel(object):
+    objects = None
+
+
+
+class TestAggregateField(unittest.TestCase):
+
+    def _get_stub(self, query_resource, id=2):
+        query_result = Mock()
+        query_result.values.return_value = query_resource
+
+        objects = Mock()
+        objects.filter.return_value = query_result
+        StubModel.objects = objects
+
+        stub_model = StubModel()
+        stub_model.id = 2
+        return stub_model
+
+    def test_handle_outgoing_sum(self):
+        ctx = mock_context()
+
+        mock_model = Mock(name='model')
+        mock_model.name__sum = 14
+        target_dict = {}
+
+        field = AggregateField('name', django.db.models.Sum)
+        field.handle_outgoing(ctx, mock_model, target_dict)
+
+        self.assertEqual(
+            14,
+            target_dict['name'],
+        )
+
+    @mock.patch('savory_pie.django.fields.AGGREGATE_MAPPER')
+    def test_raise_unknown_method(self, mapper):
+        ctx = mock_context()
+
+        mapper.get.side_effect = AttributeError
+
+        stub_model = self._get_stub([{'name': 23}, {'name': 10}])
+        mock_sum = Mock(spec='name')
+        mock_sum.name = 'sum'
+        target_dict = {}
+
+        field = AggregateField('name', mock_sum)
+        with self.assertRaises(AttributeError):
+            field.handle_outgoing(ctx, stub_model, target_dict)
+
+    @mock.patch('savory_pie.django.fields.AGGREGATE_MAPPER')
+    def test_handel_outgoing_sum_attr_error(self, mapper):
+        ctx = mock_context()
+
+        target_dict = {}
+        mock_sum = Mock(spec='name')
+        mock_sum.name = 'sum'
+        mapper.get.return_value = sum
+        field = AggregateField('name', mock_sum)
+
+        stub_model = self._get_stub([{'name': 23}, {'name': 10}])
+        field.handle_outgoing(ctx, stub_model, target_dict)
+
+        self.assertEqual(
+            33,
+            target_dict['name'],
+        )
+        StubModel.objects.filter.assert_called_with(pk=2)
+
+    @mock.patch('savory_pie.django.fields.AGGREGATE_MAPPER')
+    def test_handel_outgoing_sum_non(self, mapper):
+        ctx = mock_context()
+
+        target_dict = {}
+        mock_sum = Mock(spec='name')
+        mock_sum.name = 'sum'
+        mapper.get.return_value = sum
+        field = AggregateField('name', mock_sum)
+
+        stub_model = self._get_stub([{'name': None}])
+        field.handle_outgoing(ctx, stub_model, target_dict)
+
+        self.assertEqual(
+            0,
+            target_dict['name'],
+        )
+
     def test_prepare(self):
         ctx = mock_context()
         ctx.peek.side_effect = IndexError
         related = Mock(name='related')
 
-        field = RelatedCountField('name.one.two')
+        field = AggregateField('name.one.two', django.db.models.Count)
         field.prepare(ctx, related)
 
         related.annotate.assert_called_with(
@@ -1172,7 +1261,7 @@ class TestRelatedCountField(unittest.TestCase):
         ctx = mock_context()
         related = Mock(name='related')
 
-        field = RelatedCountField('name.one.two')
+        field = AggregateField('name.one.two', django.db.models.Count)
 
         with self.assertRaises(SavoryPieError) as cm:
             field.prepare(ctx, related)
@@ -1189,7 +1278,7 @@ class TestRelatedCountField(unittest.TestCase):
         mock_model.name__count = 14
         target_dict = {}
 
-        field = RelatedCountField('name')
+        field = AggregateField('name', django.db.models.Count)
         field.handle_outgoing(ctx, mock_model, target_dict)
 
         self.assertEqual(
