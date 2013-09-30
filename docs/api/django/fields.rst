@@ -14,3 +14,7 @@
     .. autoclass:: SubModelResourceField
 
     .. autoclass:: RelatedManagerField
+
+    .. atoclass:: AggregateField
+
+    .. atoclass:: RelatedCountField
