@@ -17,7 +17,7 @@ from savory_pie.django.fields import (
     SubModelResourceField,
     URIListResourceField,
     URIResourceField,
-    AggregateField)
+    AggregateField, RelatedCountField)
 from savory_pie.django.resources import ModelResource, QuerySetResource
 from savory_pie.django.utils import Related
 from savory_pie.errors import SavoryPieError
@@ -1153,13 +1153,38 @@ class URIListResourceFieldTestCase(unittest.TestCase):
         self.assertEqual(['uri://resources/1', 'uri://resources/2'], target_dict['foos'])
 
 
-class TestRelatedCountField(unittest.TestCase):
-    pass
-
-
 class StubModel(object):
     objects = None
 
+
+class TestRelatedCountField(unittest.TestCase):
+    @mock.patch('savory_pie.django.fields.AGGREGATE_MAPPER')
+    def test_handel_outgoing_count_attr_error(self, mapper):
+        ctx = mock_context()
+
+        target_dict = {}
+        mapper.get.return_value = sum
+        field = RelatedCountField('name')
+
+        count = Mock()
+        count.count.return_value = 3
+        query_result = Mock()
+        query_result.values.return_value = count
+
+        objects = Mock()
+        objects.filter.return_value = query_result
+        StubModel.objects = objects
+
+        stub_model = StubModel()
+        stub_model.id = 7
+
+        field.handle_outgoing(ctx, stub_model, target_dict)
+
+        self.assertEqual(
+            3,
+            target_dict['name'],
+        )
+        StubModel.objects.filter.assert_called_with(pk=7)
 
 
 class TestAggregateField(unittest.TestCase):
@@ -1173,7 +1198,7 @@ class TestAggregateField(unittest.TestCase):
         StubModel.objects = objects
 
         stub_model = StubModel()
-        stub_model.id = 2
+        stub_model.id = id
         return stub_model
 
     def test_handle_outgoing_sum(self):

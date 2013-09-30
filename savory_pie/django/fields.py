@@ -18,7 +18,6 @@ def average(query_list):
 
 AGGREGATE_MAPPER = {
     'sum': sum,
-    'count': len,
     'max': max,
     'min': min,
     'avg': average,
