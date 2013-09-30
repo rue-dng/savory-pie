@@ -479,14 +479,14 @@ class ReverseRelatedManagerField(object):
 class AggregateField(object):
     """
     Django field to handle aggregation objects. This uses
-    something like aggrege(field) under the hood.
+    something like aggregate(field) under the hood.
 
     Parameters:
         ''attribute''
             doted name of the field to count
 
         ''aggregate''
-            string or function
+            django aggregation function
 
         ``published_property``
             optional -- name exposed in the API
