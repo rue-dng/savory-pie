@@ -12,6 +12,18 @@ from savory_pie.errors import SavoryPieError
 logger = logging.getLogger(__name__)
 
 
+def average(query_list):
+    return sum(query_list)/len(query_list)
+
+
+AGGREGATE_MAPPER = {
+    'sum': sum,
+    'max': max,
+    'min': min,
+    'avg': average,
+}
+
+
 class DjangoField(base_fields.Field):
     def schema(self, ctx, **kwargs):
         model = kwargs['model']
@@ -463,21 +475,26 @@ class ReverseRelatedManagerField(object):
             setattr(target, self.attribute_name, target_obj)
 
 
-class RelatedCountField(object):
+class AggregateField(object):
     """
-    Django field to handle counting the number of related objects. This uses
-    something like annotate(Count()) under the hood.
+    Django field to handle aggregation objects. This uses
+    something like aggregate(field) under the hood.
 
     Parameters:
         ''attribute''
             doted name of the field to count
 
+        ''aggregate''
+            django aggregation function
+
         ``published_property``
             optional -- name exposed in the API
+
     """
-    def __init__(self, attribute, published_property=None):
+    def __init__(self, attribute, aggregate, published_property=None):
         self._attribute = attribute
         self._published_property = published_property
+        self.aggregate = aggregate
         self._orm_attribute = self._attribute.replace('.', '__')
 
     def _compute_property(self, ctx):
@@ -488,12 +505,25 @@ class RelatedCountField(object):
 
     def _get(self, source_obj):
         try:
-            return getattr(source_obj, self._orm_attribute + '__count')
+            return getattr(source_obj, '{0}__{1}'.format(self._orm_attribute, self.aggregate.name.lower()))
         except AttributeError:
-            return source_obj.__class__.objects.filter(pk=source_obj.id).values(self._orm_attribute).count()
+            py_func = AGGREGATE_MAPPER.get(self.aggregate.name.lower(), None)
+            if not py_func:
+                raise
+
+            query = source_obj.__class__.objects.filter(pk=source_obj.id).values(self._orm_attribute)
+            # Since queries don't take into account None values we need to filter them out.
+            # This is a potential bug further down the road if we do more intresting features like median
+            # TODO: fix none values
+
+            values = [item[self._orm_attribute] for item in query if item[self._orm_attribute] is not None]
+
+            if not values:
+                values.append(0)
+            return py_func(values)
 
     def prepare(self, ctx, related):
-        # Due to how annotate works with the django ORM, RelatedCountField can
+        # Due to how annotate works with the django ORM, AggregateField can
         # only be used on a top level resource. We peek in to the stack to see
         # how deep we are and fail if it is too deep.
         try:
@@ -501,11 +531,11 @@ class RelatedCountField(object):
         except IndexError:
             pass
         else:
-            raise SavoryPieError('RelatedCountField can only be used on a '
-                                 'top level ModelResource')
-
+            raise SavoryPieError(
+                'RelatedCountField can only be used on a top level ModelResource'
+            )
         related.annotate(
-            django.db.models.Count,
+            self.aggregate,
             self._orm_attribute,
             distinct=True,
         )
@@ -518,3 +548,25 @@ class RelatedCountField(object):
             int,
             self._get(source_obj)
         )
+
+
+class RelatedCountField(AggregateField):
+    """
+    Django field to handle counting the number of related objects. This uses
+    something like annotate(Count()) under the hood.
+
+    Parameters:
+        ''attribute''
+            doted name of the field to count
+
+        ``published_property``
+            optional -- name exposed in the API
+    """
+    def __init__(self, attribute, published_property=None):
+        super(RelatedCountField, self).__init__(attribute, django.db.models.Count, published_property)
+
+    def _get(self, source_obj):
+        try:
+            return getattr(source_obj, '{0}__{1}'.format(self._orm_attribute, self.aggregate.name.lower()))
+        except AttributeError:
+            return source_obj.__class__.objects.filter(pk=source_obj.id).values(self._orm_attribute).count()

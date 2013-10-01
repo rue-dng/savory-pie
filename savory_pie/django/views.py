@@ -52,7 +52,7 @@ def api_view(root_resource):
                 return _not_allowed_method(ctx, resource, request)
         except AuthorizationError as e:
             return _access_denied(ctx, field_name=e.name)
-        except:
+        except Exception:
             import traceback
             return _internal_error(ctx, request, traceback.format_exc())
 
