@@ -31,8 +31,7 @@ def getLogger(name=None):
 
     def logger_tb(logger=logger):
         if logger.isEnabledFor(logging.DEBUG):
-            etype, value, tb = sys.exc_info()
-            message = ''.join(traceback.format_exception(etype, value, tb))
+            message = ''.join(traceback.format_stack())
             logger._log(logging.DEBUG, '\n' + message, [], {})
     logger.tb = logger_tb
 
