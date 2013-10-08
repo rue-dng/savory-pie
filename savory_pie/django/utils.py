@@ -1,6 +1,5 @@
 import logging
 import pprint
-import sys
 import traceback
 
 from django.db import connection

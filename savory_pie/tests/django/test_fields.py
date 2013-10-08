@@ -26,7 +26,6 @@ from savory_pie.tests.django import mock_orm
 from savory_pie.tests.django.mock_request import mock_context
 
 
-
 class AttributeFieldTest(unittest.TestCase):
     def test_simple_outgoing(self):
         source_object = Mock()
