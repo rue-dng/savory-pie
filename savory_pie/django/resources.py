@@ -7,6 +7,7 @@ from savory_pie.resources import EmptyParams, Resource
 from savory_pie.django.utils import Related
 from savory_pie.django.fields import ReverseField
 from savory_pie.django.validators import ValidationError, validate
+from savory_pie.django.views import _get_sha1, PreconditionFailedError
 
 logger = logging.getLogger(__name__)
 
@@ -331,6 +332,9 @@ class ModelResource(Resource):
             if errors:
                 logger.debug(errors)
                 raise ValidationError(self, errors)
+
+        if ctx.expected_sha and ctx.expected_sha != _get_sha1(ctx, self.get(ctx, EmptyParams())):
+            raise PreconditionFailedError
 
         try:
             self._set_pre_save_fields(ctx, source_dict)

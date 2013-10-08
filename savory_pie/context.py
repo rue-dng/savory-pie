@@ -24,6 +24,7 @@ class APIContext(object):
         self.headers_dict = {}
         self.object_stack = []
         self.streaming_response = False
+        self.expected_sha = None
 
     def resolve_resource_uri(self, uri):
         """
@@ -74,6 +75,11 @@ class APIContext(object):
         """
         self.headers_dict[header] = value
         return self.headers_dict
+
+    def set_expected_sha(self, request):
+        expected_sha = request.META.get('If-Match')
+        if expected_sha:
+            self.expected_sha = expected_sha
 
     @contextlib.contextmanager
     def target(self, target):

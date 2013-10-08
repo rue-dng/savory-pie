@@ -1,3 +1,9 @@
+import hashlib
+try:
+    import cStringIO as StringIO
+except ImportError:
+    import StringIO
+
 from django.http import HttpResponse, StreamingHttpResponse
 
 from savory_pie.context import APIContext
@@ -63,6 +69,18 @@ def _strip_query_string(path):
     return path.split('?', 1)[0]
 
 
+class PreconditionFailedError(Exception):
+    pass
+
+
+def _get_sha1(ctx, dct):
+    sha = hashlib.sha1()
+    buf = StringIO.StringIO()
+    ctx.formatter.write_to(dct, buf)
+    sha.update(buf.getvalue())
+    return sha.hexdigest()
+
+
 def _process_get(ctx, resource, request):
     if 'GET' in resource.allowed_methods:
         content_dict = resource.get(ctx, _ParamsImpl(request.GET))
@@ -85,8 +103,11 @@ def _process_post(ctx, resource, request):
 def _process_put(ctx, resource, request):
     if 'PUT' in resource.allowed_methods:
         try:
+            ctx.set_expected_sha(request)
             resource.put(ctx, ctx.formatter.read_from(request))
             return _no_content_success(ctx, request, request)
+        except PreconditionFailedError:
+            return _precondition_failed(ctx, resource, request)
         except validators.ValidationError, ve:
             return _validation_errors(ctx, resource, request, ve.errors)
         except KeyError, ke:
@@ -116,6 +137,10 @@ def _access_denied(ctx, field_name=''):
     return response
 
 
+def _precondition_failed(ctx, resource, request):
+    return HttpResponse(status=412)
+
+
 def _not_allowed_method(ctx, resource, request):
     response = HttpResponse(status=405)
     response['Allowed'] = ','.join(resource.allowed_methods)
@@ -140,12 +165,14 @@ def _content_success(ctx, resource, request, content_dict):
             content_dict,
             status=200,
             content_type=ctx.formatter.content_type)
+        response['ETag'] = _get_sha1(ctx, content_dict)
     else:
         response = HttpResponse(
             status=200,
             content_type=ctx.formatter.content_type
         )
         ctx.formatter.write_to(content_dict, response)
+        # No ETag, not practical on streaming
     if ctx.headers_dict:
         for header, value in ctx.headers_dict.items():
             response[header] = value
