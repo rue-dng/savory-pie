@@ -2,7 +2,7 @@ from django.http import HttpResponse, StreamingHttpResponse
 
 from savory_pie.context import APIContext
 from savory_pie.errors import AuthorizationError
-from savory_pie.formatters import JSONFormatter
+from savory_pie.formatters import get_formatter
 from savory_pie.django import validators
 
 
@@ -30,7 +30,7 @@ def api_view(root_resource):
         ctx = APIContext(
             base_uri=request.build_absolute_uri(base_path),
             root_resource=root_resource,
-            formatter=JSONFormatter(),
+            formatter=get_formatter(request.GET.get('_format')),
             request=request
         )
 

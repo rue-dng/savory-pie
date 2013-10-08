@@ -1,3 +1,5 @@
+import csv
+import collections
 import exceptions
 import json
 import pytz
@@ -70,3 +72,60 @@ class JSONFormatter(object):
                 return str(python_value)
 
         return python_value
+
+
+class CSVFormatter(JSONFormatter):
+    """
+    Formatter reads and writes csv while converting properties to and from
+    javascript naming conventions and pep8.
+    """
+
+    content_type = 'text/csv'
+
+    def read_from(self, request):
+        raise NotImplementedError
+
+    def write_to(self, body_dict, response):
+        if 'objects' in body_dict:
+            rows = [self._flatten(r) for r in body_dict['objects']]
+        else:
+            rows = [self._flatten(body_dict)]
+
+        header = set()
+        for row in rows:
+            header.update(row.keys())
+
+        writer = csv.DictWriter(response, sorted(header))
+        writer.writeheader()
+        writer.writerows(rows)
+
+    def _flatten(self, deep_dict):
+        flat_dict = {}
+        for k, v in deep_dict.items():
+            flat_dict.update(self._flatten_value(v, prefix=k))
+        return flat_dict
+
+    def _flatten_value(self, value, prefix):
+        if isinstance(value, collections.Mapping):
+            return {prefix + ':' + k: v for k, v in self._flatten(value).items()}
+        elif isinstance(value, (str, unicode)):
+            return {prefix: value}
+        elif isinstance(value, collections.Sequence):
+            flat = {}
+            for i, i_value in enumerate(value):
+                key = prefix + ':' + str(i)
+                flat.update(self._flatten_value(i_value, prefix=key))
+            return flat
+
+        else:
+            return {prefix: value}
+
+
+_formaters = {
+    JSONFormatter.content_type: JSONFormatter,
+    CSVFormatter.content_type: CSVFormatter,
+}
+
+
+def get_formatter(content_type):
+    return _formaters.get(content_type, JSONFormatter)()
