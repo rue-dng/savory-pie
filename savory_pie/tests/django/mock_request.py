@@ -37,6 +37,7 @@ class Request(object):
 
         self.GET = GET or {}
         self.POST = POST or {}
+        self.META = {}
         self.REQUEST = dict(self.GET, **self.POST)
 
     def get_full_path(self):

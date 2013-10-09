@@ -88,6 +88,13 @@ class ComplexUserRelationResource(resources.ModelResource):
 
 
 class ModelResourceTest(unittest.TestCase):
+    def make_request(self, _json, sha=None):
+        request = Mock()
+        request.META = Mock()
+        request.META.get.return_value = sha
+        request.read.return_value = _json
+        return request
+
     def test_resource_path(self):
         user = User(pk=1, name='Bob', age=20)
         resource = AddressableUserResource(user)
@@ -137,10 +144,27 @@ class ModelResourceTest(unittest.TestCase):
         self.assertEqual(user.age, 20)
         self.assertEqual(user.owner.name, 'bob owner')
 
+    def test_put_with_good_sha(self):
+        user = User()
+        resource = AddressableUserResource(user)
+        _json = '{"age": 20, "name": "Bob"}'
+        resource.get = lambda *args: _json
+        request = self.make_request(_json, '3723cead3bb504608eb1046bbb6a24a7c856d7c0')
+        response = views._process_put(mock_context(), resource, request)
+        self.assertEqual(response.status_code, 204)
+
+    def test_put_with_bad_sha(self):
+        user = User()
+        resource = AddressableUserResource(user)
+        _json = '{"age": 20, "name": "Bob"}'
+        resource.get = lambda *args: _json
+        request = self.make_request(_json, 'OmManePadmeHumOmManePadmeHumOmManePadmeHum')
+        response = views._process_put(mock_context(), resource, request)
+        self.assertEqual(response.status_code, 412)
+
     def test_put_with_missing_required_field(self):
         user = User()
-        request = Mock()
-        request.read.return_value = '{"name": "Bob"}'   # no age
+        request = self.make_request('{"name": "Bob"}')   # no age
         response = views._process_put(mock_context(),
                                       AddressableUserResource(user),
                                       request)

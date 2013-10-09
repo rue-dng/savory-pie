@@ -55,6 +55,8 @@ class ViewTest(unittest.TestCase):
     def test_get_success_streaming(self):
         def get(ctx, params):
             ctx.streaming_response = True
+            ctx.formatter = Mock()
+            ctx.formatter.write_to = lambda *args: None
             return iter([
                 '{"foo": ',
                 '"bar"',
