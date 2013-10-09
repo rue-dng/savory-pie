@@ -67,6 +67,7 @@ class ViewTest(unittest.TestCase):
 
         response = savory_dispatch(root_resource, method='GET')
 
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(''.join(response.streaming_content), '{"foo": "bar"}')
         self.assertTrue(root_resource.get.called)
         self.assertIsNotNone(root_resource.get.call_args_list[0].request)
