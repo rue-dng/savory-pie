@@ -165,14 +165,14 @@ def _content_success(ctx, resource, request, content_dict):
             content_dict,
             status=200,
             content_type=ctx.formatter.content_type)
-        response['ETag'] = _get_sha1(ctx, content_dict)
+        # No ETag, not practical on streaming
     else:
         response = HttpResponse(
             status=200,
             content_type=ctx.formatter.content_type
         )
+        response['ETag'] = _get_sha1(ctx, content_dict)
         ctx.formatter.write_to(content_dict, response)
-        # No ETag, not practical on streaming
     if ctx.headers_dict:
         for header, value in ctx.headers_dict.items():
             response[header] = value
