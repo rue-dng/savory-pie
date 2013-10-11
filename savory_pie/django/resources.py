@@ -7,7 +7,7 @@ from savory_pie.resources import EmptyParams, Resource
 from savory_pie.django.utils import Related
 from savory_pie.django.fields import ReverseField
 from savory_pie.django.validators import ValidationError, validate
-from savory_pie.django.views import _get_sha1, PreconditionFailedError
+from savory_pie.django.views import _get_sha1
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +104,9 @@ class QuerySetResource(Resource):
 
         objects = []
         for model in final_queryset:
-            objects.append(self.to_resource(model).get(ctx, EmptyParams()))
+            model_json = self.to_resource(model).get(ctx, EmptyParams())
+            model_json['$hash'] = _get_sha1(ctx, model_json)
+            objects.append(model_json)
 
         meta = dict()
         if self.supports_paging:
@@ -332,9 +334,6 @@ class ModelResource(Resource):
             if errors:
                 logger.debug(errors)
                 raise ValidationError(self, errors)
-
-        if ctx.expected_sha and ctx.expected_sha != _get_sha1(ctx, self.get(ctx, EmptyParams())):
-            raise PreconditionFailedError
 
         try:
             self._set_pre_save_fields(ctx, source_dict)

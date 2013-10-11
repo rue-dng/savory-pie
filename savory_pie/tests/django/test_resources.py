@@ -144,21 +144,35 @@ class ModelResourceTest(unittest.TestCase):
         self.assertEqual(user.age, 20)
         self.assertEqual(user.owner.name, 'bob owner')
 
+    def test_qsr_returns_hashes(self):
+        resource = AddressableUserQuerySetResource(mock_orm.QuerySet(
+            User(pk=1, name='Alice', age=31),
+            User(pk=2, name='Bob', age=20)
+        ))
+        data = resource.get(mock_context(), EmptyParams())
+
+        self.assertEqual(data['meta'], {
+            'resourceUri': 'uri://users',
+            'count': 2
+        })
+
+        import sys; print >> sys.stderr, data['objects']
+        self.assertEqual(data['objects'][0]['$hash'], 'aa29a35c3d5f0a3de7fae2f1f2b30c0e1b35084f')
+        self.assertEqual(data['objects'][1]['$hash'], 'bbb39a0ea490e5afe9cd547dc7b96572f5ab7fd7')
+
     def test_put_with_good_sha(self):
         user = User()
         resource = AddressableUserResource(user)
-        _json = '{"age": 20, "name": "Bob"}'
-        resource.get = lambda *args: _json
-        request = self.make_request(_json, '3723cead3bb504608eb1046bbb6a24a7c856d7c0')
+        resource.get = lambda *args: {"age": 20, "name": "Bob"}
+        request = self.make_request('{"age": 20, "name": "Bob"}', 'fd92376f24d6a75974c8da6edf84a834b92ee13c')
         response = views._process_put(mock_context(), resource, request)
         self.assertEqual(response.status_code, 204)
 
     def test_put_with_bad_sha(self):
         user = User()
         resource = AddressableUserResource(user)
-        _json = '{"age": 20, "name": "Bob"}'
-        resource.get = lambda *args: _json
-        request = self.make_request(_json, 'OmManePadmeHumOmManePadmeHumOmManePadmeHum')
+        resource.get = lambda *args: {"age": 20, "name": "Bob"}
+        request = self.make_request('{"age": 20, "name": "Bob"}', 'OmManePadmeHumOmManePadmeHumOmManePadmeHum')
         response = views._process_put(mock_context(), resource, request)
         self.assertEqual(response.status_code, 412)
 
@@ -299,6 +313,9 @@ class ComplexUserResourceQuerySetResource(resources.QuerySetResource):
 
 
 class QuerySetResourceTest(unittest.TestCase):
+    def remove_hash(self, dct):
+        return dict((k, v) for k, v in dct.items() if k[:1] != '$')
+
     def test_get(self):
         resource = AddressableUserQuerySetResource(mock_orm.QuerySet(
             User(pk=1, name='Alice', age=31),
@@ -311,7 +328,7 @@ class QuerySetResourceTest(unittest.TestCase):
             'count': 2
         })
 
-        self.assertEqual(data['objects'], [
+        self.assertEqual(map(self.remove_hash, data['objects']), [
             {'resourceUri': 'uri://users/2', 'name': 'Bob', 'age': 20},
             {'resourceUri': 'uri://users/1', 'name': 'Alice', 'age': 31}
         ])
@@ -327,7 +344,7 @@ class QuerySetResourceTest(unittest.TestCase):
             'count': 1
         })
 
-        self.assertEqual(data['objects'], [
+        self.assertEqual(map(self.remove_hash, data['objects']), [
             {'resourceUri': 'uri://users/1', 'name': 'Alice', 'age': 31},
         ])
 
