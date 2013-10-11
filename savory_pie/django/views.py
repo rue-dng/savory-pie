@@ -10,6 +10,7 @@ from savory_pie.context import APIContext
 from savory_pie.errors import AuthorizationError
 from savory_pie.formatters import JSONFormatter
 from savory_pie.django import validators
+from savory_pie.resources import EmptyParams
 
 
 def api_view(root_resource):
@@ -69,11 +70,9 @@ def _strip_query_string(path):
     return path.split('?', 1)[0]
 
 
-class PreconditionFailedError(Exception):
-    pass
-
-
 def _get_sha1(ctx, dct):
+    # exclude keys like '$hash' from the hash
+    dct = dict((k, v) for k, v in dct.items() if not k.startswith('$'))
     sha = hashlib.sha1()
     buf = StringIO.StringIO()
     ctx.formatter.write_to(dct, buf)
@@ -103,11 +102,14 @@ def _process_post(ctx, resource, request):
 def _process_put(ctx, resource, request):
     if 'PUT' in resource.allowed_methods:
         try:
-            ctx.set_expected_sha(request)
+            previous_content_dict = resource.get(ctx, EmptyParams())
             resource.put(ctx, ctx.formatter.read_from(request))
-            return _no_content_success(ctx, request, request)
-        except PreconditionFailedError:
-            return _precondition_failed(ctx, resource, request)
+            # validation errors take precedence over hash mismatch
+            expected_hash = request.META.get('HTTP_IF_MATCH')
+            if expected_hash and expected_hash != _get_sha1(ctx, previous_content_dict):
+                return _precondition_failed(ctx, resource, request)
+            else:
+                return _no_content_success(ctx, request, request)
         except validators.ValidationError, ve:
             return _validation_errors(ctx, resource, request, ve.errors)
         except KeyError, ke:
