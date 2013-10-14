@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>{% block head_title %}{% endblock head_title %}</title>
+        <style type="text/css">
+        textarea {
+            font-size: 10pt;
+            font-family: "Courier New";
+        }
+        </style>
+        <script type="text/javascript" src="{{ STATIC_URL }}/static/jquery-1.10.2.js">
+        </script>
+        <script src="/static/retries.js" type="text/javascript"></script>
+        <script type="text/javascript">
+            // Work on this later, it's meant to address all the 409/412 retry stuff.
+            var spif = savoryPieInterface();
+
+            // Wire up GET, PUT and POST so I can try stuff.
+            $(function() {
+                var wireUp = function(buttonId, uriId, action, responseId, dataId) {
+                    $(buttonId).click(function (e) {
+                        var params = {
+                            url: $(uriId).val(),
+                            type: action,
+                        };
+                        if (dataId) {
+                            params.data = $(dataId).val();
+                        }
+                        $.ajax(params).complete(function(response) {
+                            var data = JSON.parse(response.responseText);
+                            $(responseId).html('<i>Response</i><br/>' +
+                                    '<pre>' + JSON.stringify(data, undefined, 4) + '</pre>');
+                        });
+                    });
+                };
+                wireUp('#button-get', '#input-get', 'GET', '#response-get');
+                wireUp('#button-put', '#input-put', 'PUT', '#response-put', '#data-put');
+                wireUp('#button-post', '#input-post', 'POST', '#response-post', '#data-post');
+            });
+        </script>
+        <meta name="description" book="{% block head_description %}{% endblock head_description %}">
+        <meta name="author" book="">
+    </head>
+
+    <body>
+        {% block body %}
+        Here are some objects.
+        {% if authors %}
+            <ul>
+            {% for z in authors %}
+                <li><b>{{ z.name }}</b>, a {{ z.type }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+        {% if books %}
+            <ul>
+            {% for c in books %}
+                <li><b>{{ c.title }}</b>, a {{ c.type }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+        {% if shelfs %}
+            <ul>
+            {% for s in shelfs %}
+                <li><b>{{ s.name }}</b>, a {{ s.type }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+        {% if authorbooks %}
+            <ul>
+            {% for z in authorbooks %}
+                <li><b>{{ z.author }}:{{ z.book }}:{{ z.shelf }}</b>, a {{ z.type }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+        {% endblock body %}
+
+        <div>
+            <button id="button-get">GET</button> <input id="input-get" placeholder="URI"/> e.g. "/api/book/1"
+            <div id="response-get"></div>
+        </div>
+        <div>
+            <button id="button-put">PUT</button> <input id="input-put" placeholder="URI"/><br/>
+            <textarea id="data-put" style="width: 600px; height: 100px;"></textarea>
+            <div id="response-put"></div>
+        </div>
+        <div>
+            <button id="button-post">POST</button> <input id="input-post" placeholder="URI"/><br/>
+            <textarea id="data-post" style="width: 600px; height: 100px;"></textarea>
+            <div id="response-post"></div>
+        </div>
+    </body>
+</html>

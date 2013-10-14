@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>{% block head_title %}{% endblock head_title %}</title>
+        <script type="text/javascript" src="{{ STATIC_URL }}/static/jquery-1.10.2.js">
+        </script>
+        <meta name="description" book="{% block head_description %}{% endblock head_description %}">
+        <meta name="author" book="">
+    </head>
+
+    <body>
+        {% block body %}
+        Here are some objects.
+        {% if authors %}
+            <ul>
+            {% for z in authors %}
+                <li><b>{{ z.name }}</b>, a {{ z.type }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+        {% if books %}
+            <ul>
+            {% for c in books %}
+                <li><b>{{ c.title }}</b>, a {{ c.type }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+        {% if shelfs %}
+            <ul>
+            {% for s in shelfs %}
+                <li><b>{{ s.name }}</b>, a {{ s.type }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+        {% if authorbooks %}
+            <ul>
+            {% for z in authorbooks %}
+                <li><b>{{ z.author }}:{{ z.book }}:{{ z.shelf }}</b>, a {{ z.type }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+        {% endblock body %}
+    </body>
+</html>
