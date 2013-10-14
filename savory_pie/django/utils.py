@@ -5,9 +5,14 @@ import traceback
 from django.db import connection
 
 
-def getLogger(name=None):
+def getLogger(name=None, singletonContainer={}):
     if name is None:
         name = __name__
+
+    logger = singletonContainer.get(name)
+    if logger:
+        return logger
+
     logger = logging.getLogger(name)
     formatter = logging.Formatter("[%(funcName)s: %(filename)s:%(lineno)d] %(message)s")
     handler = logging.StreamHandler()
@@ -56,6 +61,7 @@ def getLogger(name=None):
     logger.before_queries = logger_before_queries
     logger.after_queries = logger_after_queries
 
+    singletonContainer[name] = logger
     return logger
 
 
