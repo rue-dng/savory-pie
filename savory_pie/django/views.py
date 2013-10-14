@@ -5,6 +5,7 @@ except ImportError:
     import StringIO
 
 from django.http import HttpResponse, StreamingHttpResponse
+from django.db import transaction
 
 from savory_pie.context import APIContext
 from savory_pie.errors import AuthorizationError
@@ -99,6 +100,7 @@ def _process_post(ctx, resource, request):
         return _not_allowed_method(ctx, resource, request)
 
 
+@transaction.commit_manually
 def _process_put(ctx, resource, request):
     if 'PUT' in resource.allowed_methods:
         try:
@@ -107,12 +109,16 @@ def _process_put(ctx, resource, request):
             # validation errors take precedence over hash mismatch
             expected_hash = request.META.get('HTTP_IF_MATCH')
             if expected_hash and expected_hash != _get_sha1(ctx, previous_content_dict):
+                transaction.rollback()
                 return _precondition_failed(ctx, resource, request)
             else:
+                transaction.commit()
                 return _no_content_success(ctx, request, request)
         except validators.ValidationError, ve:
+            transaction.rollback()
             return _validation_errors(ctx, resource, request, ve.errors)
         except KeyError, ke:
+            transaction.rollback()
             return _validation_errors(ctx, resource, request, {'missingData': ke.message})
     else:
         return _not_allowed_method(ctx, resource, request)
