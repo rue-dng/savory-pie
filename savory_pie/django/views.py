@@ -79,10 +79,9 @@ def _database_transaction(func):
         response = func(ctx, resource, request)
         if 200 <= response.status_code < 300:
             transaction.commit()
-            return response
         else:
             transaction.rollback()
-            return response
+        return response
     return inner
 
 
