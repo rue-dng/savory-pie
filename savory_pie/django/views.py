@@ -1,10 +1,12 @@
 import hashlib
+import functools
 try:
     import cStringIO as StringIO
 except ImportError:
     import StringIO
 
 from django.http import HttpResponse, StreamingHttpResponse
+from django.db import transaction
 
 from savory_pie.context import APIContext
 from savory_pie.errors import AuthorizationError
@@ -70,6 +72,19 @@ def _strip_query_string(path):
     return path.split('?', 1)[0]
 
 
+def _database_transaction(func):
+    @functools.wraps(func)
+    @transaction.commit_manually
+    def inner(ctx, resource, request, func=func):
+        response = func(ctx, resource, request)
+        if 200 <= response.status_code < 300:
+            transaction.commit()
+        else:
+            transaction.rollback()
+        return response
+    return inner
+
+
 def _get_sha1(ctx, dct):
     # exclude keys like '$hash' from the hash
     dct = dict((k, v) for k, v in dct.items() if not k.startswith('$'))
@@ -88,6 +103,7 @@ def _process_get(ctx, resource, request):
         return _not_allowed_method(ctx, resource, request)
 
 
+@_database_transaction
 def _process_post(ctx, resource, request):
     if 'POST' in resource.allowed_methods:
         try:
@@ -99,6 +115,7 @@ def _process_post(ctx, resource, request):
         return _not_allowed_method(ctx, resource, request)
 
 
+@_database_transaction
 def _process_put(ctx, resource, request):
     if 'PUT' in resource.allowed_methods:
         try:
