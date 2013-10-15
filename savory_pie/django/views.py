@@ -1,4 +1,5 @@
 import hashlib
+import functools
 try:
     import cStringIO as StringIO
 except ImportError:
@@ -72,6 +73,7 @@ def _strip_query_string(path):
 
 
 def _database_transaction(func):
+    @functools.wraps(func)
     @transaction.commit_manually
     def inner(ctx, resource, request, func=func):
         response = func(ctx, resource, request)
