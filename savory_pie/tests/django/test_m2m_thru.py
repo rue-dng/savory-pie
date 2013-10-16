@@ -17,93 +17,93 @@ def createCreator(model_class, collection):
 
 ####################
 
-_zones = []
+_groups = []
 
 
-class Zone(mock_orm.Model):
-    name = Mock(name='zone.name')
-    pk = Mock(name='zone.pk')
+class Group(mock_orm.Model):
+    name = Mock(name='group.name')
+    pk = Mock(name='group.pk')
 
 
-class ZoneResource(resources.ModelResource):
-    parent_resource_path = 'zones'
-    model_class = Zone
+class GroupResource(resources.ModelResource):
+    parent_resource_path = 'groups'
+    model_class = Group
 
     fields = [
         fields.AttributeField('name', type=str),
     ]
 
 
-class ZoneQuerySetResource(resources.QuerySetResource):
-    resource_path = 'zone'
-    resource_class = ZoneResource
+class GroupQuerySetResource(resources.QuerySetResource):
+    resource_path = 'group'
+    resource_class = GroupResource
 
-createZone = createCreator(Zone, _zones)
+createGroup = createCreator(Group, _groups)
 
 ######################
 
-_contents = []
+_people = []
 
 
-class Content(mock_orm.Model):
-    title = Mock(name='content.title')
-    zones = Mock(name='content.zones')
-    pk = Mock(name='content.pk')
+class Person(mock_orm.Model):
+    name = Mock(name='person.name')
+    groups = Mock(name='person.groups')
+    pk = Mock(name='person.pk')
 
-Content.zones.all.return_value = _zones
-del Content.zones.add      # this is a "through" relationship
-del Content.zones.remove
-Content.zones.source_field_name = 'content'
-Content.zones.target_field_name = 'zone'
+Person.groups.all.return_value = _groups
+del Person.groups.add      # this is a "through" relationship
+del Person.groups.remove
+Person.groups.source_field_name = 'person'
+Person.groups.target_field_name = 'group'
 
 
-class ContentResource(resources.ModelResource):
-    parent_resource_path = 'content'
-    model_class = Content
+class PersonResource(resources.ModelResource):
+    parent_resource_path = 'person'
+    model_class = Person
 
     fields = [
-        fields.AttributeField('title', type=str),
-        fields.RelatedManagerField('zones', ZoneResource),
+        fields.AttributeField('name', type=str),
+        fields.RelatedManagerField('groups', GroupResource),
     ]
 
 
-class ContentQuerySetResource(resources.QuerySetResource):
-    resource_path = 'content'
-    resource_class = ContentResource
+class PersonQuerySetResource(resources.QuerySetResource):
+    resource_path = 'person'
+    resource_class = PersonResource
 
-createContent = createCreator(Content, _contents)
+createPerson = createCreator(Person, _people)
 
 ######################
 
-_zonecontents = []
+_memberships = []
 
 
-class ZoneContent(mock_orm.Model):
-    zone = Mock(django.db.models.fields.related.ReverseSingleRelatedObjectDescriptor(Mock()))
-    content = Mock(django.db.models.fields.related.ReverseSingleRelatedObjectDescriptor(Mock()))
+class Membership(mock_orm.Model):
+    group = Mock(django.db.models.fields.related.ReverseSingleRelatedObjectDescriptor(Mock()))
+    person = Mock(django.db.models.fields.related.ReverseSingleRelatedObjectDescriptor(Mock()))
     pk = Mock()
     objects = Mock()
 
 
-class ZoneContentResource(resources.ModelResource):
-    parent_resource_path = 'zonecontent'
-    model_class = ZoneContent
+class MembershipResource(resources.ModelResource):
+    parent_resource_path = 'membership'
+    model_class = Membership
 
     fields = [
-        fields.RelatedManagerField('zone', ZoneResource),
-        fields.RelatedManagerField('content', ContentResource),
+        fields.RelatedManagerField('group', GroupResource),
+        fields.RelatedManagerField('person', PersonResource),
     ]
 
-Content.zones.through = ZoneContent
+Person.groups.through = Membership
 
 
-class ZoneContentQuerySetResource(resources.QuerySetResource):
-    resource_path = 'zonecontent'
-    resource_class = ZoneContentResource
+class MembershipQuerySetResource(resources.QuerySetResource):
+    resource_path = 'membership'
+    resource_class = MembershipResource
 
-createZoneContent = createCreator(ZoneContent, _zonecontents)
+createMembership = createCreator(Membership, _memberships)
 
-ZoneContent.objects.create = createZoneContent
+Membership.objects.create = createMembership
 
 ##########
 
@@ -111,21 +111,23 @@ ZoneContent.objects.create = createZoneContent
 class ManyToManyThroughTest(unittest.TestCase):
 
     def setUp(self):
-        createZone(name='abcd', pk=1)
-        createZone(name='efgh', pk=2)
-        createContent(title='A Tree Grows in Brooklyn', pk=3)
-        createContent(title='The Sun Also Rises', pk=4)
-        createZoneContent(zone=_zones[0], content=_contents[0], pk=5)
-        createZoneContent(zone=_zones[1], content=_contents[1], pk=6)
+        createGroup(name='Rotary Club', pk=1)
+        createGroup(name='Boston Python Meetup', pk=2)
+        createPerson(name='Alice', pk=3)
+        createPerson(name='Bob', pk=4)
+        # Alice is a member of the Rotary Club
+        createMembership(group=_groups[0], person=_people[0], pk=5)
+        # Bob is a member of the Boston Python Meetup
+        createMembership(group=_groups[1], person=_people[1], pk=6)
 
     def tearDown(self):
-        global _zones, _contents, _zonecontents
-        del _zones[:]
-        del _contents[:]
-        del _zonecontents[:]
+        global _groups, _people, _memberships
+        del _groups[:]
+        del _people[:]
+        del _memberships[:]
 
     def test_check_add(self):
-        related = ContentResource.fields[1]
+        related = PersonResource.fields[1]
         # When the add method is missing, we know it's a "through" M2M relationship.
         self.assertFalse(hasattr(related, 'add'))
 
@@ -136,26 +138,26 @@ class ManyToManyThroughTest(unittest.TestCase):
             prefix = 'http://localhost:8000/api/'
             self.assertTrue(args[0].startswith(prefix))
             arg = args[0][len(prefix):]
-            if arg.startswith('zone/'):
-                n = int(arg[5:]) - 1
-                assert n < len(_zones), n
-                return ZoneResource(_zones[n])
-            elif arg.startswith('content/'):
-                n = int(arg[8:]) - 1
-                assert n < len(_contents), n
-                return ContentResource(_contents[n])
+            if arg.startswith('group/'):
+                n = int(arg[6:]) - 1
+                assert n < len(_groups), n
+                return GroupResource(_groups[n])
+            elif arg.startswith('person/'):
+                n = int(arg[7:]) - 1
+                assert n < len(_people), n
+                return PersonResource(_people[n])
             else:
                 self.fail(arg)
         ctx.resolve_resource_uri = resolve
         source_dict = {
-            'zones': [{'resourceUri': 'http://localhost:8000/api/zone/1', 'name': 'quux'}],
-            'resourceUri': 'http://localhost:8000/api/content/1',
-            'title': 'Harry Potter and the Endless Sequels'
+            'groups': [{'resourceUri': 'http://localhost:8000/api/group/1', 'name': 'Boy Scouts'}],
+            'resourceUri': 'http://localhost:8000/api/person/1',
+            'name': 'Charlie'
         }
-        resource = ContentResource(_contents[0])
+        resource = PersonResource(_people[0])
         resource.put(ctx, source_dict)
-        self.assertEqual('quux', _zones[0].name)
-        self.assertEqual(3, len(_zonecontents))
-        resource = ZoneResource(_zones[0])
-        self.assertEqual({'resourceUri': 'uri://zones/1', 'name': 'quux'},
-                         resource.get(ctx, {'resourceUri': 'http://localhost:8000/api/zone/1'}))
+        self.assertEqual('Boy Scouts', _groups[0].name)
+        self.assertEqual(3, len(_memberships))
+        resource = GroupResource(_groups[0])
+        self.assertEqual({'resourceUri': 'uri://groups/1', 'name': 'Boy Scouts'},
+                         resource.get(ctx, {'resourceUri': 'http://localhost:8000/api/group/1'}))
