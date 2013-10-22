@@ -82,7 +82,12 @@ def _database_transaction(func):
         else:
             transaction.rollback()
         return response
-    return inner
+    def outer(ctx, resource, request, func=func):
+        try:
+            return inner(ctx, resource, request)
+        except transaction.TransactionManagementError:
+            return _transaction_conflict(ctx, resource, request)
+    return outer
 
 
 def _get_sha1(ctx, dct):
@@ -210,6 +215,13 @@ def _success(ctx, resource, request, content_dict=None):
 def _internal_error(ctx, request, error):
     response = HttpResponse(status=500, content_type=ctx.formatter.content_type)
     error_body = {ctx.formatter.convert_to_public_property('error'): error}
+    ctx.formatter.write_to(error_body, response)
+    return response
+
+
+def _transaction_conflict(ctx, resource, request):
+    response = HttpResponse(status=409, content_type=ctx.formatter.content_type)
+    error_body = {ctx.formatter.convert_to_public_property('resource'): ctx.build_resource_uri(resource)}
     ctx.formatter.write_to(error_body, response)
     return response
 

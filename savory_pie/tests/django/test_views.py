@@ -113,6 +113,21 @@ class ViewTest(unittest.TestCase):
         self.assertEqual(response['Location'], 'http://localhost/api/foo')
         self.assertIsNotNone(root_resource.post.call_args_list[0].request)
 
+    def test_post_with_collision(self):
+        root_resource = mock_resource(name='root')
+        root_resource.allowed_methods.add('POST')
+
+        def side_effect(*args):
+            # This would occur if a slightly earlier POST or PUT still had
+            # the database locked during a DB transaction.
+            from django.db.transaction import TransactionManagementError
+            raise TransactionManagementError
+        root_resource.post = Mock(side_effect=side_effect)
+
+        response = savory_dispatch(root_resource, method='POST', body='{}')
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.content, '{"resource": "http://localhost/api/"}')
+
     def test_post_not_supported(self):
         root_resource = mock_resource(name='root')
 
