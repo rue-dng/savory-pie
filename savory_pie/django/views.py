@@ -85,6 +85,8 @@ def _database_transaction(func):
                 transaction.commit()
             else:
                 transaction.rollback()
+        except AuthorizationError as e:
+            raise e
         except Exception as e:
             logger.debug(e)
             transaction.rollback()
