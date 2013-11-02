@@ -5,6 +5,10 @@
         <title>{% block head_title %}{% endblock head_title %}</title>
         <script type="text/javascript" src="{{ STATIC_URL }}/static/jquery-1.10.2.js">
         </script>
+        <script src="/static/retries.js" type="text/javascript"></script>
+        <script type="text/javascript">
+            var spif = savoryPieInterface();
+        </script>
         <meta name="description" book="{% block head_description %}{% endblock head_description %}">
         <meta name="author" book="">
     </head>
@@ -41,5 +45,7 @@
             </ul>
         {% endif %}
         {% endblock body %}
+
+        <a onclick="spif.get('/api/book/')">FOO</a>
     </body>
 </html>
