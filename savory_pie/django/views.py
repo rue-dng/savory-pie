@@ -1,6 +1,5 @@
 import hashlib
 import functools
-import sys
 try:
     import cStringIO as StringIO
 except ImportError:
@@ -74,9 +73,6 @@ def _strip_query_string(path):
 
 
 def _database_transaction(func):
-    class WrappedException(Exception):
-        pass
-
     @functools.wraps(func)
     @transaction.commit_manually
     def inner(ctx, resource, request, func=func):
@@ -86,15 +82,9 @@ def _database_transaction(func):
                 transaction.commit()
             else:
                 transaction.rollback()
-        except AuthorizationError as e:
-            # http://stackoverflow.com/questions/1350671
-            raise WrappedException(e), None, sys.exc_info()[2]
-        except transaction.TransactionManagementError as e:
-            raise e, None, sys.exc_info()[2]
-        except Exception as e:
-            # Any other exceptions must be wrapped
+        except:
             transaction.rollback()
-            raise WrappedException(e), None, sys.exc_info()[2]
+            raise
         return response
 
     def outer(ctx, resource, request):
@@ -102,8 +92,6 @@ def _database_transaction(func):
             return inner(ctx, resource, request)
         except transaction.TransactionManagementError:
             return _transaction_conflict(ctx, resource, request)
-        except WrappedException as w:
-            raise w.args[0], None, sys.exc_info()[2]
     return outer
 
 
