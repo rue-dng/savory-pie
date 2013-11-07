@@ -520,7 +520,6 @@ class SchemaGetTestCase(ValidationTestCase):
         ctx = mock_context()
         ctx.build_resource_uri = lambda resource: 'uri://users/schema/'
         result = resource.get(ctx)
-        # import sys, pprint; pprint.pprint(result, stream=sys.stderr)
         self.assertEqual(
             [{
                 'text': 'Datetimes are not in expected sequence.',

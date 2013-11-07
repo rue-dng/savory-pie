@@ -1,6 +1,6 @@
 import hashlib
-import logging
 import functools
+import sys
 try:
     import cStringIO as StringIO
 except ImportError:
@@ -14,8 +14,6 @@ from savory_pie.errors import AuthorizationError
 from savory_pie.formatters import JSONFormatter
 from savory_pie.django import validators
 from savory_pie.resources import EmptyParams
-
-logger = logging.getLogger(__name__)
 
 
 def api_view(root_resource):
@@ -76,6 +74,9 @@ def _strip_query_string(path):
 
 
 def _database_transaction(func):
+    class WrappedException(Exception):
+        pass
+
     @functools.wraps(func)
     @transaction.commit_manually
     def inner(ctx, resource, request, func=func):
@@ -86,17 +87,23 @@ def _database_transaction(func):
             else:
                 transaction.rollback()
         except AuthorizationError as e:
-            raise e
+            # http://stackoverflow.com/questions/1350671
+            raise WrappedException(e), None, sys.exc_info()[2]
+        except transaction.TransactionManagementError as e:
+            raise e, None, sys.exc_info()[2]
         except Exception as e:
-            logger.debug(e)
+            # Any other exceptions must be wrapped
             transaction.rollback()
-            raise transaction.TransactionManagementError()
+            raise WrappedException(e), None, sys.exc_info()[2]
         return response
+
     def outer(ctx, resource, request):
         try:
             return inner(ctx, resource, request)
         except transaction.TransactionManagementError:
             return _transaction_conflict(ctx, resource, request)
+        except WrappedException as w:
+            raise w.args[0], None, sys.exc_info()[2]
     return outer
 
 
