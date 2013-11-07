@@ -1,5 +1,4 @@
 import hashlib
-import logging
 import functools
 try:
     import cStringIO as StringIO
@@ -14,8 +13,6 @@ from savory_pie.errors import AuthorizationError
 from savory_pie.formatters import JSONFormatter
 from savory_pie.django import validators
 from savory_pie.resources import EmptyParams
-
-logger = logging.getLogger(__name__)
 
 
 def api_view(root_resource):
@@ -85,13 +82,11 @@ def _database_transaction(func):
                 transaction.commit()
             else:
                 transaction.rollback()
-        except AuthorizationError as e:
-            raise e
-        except Exception as e:
-            logger.debug(e)
+        except:
             transaction.rollback()
-            raise transaction.TransactionManagementError()
+            raise
         return response
+
     def outer(ctx, resource, request):
         try:
             return inner(ctx, resource, request)

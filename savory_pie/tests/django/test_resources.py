@@ -156,7 +156,6 @@ class ModelResourceTest(unittest.TestCase):
             'count': 2
         })
 
-        import sys; print >> sys.stderr, data['objects']
         self.assertEqual(data['objects'][0]['$hash'], 'aa29a35c3d5f0a3de7fae2f1f2b30c0e1b35084f')
         self.assertEqual(data['objects'][1]['$hash'], 'bbb39a0ea490e5afe9cd547dc7b96572f5ab7fd7')
 

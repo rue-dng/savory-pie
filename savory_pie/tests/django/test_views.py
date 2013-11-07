@@ -1,5 +1,6 @@
 import unittest
 import json
+import mock
 
 from mock import Mock
 from savory_pie.errors import AuthorizationError
@@ -113,20 +114,53 @@ class ViewTest(unittest.TestCase):
         self.assertEqual(response['Location'], 'http://localhost/api/foo')
         self.assertIsNotNone(root_resource.post.call_args_list[0].request)
 
-    def test_post_with_collision(self):
+    def test_post_with_collision_one(self):
         root_resource = mock_resource(name='root')
         root_resource.allowed_methods.add('POST')
 
         def side_effect(*args):
-            # This would occur if a slightly earlier POST or PUT still had
+            # This could occur if a slightly earlier POST or PUT still had
             # the database locked during a DB transaction.
             from django.db.transaction import TransactionManagementError
-            raise TransactionManagementError
+            raise TransactionManagementError()
         root_resource.post = Mock(side_effect=side_effect)
 
         response = savory_dispatch(root_resource, method='POST', body='{}')
         self.assertEqual(response.status_code, 409)
         self.assertEqual(response.content, '{"resource": "http://localhost/api/"}')
+
+    @mock.patch('django.db.transaction.enter_transaction_management')
+    def test_post_with_collision_two(self, enter):
+        def side_effect(*args, **kwargs):
+            # This could occur if a slightly earlier POST or PUT still had
+            # the database locked during a DB transaction.
+            from django.db.transaction import TransactionManagementError
+            raise TransactionManagementError()
+        enter.side_effect = side_effect
+
+        root_resource = mock_resource(name='root')
+        new_resource = mock_resource(name='new', resource_path='foo')
+        root_resource.post = Mock(return_value=new_resource)
+        root_resource.allowed_methods.add('POST')
+
+        response = savory_dispatch(root_resource, method='POST', body='{}')
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.content, '{"resource": "http://localhost/api/"}')
+
+    def test_post_with_exception(self):
+        root_resource = mock_resource(name='root')
+        root_resource.allowed_methods.add('POST')
+
+        def side_effect(*args):
+            raise Exception('Some kind of server error')
+        root_resource.post = Mock(side_effect=side_effect)
+
+        response = savory_dispatch(root_resource, method='POST', body='{}')
+        self.assertEqual(response.status_code, 500)
+        content = json.loads(response.content)
+        self.assertTrue('error' in content)
+        self.assertTrue(content['error'].startswith('Traceback (most recent call last):'))
+        self.assertTrue('Some kind of server error' in content['error'])
 
     def test_post_not_supported(self):
         root_resource = mock_resource(name='root')
