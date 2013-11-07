@@ -133,7 +133,7 @@ class QuerySet(Mock):
             if results is None:
                 results = r
             else:
-                results = opp(results, r)
+                results = opp(set(results), r)
 
         return results
 
