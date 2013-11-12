@@ -9,9 +9,10 @@ from django.http import HttpResponse, StreamingHttpResponse
 from django.db import transaction
 
 from savory_pie.context import APIContext
+from savory_pie.django import validators
 from savory_pie.errors import AuthorizationError
 from savory_pie.formatters import JSONFormatter
-from savory_pie.django import validators
+from savory_pie.newrelic import set_transaction_name
 from savory_pie.resources import EmptyParams
 
 
@@ -29,6 +30,7 @@ def api_view(root_resource):
         root_resource.resource_path = ''
 
     @csrf_exempt
+    @set_transaction_name
     def view(request, resource_path):
         full_path = _strip_query_string(request.get_full_path())
         if len(resource_path) == 0:
