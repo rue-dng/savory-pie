@@ -28,6 +28,17 @@ def getLogger(name=None, singletonContainer={}):
         logger._log(logging.DEBUG, info, [], {})
     logger.callable = logger_callable
 
+    def logger_alert(obj, marker='*', logger=logger):
+        if logger.isEnabledFor(logging.DEBUG):
+            bannerEdge = ' '.join(40 * [marker])
+            objStr = str(obj)
+            logger._log(logging.DEBUG, bannerEdge, [], {})
+            logger._log(logging.DEBUG, bannerEdge, [], {})
+            logger._log(logging.DEBUG, ((40 - len(objStr) / 2) * ' ') + objStr, [], {})
+            logger._log(logging.DEBUG, bannerEdge, [], {})
+            logger._log(logging.DEBUG, bannerEdge, [], {})
+    logger.alert = logger_alert
+
     def logger_pprint(obj, logger=logger):
         if logger.isEnabledFor(logging.DEBUG):
             logger._log(logging.DEBUG, '\n' + pprint.pformat(obj), [], {})
@@ -63,6 +74,8 @@ def getLogger(name=None, singletonContainer={}):
 
     singletonContainer[name] = logger
     return logger
+
+logger = getLogger()
 
 
 class Related(object):
