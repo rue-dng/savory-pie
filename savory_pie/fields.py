@@ -145,6 +145,8 @@ class AttributeField(Field):
     @read_only_noop
     @authorization(authorization_adapter)
     def handle_incoming(self, ctx, source_dict, target_obj):
+        from savory_pie.django.utils import logger
+        logger.pprint((self.name, source_dict, type(target_obj), target_obj))
         attr = self._compute_property(ctx)
         if attr not in source_dict:
             raise ValidationError(self, {'missingField': attr,
@@ -231,6 +233,8 @@ class URIResourceField(Field):
     @read_only_noop
     @authorization(authorization_adapter)
     def handle_incoming(self, ctx, source_dict, target_obj):
+        from savory_pie.django.utils import logger
+        logger.pprint((self.name, source_dict, type(target_obj), target_obj))
         uri = source_dict[self._compute_property(ctx)]
         if uri is not None:
             resource = ctx.resolve_resource_uri(uri)
@@ -285,6 +289,11 @@ class CompleteURIResourceField(Field):
 
     @authorization(authorization_adapter)
     def handle_incoming(self, ctx, source_dict, target_obj):
+        from savory_pie.django.utils import logger
+        if hasattr(self, 'name'):
+            logger.pprint((self.name, source_dict, type(target_obj), target_obj))
+        else:
+            logger.pprint((source_dict, type(target_obj), target_obj))
         pass
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
@@ -350,6 +359,8 @@ class URIListResourceField(Field):
     @read_only_noop
     @authorization(authorization_adapter)
     def handle_incoming(self, ctx, source_dict, target_obj):
+        from savory_pie.django.utils import logger
+        logger.pprint((self.name, source_dict, type(target_obj), target_obj))
         attribute = getattr(target_obj, self._attribute)
 
         db_keys = set()
@@ -490,6 +501,8 @@ class SubObjectResourceField(Field):
     @read_only_noop
     @authorization(authorization_adapter)
     def handle_incoming(self, ctx, source_dict, target_obj):
+        from savory_pie.django.utils import logger
+        logger.pprint((self.name, source_dict, type(target_obj), target_obj))
         if not source_dict:
             setattr(target_obj, self._attribute, None)
         else:
@@ -613,6 +626,8 @@ class IterableField(Field):
     @read_only_noop
     @authorization(authorization_adapter)
     def handle_incoming(self, ctx, source_dict, target_obj):
+        from savory_pie.django.utils import logger
+        logger.pprint((self.name, source_dict, type(target_obj), target_obj))
         attribute = getattr(target_obj, self._attribute)
 
         # We are doing this outside of get_iterable so that subclasses can not

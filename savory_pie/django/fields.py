@@ -98,6 +98,8 @@ class AttributeField(base_fields.AttributeField, DjangoField):
                 related.select(related_attr)
 
     def handle_incoming(self, ctx, source_dict, target_obj):
+        from savory_pie.django.utils import logger
+        logger.pprint((self.name, source_dict, type(target_obj), target_obj))
         super(AttributeField, self).handle_incoming(ctx, source_dict, target_obj)
 
     def save(self, target_obj):
@@ -168,6 +170,8 @@ class AttributeFieldWithModel(AttributeField):
         return obj
 
     def handle_incoming(self, ctx, source_dict, target_obj):
+        from savory_pie.django.utils import logger
+        logger.pprint((self.name, source_dict, type(target_obj), target_obj))
         obj = self._get_object_with_model(target_obj, source_dict)
 
         value = self.to_python_value(ctx, source_dict[self._compute_property(ctx)])
@@ -432,6 +436,8 @@ class ReverseField(object):
         return self.attribute_name
 
     def handle_incoming(self, ctx, source_dict, target_obj):
+        from savory_pie.django.utils import logger
+        logger.pprint((self.name, source_dict, type(target_obj), target_obj))
         if target_obj.pk is not None:
             return
         setattr(target_obj, self.attribute_name, ctx.peek())
@@ -468,6 +474,8 @@ class ReverseRelatedManagerField(object):
         return True
 
     def handle_incoming(self, ctx, source_dict, target_obj):
+        from savory_pie.django.utils import logger
+        logger.pprint((self.name, source_dict, type(target_obj), target_obj))
         if target_obj.pk is not None:
             target = ctx.peek()
             a_model_type = self._resource_class.model_class
@@ -541,6 +549,8 @@ class AggregateField(object):
         )
 
     def handle_incoming(self, ctx, source_dict, target_obj):
+        from savory_pie.django.utils import logger
+        logger.pprint((self.name, source_dict, type(target_obj), target_obj))
         pass
 
     def handle_outgoing(self, ctx, source_obj, target_dict):

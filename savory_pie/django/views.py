@@ -132,7 +132,10 @@ def _process_put(ctx, resource, request):
     if 'PUT' in resource.allowed_methods:
         try:
             previous_content_dict = resource.get(ctx, EmptyParams())
+            from savory_pie.django.utils import logger
+            logger.debug('before resource.put')
             resource.put(ctx, ctx.formatter.read_from(request))
+            logger.debug('after resource.put')
             # validation errors take precedence over hash mismatch
             expected_hash = request.META.get('HTTP_IF_MATCH')
             if expected_hash and expected_hash != _get_sha1(ctx, previous_content_dict):

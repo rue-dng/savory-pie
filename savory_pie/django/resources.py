@@ -290,7 +290,10 @@ class ModelResource(Resource):
         return target_dict
 
     def _set_pre_save_fields(self, ctx, source_dict):
+        from savory_pie.django.utils import logger
         for field in self.fields:
+            logger.describe(self)
+            logger.describe(field)
             try:
                 pre_save = field.pre_save
             except AttributeError:
@@ -326,7 +329,12 @@ class ModelResource(Resource):
         If not, call save first, before setting the field value, this is for the
         many-to-many relationship.
         '''
+        from savory_pie.django.utils import logger
+        logger.alert('BEGIN {0}.put()'.format(self.__class__.__name__))
+        logger.indent()
         if not source_dict:
+            logger.dedent()
+            logger.alert('END {0}.put()'.format(self.__class__.__name__))
             return
 
         if not skip_validation:
@@ -349,6 +357,8 @@ class ModelResource(Resource):
 
         self._set_post_save_fields(ctx, source_dict)
         logger.debug('put succeeded for %s' % self)
+        logger.dedent()
+        logger.alert('END {0}.put()'.format(self.__class__.__name__))
 
     def delete(self, ctx):
         self.model.delete()
