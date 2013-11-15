@@ -1,3 +1,4 @@
+import inspect
 import logging
 import pprint
 import traceback
@@ -19,6 +20,42 @@ def getLogger(name=None, singletonContainer={}):
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
+    logger._indent_level = 0
+
+    def logger_indent(logger=logger):
+        logger._indent_level += 1
+    logger.indent = logger_indent
+
+    def logger_dedent(logger=logger):
+        logger._indent_level -= 1
+    logger.dedent = logger_dedent
+
+    def logger_describe(obj, logger=logger):
+        def good_item(kv):
+            key, value = kv
+            return not key.startswith('_') and \
+                not key.endswith('_set') and \
+                not callable(value)
+        if logger.isEnabledFor(logging.DEBUG):
+            indent = logger._get_indent()
+            obj_info = '{0}{1} @ {2}'.format(indent, type(obj).__name__, hex(id(obj)))
+            logger._log(logging.DEBUG, obj_info, [], {})
+            try:
+                things = dict([kv for kv in inspect.getmembers(obj) if good_item(kv)])
+            except:
+                things = {}
+            logger._log(logging.DEBUG,
+                        '\n' + logger._indent_lines(pprint.pformat(things)), [], {})
+    logger.describe = logger_describe
+
+    def logger_get_indent(logger=logger):
+        return (4 * logger._indent_level) * ' '
+    logger._get_indent = logger_get_indent
+
+    def logger_indent_lines(lines, logger=logger):
+        return '\n'.join([(logger._get_indent() + line) for line in lines.split('\n')])
+    logger._indent_lines = logger_indent_lines
+
     def logger_callable(f, logger=logger):
         assert callable(f)
         if hasattr(f, 'im_func'):
@@ -30,18 +67,21 @@ def getLogger(name=None, singletonContainer={}):
 
     def logger_alert(obj, marker='*', logger=logger):
         if logger.isEnabledFor(logging.DEBUG):
+            indent = logger._get_indent()
             bannerEdge = ' '.join(40 * [marker])
             objStr = str(obj)
-            logger._log(logging.DEBUG, bannerEdge, [], {})
-            logger._log(logging.DEBUG, bannerEdge, [], {})
-            logger._log(logging.DEBUG, ((40 - len(objStr) / 2) * ' ') + objStr, [], {})
-            logger._log(logging.DEBUG, bannerEdge, [], {})
-            logger._log(logging.DEBUG, bannerEdge, [], {})
+            objStr = ((40 - len(objStr) / 2) * ' ') + objStr
+            logger._log(logging.DEBUG, indent + bannerEdge, [], {})
+            logger._log(logging.DEBUG, indent + bannerEdge, [], {})
+            logger._log(logging.DEBUG, indent + objStr, [], {})
+            logger._log(logging.DEBUG, indent + bannerEdge, [], {})
+            logger._log(logging.DEBUG, indent + bannerEdge, [], {})
     logger.alert = logger_alert
 
     def logger_pprint(obj, logger=logger):
         if logger.isEnabledFor(logging.DEBUG):
-            logger._log(logging.DEBUG, '\n' + pprint.pformat(obj), [], {})
+            logger._log(logging.DEBUG,
+                        '\n' + logger._indent_lines(pprint.pformat(obj)), [], {})
     logger.pprint = logger_pprint
 
     def logger_tb(logger=logger):
