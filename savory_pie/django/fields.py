@@ -149,27 +149,59 @@ class AttributeFieldWithModel(AttributeField):
         self._extras = kwargs.pop('extras', {})
         super(AttributeFieldWithModel, self).__init__(*args, **kwargs)
 
-    def _get_object_with_model(self, root_obj, source_dict):
-        obj = root_obj
-        for i, attr in enumerate(self._attrs[:-1]):
-            try:
-                obj = getattr(obj, attr)
-            except ObjectDoesNotExist:
-                # only look for the model, if we are at the second last level,
-                # i.e. if it's foo.bar.property, only do this when we are at 'bar'
-                if i == len(self._attrs)-2:
-                    filter_parms = self._extras.copy()
-                    filter_parms[self._bare_attribute] = source_dict[self._bare_attribute]
-                    new_obj = self._model.objects.get(**filter_parms)
-                    setattr(obj, attr, new_obj)
-                    obj = new_obj
-                else:
-                    raise SavoryPieError(u'Unable to save attribute field: {0}'.format(self._full_attribute))
-        return obj
+    def set_recursively(self, ctx, root_obj, attrs, source_dict):
+        to_public = ctx.formatter.convert_to_public_property
+
+        def get_model_params(target_type, ctx=ctx, source_dict=source_dict, extras=self._extras):
+            # don't use key-values that do not apply to this target_type, or you'll
+            # get an error from target_type.objects.get_or_create
+            params = {}
+            fields = map(lambda field: (field.name, field), target_type._meta.fields)
+            for key, field in fields:
+                if to_public(key) in source_dict:
+                    params[key] = source_dict[to_public(key)]
+                if key in extras:
+                    params[key] = extras[key]
+            return params, dict(fields)
+
+        def get_or_create(target_type, attrs,
+                          self=self, to_public=to_public, source_dict=source_dict, extras=self._extras):
+            fields = target_type._meta.fields
+            for field in filter(lambda f, attr=attrs[0]: f.name == attr, fields):
+                # It might be necessary to get or create a prerequisite sub-object before
+                # the object can be created.
+                if isinstance(field, django.db.models.fields.related.ForeignKey) and not field.null:
+                    extras[attrs[0]] = get_or_create(field.rel.to, attrs[1:])
+            params, _ = get_model_params(target_type)
+            obj, _ = target_type.objects.get_or_create(**params)
+            return obj
+
+        if len(attrs) == 1:
+            params, fields = get_model_params(type(root_obj))
+            for key in fields:
+                if key in params:
+                    setattr(root_obj, key, params[key])
+            return root_obj
+        try:
+            # Descend to the next object down, easy if it exists
+            if attrs[0] in [to_public(x.name) for x in type(root_obj)._meta.fields]:
+                obj = getattr(root_obj, attrs[0])
+                self.set_recursively(ctx, obj, attrs[1:], source_dict)
+            else:
+                obj = root_obj
+            return obj
+        except ObjectDoesNotExist:
+            # Try to create the object.
+            target_field_name, attrs = attrs[0], attrs[1:]
+            target_type = getattr(type(root_obj), target_field_name).field.rel.to
+            obj = get_or_create(target_type, attrs)
+            if obj:
+                return obj
+            else:
+                raise SavoryPieError(u'Unable to save attribute field: {0}'.format(self._full_attribute))
 
     def handle_incoming(self, ctx, source_dict, target_obj):
-        obj = self._get_object_with_model(target_obj, source_dict)
-
+        obj = self.set_recursively(ctx, target_obj, self._attrs, source_dict)
         value = self.to_python_value(ctx, source_dict[self._compute_property(ctx)])
         setattr(obj, self._bare_attribute, value)
 
