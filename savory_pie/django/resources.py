@@ -303,6 +303,7 @@ class ModelResource(Resource):
 
         if self.resource_path is not None:
             target_dict['resourceUri'] = ctx.build_resource_uri(self)
+            target_dict['$hash'] = _get_sha1(ctx, target_dict)
 
         return target_dict
 
