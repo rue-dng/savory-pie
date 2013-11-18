@@ -103,17 +103,22 @@ class ModelResourceTest(unittest.TestCase):
 
     @patch('savory_pie.django.resources.dirty_bits')
     def test_dirty_signal_register(self, dirty_bits):
-        user = User(pk=1, name='Bob', age=20)
-        UserOwnerResource(user)
-        dirty_bits.register.assert_called_with(UserOwner)
+        class NEWCLazz(mock_orm.Model):
+            pass
+
+        class NEWClazzResource(resources.ModelResource):
+            model_class = NEWCLazz
+
+        NEWClazzResource(NEWCLazz())
+        dirty_bits.register.assert_called_with(NEWCLazz)
 
     def test_get(self):
         user = User(pk=1, name='Bob', age=20)
 
         resource = AddressableUserResource(user)
-        dict = resource.get(mock_context(), EmptyParams())
+        dct = resource.get(mock_context(), EmptyParams())
 
-        self.assertEqual(dict, {
+        self.assertEqual(dct, {
             'name': 'Bob',
             'age': 20,
             'resourceUri': 'uri://users/1'
@@ -149,6 +154,61 @@ class ModelResourceTest(unittest.TestCase):
         self.assertEqual(user.name, 'Bob')
         self.assertEqual(user.age, 20)
         self.assertEqual(user.owner.name, 'bob owner')
+
+    def test_clean_save(self):
+
+        class DirtyUser(mock_orm.Model):
+            age = 30
+            name = 'Bob'
+            _fields = ['age', 'name']
+            pk = 3
+
+        class DirtyUserResource(resources.ModelResource):
+            parent_resource_path = 'users'
+            model_class = DirtyUser
+
+            fields = [
+                fields.AttributeField(attribute='name', type=str),
+                fields.AttributeField(attribute='age', type=int)
+            ]
+
+        dirty_user = DirtyUser()
+        dirty_user.save = Mock()
+        resource = DirtyUserResource(dirty_user)
+
+        resource.put(mock_context(), {
+            'name': 'Bob',
+            'age': 30,
+            'resourceUri': 'uri://users/1'
+        })
+        self.assertFalse(dirty_user.save.called)
+
+    def test_dirty_save(self):
+        class DirtyUser(mock_orm.Model):
+            age = 30
+            name = 'Bob'
+            _fields = ['age', 'name']
+            pk = 3
+
+        class DirtyUserResource(resources.ModelResource):
+            parent_resource_path = 'users'
+            model_class = DirtyUser
+
+            fields = [
+                fields.AttributeField(attribute='name', type=str),
+                fields.AttributeField(attribute='age', type=int)
+            ]
+
+        dirty_user = DirtyUser()
+        dirty_user.save = Mock()
+        resource = DirtyUserResource(dirty_user)
+
+        resource.put(mock_context(), {
+            'name': 'Bob',
+            'age': 33,
+            'resourceUri': 'uri://users/1'
+        })
+        self.assertTrue(dirty_user.save.called)
 
     def test_qsr_returns_hashes(self):
         resource = AddressableUserQuerySetResource(mock_orm.QuerySet(

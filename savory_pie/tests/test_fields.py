@@ -15,6 +15,9 @@ class IterableFieldTest(unittest.TestCase):
         # TODO: Need to alter savory_pie.fields.IterableField.handle_outgoing to not use manager.all()
         from savory_pie.tests.django import mock_orm
 
+        class ORMModelMock(mock_orm.Model):
+            pass
+
         class MockResource(ModelResource):
             model_class = mock_orm.Model
             fields = [
@@ -26,7 +29,7 @@ class IterableFieldTest(unittest.TestCase):
         source_object = mock_orm.Model()
         related_manager = mock_orm.Manager()
         related_manager.all = Mock(return_value=mock_orm.QuerySet(
-            mock_orm.Model(pk=4, bar=14)
+            ORMModelMock(pk=4, bar=14)
         ))
 
         class InterimObject(object):
