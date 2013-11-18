@@ -101,6 +101,12 @@ class ModelResourceTest(unittest.TestCase):
 
         self.assertEqual(resource.resource_path, 'users/1')
 
+    @patch('savory_pie.django.resources.dirty_bits')
+    def test_dirty_signal_register(self, dirty_bits):
+        user = User(pk=1, name='Bob', age=20)
+        UserOwnerResource(user)
+        dirty_bits.register.assert_called_with(UserOwner)
+
     def test_get(self):
         user = User(pk=1, name='Bob', age=20)
 

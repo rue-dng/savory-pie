@@ -49,6 +49,7 @@ class IterableFieldTest(unittest.TestCase):
         iterable.__iter__.return_value = iter(values)
 
         class MockResource(ModelResource):
+            model_class = Mock()
             fields = [
                 AttributeField(attribute='bar', type=int),
             ]
@@ -144,6 +145,7 @@ class CompleteURIResourceFieldTestCase(unittest.TestCase):
     def test_outgoing(self):
 
         class Resource(ModelResource):
+            model_class = Mock()
             parent_resource_path = 'resources'
 
         field = CompleteURIResourceField(resource_class=Resource)

@@ -268,6 +268,7 @@ class URIResourceFieldTest(unittest.TestCase):
     def test_outgoing(self):
 
         class Resource(ModelResource):
+            model_class = Mock()
             parent_resource_path = 'resources'
 
         field = URIResourceField(attribute='foo', resource_class=Resource)
@@ -283,6 +284,7 @@ class URIResourceFieldTest(unittest.TestCase):
     def test_incoming(self):
 
         class Resource(ModelResource):
+            model_class = Mock()
             pass
 
         field = URIResourceField(attribute='foo', resource_class=Resource)
@@ -305,6 +307,7 @@ class URIResourceFieldTest(unittest.TestCase):
     def test_incoming_read_only(self):
 
         class Resource(ModelResource):
+            model_class = Mock()
             pass
 
         field = URIResourceField(
@@ -360,6 +363,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
     def test_outgoing(self):
 
         class Resource(ModelResource):
+            model_class = Mock()
             fields = [
                 AttributeField(attribute='bar', type=int),
             ]
@@ -378,6 +382,7 @@ class SubModelResourceFieldTest(unittest.TestCase):
     def test_outgoing_with_simple_none(self):
 
         class Resource(ModelResource):
+            model_class = Mock()
             fields = [
                 AttributeField(attribute='bar', type=int),
             ]
@@ -718,6 +723,7 @@ class OneToOneFieldTest(unittest.TestCase):
     def test_outgoing(self):
 
         class Resource(ModelResource):
+            model_class = Mock()
             fields = [
                 AttributeField(attribute='bar', type=int),
             ]
