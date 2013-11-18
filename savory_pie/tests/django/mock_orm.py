@@ -176,6 +176,19 @@ class Manager(Mock):
         return iter(self.all())
 
 
+class FeildsInitType(type):
+    def __new__(meta, classname, bases, dct):
+        fields = dct.get('_fields', [])
+        for base in bases:
+            if getattr(base, '_meta', None):
+                base_meta = base._meta
+                base_meta.get_all_field_names.return_value = fields
+                dct['_meta'] = base_meta
+                break
+
+        return type.__new__(meta, classname, bases, dct)
+
+
 class Model(object):
     class DoesNotExist(ObjectDoesNotExist):
         pass
@@ -183,10 +196,10 @@ class Model(object):
     _models = []
     _meta = Mock()
     objects = Manager()
-    _meta.get_all_field_names.return_value = []
+    __metaclass__ = FeildsInitType
 
     def __init__(self, **kwargs):
-        self.pk = None
+        self.pk = getattr(self, 'pk', None)
         self._models.append(self)
 
         for key, value in kwargs.iteritems():
