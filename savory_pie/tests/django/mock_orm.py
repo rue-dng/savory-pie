@@ -2,6 +2,7 @@ import operator
 import random
 
 from django.db.models import Q
+from django.db.models.signals import post_init
 
 from mock import Mock
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
@@ -182,6 +183,7 @@ class Model(object):
     _models = []
     _meta = Mock()
     objects = Manager()
+    _meta.get_all_field_names.return_value = []
 
     def __init__(self, **kwargs):
         self.pk = None
@@ -193,6 +195,8 @@ class Model(object):
         def save_side_effect():
             if self.pk is None:
                 self.pk = random.randint(1000, 10000)
+
+        post_init.send(sender=self.__class__, instance=self)
 
         self.save = Mock(name='save', side_effect=save_side_effect)
         self.delete = Mock(name='delete')

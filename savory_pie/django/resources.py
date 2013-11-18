@@ -2,6 +2,7 @@ import urllib
 import logging
 
 import django.core.exceptions
+import dirty_bits
 
 from savory_pie.resources import EmptyParams, Resource
 from savory_pie.django.utils import Related
@@ -42,6 +43,8 @@ class QuerySetResource(Resource):
             self.queryset = queryset
         else:
             self.queryset = self.resource_class.model_class.objects.all()
+
+        super(QuerySetResource, self).__init__(queryset)
 
     @property
     def supports_paging(self):
@@ -253,6 +256,7 @@ class ModelResource(Resource):
             return cls(model)
 
     def __init__(self, model):
+        dirty_bits.register(self.model_class)
         self.model = model
 
     @property
@@ -310,6 +314,16 @@ class ModelResource(Resource):
                     field.handle_incoming(ctx, source_dict, self.model)
 
     def _save(self):
+        try:
+            is_dirty = self.model.is_dirty
+        except AttributeError:
+            # If its not accessed its dirty
+            pass
+        else:
+            if is_dirty():
+                return
+
+
         self.model.save()
         for field in self.fields:
             try:
