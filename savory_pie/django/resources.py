@@ -44,8 +44,6 @@ class QuerySetResource(Resource):
         else:
             self.queryset = self.resource_class.model_class.objects.all()
 
-        super(QuerySetResource, self).__init__(queryset)
-
     @property
     def supports_paging(self):
         return self.page_size is not None
@@ -170,6 +168,19 @@ class QuerySetResource(Resource):
             return None
 
 
+class DirtyInitializerMetaClass(type):
+
+    def __new__(cls, name, bases, dct):
+        model_class = dct.get('model_class', None)
+        if model_class:
+            dirty_bits.register(model_class)
+        for base in bases:
+            model_class = getattr(base, 'model_class', None)
+            if model_class:
+                dirty_bits.register(model_class)
+        return type.__new__(cls, name, bases, dct)
+
+
 class ModelResource(Resource):
     """
     Resource abstract around ModelResource.
@@ -185,7 +196,8 @@ class ModelResource(Resource):
         class FooQuerySetResource(QuerySetResource):
             resource_class = FooResource
     """
-    # model_class
+    # Must have a metaclass to instantiate dirty checking
+    __metaclass__ = DirtyInitializerMetaClass
 
     #: path of parent resource - used to compute resource_path
     parent_resource_path = None
@@ -256,7 +268,6 @@ class ModelResource(Resource):
             return cls(model)
 
     def __init__(self, model):
-        dirty_bits.register(self.model_class)
         self.model = model
 
     @property
@@ -320,9 +331,8 @@ class ModelResource(Resource):
             # If its not accessed its dirty
             pass
         else:
-            if is_dirty():
+            if not is_dirty():
                 return
-
 
         self.model.save()
         for field in self.fields:
