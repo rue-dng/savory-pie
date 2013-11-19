@@ -174,10 +174,12 @@ class DirtyInitializerMetaClass(type):
         model_class = dct.get('model_class', None)
         if model_class:
             dirty_bits.register(model_class)
-        for base in bases:
-            model_class = getattr(base, 'model_class', None)
-            if model_class:
-                dirty_bits.register(model_class)
+        else:
+            for base in bases:
+                model_class = getattr(base, 'model_class', None)
+                if model_class:
+                    dirty_bits.register(model_class)
+                    break
         return type.__new__(cls, name, bases, dct)
 
 
