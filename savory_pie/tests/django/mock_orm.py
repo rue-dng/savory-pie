@@ -2,6 +2,7 @@ import operator
 import random
 
 from django.db.models import Q
+from django.db.models.signals import post_init
 
 from mock import Mock
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
@@ -175,6 +176,19 @@ class Manager(Mock):
         return iter(self.all())
 
 
+class FieldsInitType(type):
+    def __new__(meta, classname, bases, dct):
+        fields = dct.get('_fields', [])
+        for base in bases:
+            if getattr(base, '_meta', None):
+                base_meta = base._meta
+                base_meta.get_all_field_names.return_value = fields
+                dct['_meta'] = base_meta
+                break
+
+        return type.__new__(meta, classname, bases, dct)
+
+
 class Model(object):
     class DoesNotExist(ObjectDoesNotExist):
         pass
@@ -182,9 +196,10 @@ class Model(object):
     _models = []
     _meta = Mock()
     objects = Manager()
+    __metaclass__ = FieldsInitType
 
     def __init__(self, **kwargs):
-        self.pk = None
+        self.pk = getattr(self, 'pk', None)
         self._models.append(self)
 
         for key, value in kwargs.iteritems():
@@ -193,6 +208,8 @@ class Model(object):
         def save_side_effect():
             if self.pk is None:
                 self.pk = random.randint(1000, 10000)
+
+        post_init.send(sender=self.__class__, instance=self)
 
         self.save = Mock(name='save', side_effect=save_side_effect)
         self.delete = Mock(name='delete')

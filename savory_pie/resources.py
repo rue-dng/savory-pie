@@ -101,7 +101,7 @@ class APIResource(Resource):
         leaf = resource.resource_path
         if '/' in resource.resource_path:
             n = resource.resource_path.index('/')
-            leaf = resource.resource_path[n+1:]
+            leaf = resource.resource_path[n + 1:]
 
         self._child_resources[leaf] = resource
         return self

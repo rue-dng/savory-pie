@@ -1,5 +1,6 @@
 # For testing django support
 Django
+django_dirty_bits
 
 # Unit testing tools
 nose

@@ -136,7 +136,6 @@ class HaystackSearchResourceTest(unittest.TestCase):
 
         resource = TestSearchResource()
         result = resource.get(ctx, {})
-        print result
 
         self.assertEqual(
             ''.join(result),
@@ -161,7 +160,6 @@ class HaystackSearchResourceTest(unittest.TestCase):
 
         resource = TestSearchResource()
         result = resource.get(ctx, {'q': 'foo bar'})
-        print result
 
         self.assertEqual(
             ''.join(result),
@@ -186,7 +184,6 @@ class HaystackSearchResourceTest(unittest.TestCase):
 
         resource = TestSearchResource()
         result = resource.get(ctx, {'updatedSince': '2012-01-01'})
-        print result
 
         self.assertEqual(
             ''.join(result),

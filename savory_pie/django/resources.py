@@ -2,6 +2,7 @@ import urllib
 import logging
 
 import django.core.exceptions
+import dirty_bits
 
 from savory_pie.resources import EmptyParams, Resource
 from savory_pie.django.utils import Related
@@ -167,6 +168,21 @@ class QuerySetResource(Resource):
             return None
 
 
+class DirtyInitializerMetaClass(type):
+
+    def __new__(cls, name, bases, dct):
+        model_class = dct.get('model_class', None)
+        if model_class:
+            dirty_bits.register(model_class)
+        else:
+            for base in bases:
+                model_class = getattr(base, 'model_class', None)
+                if model_class:
+                    dirty_bits.register(model_class)
+                    break
+        return type.__new__(cls, name, bases, dct)
+
+
 class ModelResource(Resource):
     """
     Resource abstract around ModelResource.
@@ -182,7 +198,8 @@ class ModelResource(Resource):
         class FooQuerySetResource(QuerySetResource):
             resource_class = FooResource
     """
-    # model_class
+    # Must have a metaclass to instantiate dirty checking
+    __metaclass__ = DirtyInitializerMetaClass
 
     #: path of parent resource - used to compute resource_path
     parent_resource_path = None
@@ -310,6 +327,9 @@ class ModelResource(Resource):
                     field.handle_incoming(ctx, source_dict, self.model)
 
     def _save(self):
+        if not self.model.is_dirty():
+            return
+
         self.model.save()
         for field in self.fields:
             try:
