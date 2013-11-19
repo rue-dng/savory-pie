@@ -157,10 +157,16 @@ class ModelResourceTest(unittest.TestCase):
 
     def test_clean_save(self):
 
+        age_field = Mock()
+        age_field.name = 'age'
+        age_field.value_to_string.return_value = 30
+
+        name_field = Mock()
+        name_field.name = 'name'
+        name_field.value_to_string.return_value = 'Bob'
+
         class DirtyUser(mock_orm.Model):
-            age = 30
-            name = 'Bob'
-            _fields = ['age', 'name']
+            _fields = [age_field, name_field]
             pk = 3
 
         class DirtyUserResource(resources.ModelResource):
@@ -184,10 +190,16 @@ class ModelResourceTest(unittest.TestCase):
         self.assertFalse(dirty_user.save.called)
 
     def test_dirty_save(self):
+        age_field = Mock()
+        age_field.name = 'age'
+        age_field.value_to_string.side_effect = [30, 33]
+
+        name_field = Mock()
+        name_field.name = 'name'
+        name_field.value_to_string.return_value = 'Bob'
+
         class DirtyUser(mock_orm.Model):
-            age = 30
-            name = 'Bob'
-            _fields = ['age', 'name']
+            _fields = [age_field, name_field]
             pk = 3
 
         class DirtyUserResource(resources.ModelResource):

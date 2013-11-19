@@ -182,10 +182,10 @@ class FieldsInitType(type):
         for base in bases:
             if getattr(base, '_meta', None):
                 base_meta = base._meta
-                base_meta.get_all_field_names.return_value = fields
+                base_meta.fields = fields
+                base_meta.many_to_many = []
                 dct['_meta'] = base_meta
                 break
-
         return type.__new__(meta, classname, bases, dct)
 
 

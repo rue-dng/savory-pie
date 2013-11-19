@@ -104,7 +104,15 @@ class AttributeField(base_fields.AttributeField, DjangoField):
         # TODO: remove this save call and track all models to save in the ctx.
         # Also run a topo-sort in the ctx and save models in the order.  We can
         # then remove all of the save order logic from the fields.
-        self._get_object(target_obj).save()
+        target = self._get_object(target_obj)
+        try:
+            is_dirty = target.is_dirty
+        except AttributeError:
+            pass
+        else:
+            if not is_dirty():
+                return
+        target.save()
 
     def filter_by_item(self, ctx, filter_args, source_dict):
         filter_args[self._full_attribute] = source_dict.get(self._compute_property(ctx))
