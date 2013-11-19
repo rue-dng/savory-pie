@@ -103,14 +103,14 @@ class ModelResourceTest(unittest.TestCase):
 
     @patch('savory_pie.django.resources.dirty_bits')
     def test_dirty_signal_register(self, dirty_bits):
-        class NEWCLazz(mock_orm.Model):
+        class NewClazz(mock_orm.Model):
             pass
 
-        class NEWClazzResource(resources.ModelResource):
-            model_class = NEWCLazz
+        class NewClazzResource(resources.ModelResource):
+            model_class = NewClazz
 
-        NEWClazzResource(NEWCLazz())
-        dirty_bits.register.assert_called_with(NEWCLazz)
+        NewClazzResource(NewClazz())
+        dirty_bits.register.assert_called_with(NewClazz)
 
     def test_get(self):
         user = User(pk=1, name='Bob', age=20)
