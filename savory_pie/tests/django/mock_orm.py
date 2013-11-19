@@ -176,7 +176,7 @@ class Manager(Mock):
         return iter(self.all())
 
 
-class FeildsInitType(type):
+class FieldsInitType(type):
     def __new__(meta, classname, bases, dct):
         fields = dct.get('_fields', [])
         for base in bases:
@@ -196,7 +196,7 @@ class Model(object):
     _models = []
     _meta = Mock()
     objects = Manager()
-    __metaclass__ = FeildsInitType
+    __metaclass__ = FieldsInitType
 
     def __init__(self, **kwargs):
         self.pk = getattr(self, 'pk', None)
