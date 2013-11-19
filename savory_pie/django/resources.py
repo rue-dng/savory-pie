@@ -325,14 +325,8 @@ class ModelResource(Resource):
                     field.handle_incoming(ctx, source_dict, self.model)
 
     def _save(self):
-        try:
-            is_dirty = self.model.is_dirty
-        except AttributeError:
-            # If its not accessed its dirty
-            pass
-        else:
-            if not is_dirty():
-                return
+        if not self.model.is_dirty():
+            return
 
         self.model.save()
         for field in self.fields:
