@@ -328,7 +328,6 @@ class ModelResource(Resource):
 
     def _save(self):
         if not self.model.is_dirty():
-            print 'Not saving %s' % self.model
             return
 
         self.model.save()
@@ -338,7 +337,6 @@ class ModelResource(Resource):
             except AttributeError:
                 pass
             else:
-                print 'saving related %s' % self.model
                 save(self.model)
 
     def put(self, ctx, source_dict, save=True, skip_validation=False):
