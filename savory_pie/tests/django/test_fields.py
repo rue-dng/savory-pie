@@ -444,6 +444,28 @@ class SubModelResourceFieldTest(unittest.TestCase):
         self.assertEqual(target_object.foo.bar, 20)
         target_object.foo.save.assert_called_with()
 
+    @mock.patch('savory_pie.fields.AttributeField._get_object')
+    def test_incoming_update_not_dirty(self, get_object):
+        target = Mock()
+        target.is_dirty.return_value = False
+        get_object.return_value = target
+
+        class Resource(ModelResource):
+            model_class = Mock()
+            fields = [
+                AttributeField(attribute='bar', type=int),
+            ]
+
+        field = SubModelResourceField(attribute='foo', resource_class=Resource)
+
+        source_dict = {
+            'foo': {'bar': 20},
+        }
+        target_object = Mock()
+        target_object._meta.get_field().related.field.name = 'bar'
+        field.handle_incoming(mock_context(), source_dict, target_object)
+        self.assertFalse(target.save.called)
+
     def test_incoming_with_none_source(self):
 
         class Resource(ModelResource):
