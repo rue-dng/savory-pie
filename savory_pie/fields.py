@@ -634,18 +634,13 @@ class IterableField(Field):
         request_models = {}
         for model_dict in source_dict.get(self._compute_property(ctx), []):
             resource = self._get_resource(ctx, attribute, model_dict)
-            print 'response resource %s' % resource
-            print ' model dict %s' % new_put_data
             if resource:
                 request_models[resource.key] = resource.model
                 request_keys.add(resource.key)
-                print 'db_keys %s' % db_keys
-                print 'resource.key %s' % resource.key
                 if resource.key in db_keys:
                     with ctx.target(resource.model):
                         resource.put(ctx, model_dict)
                     if not hasattr(attribute, 'add'):
-                        print 'new model fix %s' % new_put_data
                         new_models.append(resource.model)
                 else:
                     new_models.append(resource.model)
@@ -664,7 +659,6 @@ class IterableField(Field):
 
         # Delay all the new creates untill after the deletes for unique
         # constraints again
-        print 'new_put_data %s' % new_put_data
         for model_dict in new_put_data:
             model_resource = self._resource_class.create_resource()
             with ctx.target(target_obj):
@@ -672,17 +666,13 @@ class IterableField(Field):
             new_models.append(model_resource.model)
 
         if hasattr(attribute, 'add'):
-            print 'add %s' % attribute
             attribute.add(*new_models)
         else:
-            print 'through %s' % attribute
             for obj in new_models:
-                print 'through %s - obj %s' % (attribute, obj)
                 through_parameters = {
                     attribute.source_field_name: target_obj,
                     attribute.target_field_name: obj
                 }
-                print 'params %s' % through_parameters
                 attribute.through.objects.create(**through_parameters)
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
