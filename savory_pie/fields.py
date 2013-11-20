@@ -637,15 +637,22 @@ class IterableField(Field):
             if resource:
                 request_models[resource.key] = resource.model
                 request_keys.add(resource.key)
+                # Check to see if the resource has already been saved in the DB
                 if resource.key in db_keys:
                     with ctx.target(resource.model):
                         resource.put(ctx, model_dict)
+                    # If the resource has been saved to the db and the model is
+                    # a RelatedManager that is a through (existence of add attribute)
+                    # must add it to the new model since it can create a model based
+                    # on just the association.
                     if not hasattr(attribute, 'add'):
                         new_models.append(resource.model)
                 else:
+                    # if the model is not in the database, must save it
                     new_models.append(resource.model)
 
             else:
+                # if the resource does not exist then this is a new instance
                 new_put_data.append(model_dict)
 
         # Delete before add to prevent problems with unique constraints
