@@ -214,6 +214,7 @@ class AttributeFieldWithModelsTest(unittest.TestCase):
     def setUp(self):
         class CharField(Mock):
             pass
+
         class ForeignKey(Mock):
             pass
 
@@ -931,7 +932,7 @@ class RelatedManagerFieldTest(unittest.TestCase):
         ctx.resolve_resource_uri.return_value = MockResource(related_model)
 
         field.handle_incoming(ctx, source_dict, target_obj)
-        model = mock_orm.Model._models[model_index-1]
+        model = mock_orm.Model._models[model_index - 1]
         self.assertEqual(14, model.bar)
 
     def test_incoming_delete(self):
