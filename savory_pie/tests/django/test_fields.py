@@ -211,57 +211,72 @@ class AttributeFieldTest(unittest.TestCase):
 
 
 class AttributeFieldWithModelsTest(unittest.TestCase):
+    def setUp(self):
+        class CharField(Mock):
+            pass
+        class ForeignKey(Mock):
+            pass
+
+        class mock_Model(mock_orm.Model):
+            def __getattribute__(self, item):
+                result = super(mock_Model, self).__getattribute__(item)
+                if item in ['bar', 'baz']:
+                    result = result.target
+                return result
+
+        class BazModel(mock_Model):
+            potato = CharField()
+            potato.name = 'potato'
+            other = CharField()
+            other.name = 'other'
+        self.baz = BazModel(potato='idaho')
+        BazModel._meta = Mock()
+        BazModel._meta.fields = [BazModel.potato, BazModel.other]
+        self.BazModel = BazModel
+
+        class BarModel(mock_Model):
+            baz = ForeignKey()
+            baz.name = 'baz'
+            baz.target = self.baz
+        my_bar = BarModel()
+        BarModel._meta = Mock()
+        BarModel._meta.fields = [BarModel.baz]
+
+        class FooModel(mock_Model):
+            bar = ForeignKey('bar', BarModel())
+            bar.name = 'bar'
+            bar.target = my_bar
+        FooModel._meta = Mock()
+        FooModel._meta.fields = [FooModel.bar]
+        self.foo = FooModel()
+
     def test_simple_incoming(self):
-        class FooModel(mock_orm.Model):
-            bar = Mock()
-
-        source_dict = {
-            'bar': 20
-        }
-        field = AttributeFieldWithModel(attribute='foo.bar', type=int, model=FooModel)
-
-        class Target(object):
-            def __getattr__(self, key):
-                if key == 'foo':
-                    raise ObjectDoesNotExist
-                return self
-
-        target_object = Target()
-
-        field.handle_incoming(mock_context(), source_dict, target_object)
-
-        self.assertEqual(target_object.foo.bar, 20)
-
-    def test_simple_incoming_with_extras(self):
-        class FooModel(mock_orm.Model):
-            bar = Mock()
-
-        FooModel.objects = Mock(return_value=mock_orm.QuerySet(
-            mock_orm.Model(pk=4, bar=20, other='A'),
-            mock_orm.Model(pk=4, bar=20, other='B'),
-        ))
-        source_dict = {
-            'bar': 20,
-        }
         field = AttributeFieldWithModel(
-            attribute='foo.bar',
-            type=int,
-            model=FooModel,
-            extras={'other': 'A'}
+            attribute='bar.baz.potato',
+            type=str,
+            model=self.BazModel
         )
 
-        class Target(object):
-            def __getattr__(self, key):
-                if key == 'foo':
-                    raise ObjectDoesNotExist
-                return self
+        source_dict = {
+            'potato': 'abc'
+        }
+        field.handle_incoming(mock_context(), source_dict, self.foo)
+        self.assertEqual(self.baz.potato, 'abc')
 
-        target_object = Target()
+    def test_simple_incoming_with_extras(self):
+        field = AttributeFieldWithModel(
+            attribute='bar.baz.potato',
+            type=str,
+            model=self.BazModel,
+            extras={'other': 'def'}
+        )
 
-        field.handle_incoming(mock_context(), source_dict, target_object)
-
-        self.assertEqual(target_object.foo.bar, 20)
-        FooModel.objects.get.assert_called_with(bar=20, other='A')
+        source_dict = {
+            'potato': 'abc'
+        }
+        field.handle_incoming(mock_context(), source_dict, self.foo)
+        self.assertEqual(self.baz.potato, 'abc')
+        self.assertEqual(self.baz.other, 'def')
 
 
 class URIResourceFieldTest(unittest.TestCase):
