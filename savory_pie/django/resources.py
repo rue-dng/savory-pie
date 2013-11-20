@@ -327,10 +327,9 @@ class ModelResource(Resource):
                     field.handle_incoming(ctx, source_dict, self.model)
 
     def _save(self):
-        if not self.model.is_dirty():
-            return
+        if self.model.is_dirty():
+            self.model.save()
 
-        self.model.save()
         for field in self.fields:
             try:
                 save = field.save

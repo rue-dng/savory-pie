@@ -214,6 +214,7 @@ class AttributeFieldWithModelsTest(unittest.TestCase):
     def setUp(self):
         class CharField(Mock):
             pass
+
         class ForeignKey(Mock):
             pass
 
@@ -911,15 +912,16 @@ class RelatedManagerFieldTest(unittest.TestCase):
         field = RelatedManagerField(attribute='foo', resource_class=MockResource)
 
         target_obj = mock_orm.Mock()
+
         related_manager = mock_orm.Manager()
-        related_model = mock_orm.Model(pk=4, bar=14)
+        related_model = mock_orm.Model(pk=4, bar=10)
         related_manager.all = Mock(return_value=mock_orm.QuerySet(
             related_model
         ))
         target_obj.foo = related_manager
         source_dict = {
             'foo': [{
-                'resourceUri': 'http://testsever/api/v2/bar/14',
+                'resourceUri': 'http://testsever/api/v2/bar/4',
                 'bar': 14
             }],
         }
@@ -927,12 +929,11 @@ class RelatedManagerFieldTest(unittest.TestCase):
         model_index = len(mock_orm.Model._models)
         ctx = mock_context()
         ctx.resolve_resource_uri = Mock()
-        bar_14 = ctx.resolve_resource_uri.return_value = MockResource(Mock())
+        ctx.resolve_resource_uri.return_value = MockResource(related_model)
 
         field.handle_incoming(ctx, source_dict, target_obj)
-        model = mock_orm.Model._models[model_index-1]
+        model = mock_orm.Model._models[model_index - 1]
         self.assertEqual(14, model.bar)
-        related_manager.add.assert_called_with(bar_14.model)
 
     def test_incoming_delete(self):
         del mock_orm.Model._models[:]
