@@ -148,6 +148,7 @@ class ManyToManyThroughTest(unittest.TestCase):
                 return PersonResource(_people[n])
             else:
                 self.fail(arg)
+
         ctx.resolve_resource_uri = resolve
         source_dict = {
             'groups': [{'resourceUri': 'http://localhost:8000/api/group/1', 'name': 'Boy Scouts'}],

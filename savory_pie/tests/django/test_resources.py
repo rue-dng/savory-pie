@@ -233,9 +233,10 @@ class ModelResourceTest(unittest.TestCase):
             'resourceUri': 'uri://users',
             'count': 2
         })
-
-        self.assertEqual(data['objects'][0]['$hash'], 'aa29a35c3d5f0a3de7fae2f1f2b30c0e1b35084f')
-        self.assertEqual(data['objects'][1]['$hash'], 'bbb39a0ea490e5afe9cd547dc7b96572f5ab7fd7')
+        self.assertEqual(data['objects'][1]['name'], 'Bob')
+        self.assertEqual(data['objects'][0]['name'], 'Alice')
+        self.assertEqual(data['objects'][1]['$hash'], 'aa29a35c3d5f0a3de7fae2f1f2b30c0e1b35084f')
+        self.assertEqual(data['objects'][0]['$hash'], 'bbb39a0ea490e5afe9cd547dc7b96572f5ab7fd7')
 
     def test_put_with_good_sha(self):
         user = User()
@@ -393,7 +394,7 @@ class QuerySetResourceTest(unittest.TestCase):
     def remove_hash(self, dct):
         return dict((k, v) for k, v in dct.items() if k[:1] != '$')
 
-    def test_get(self):
+    def test_query_set_get(self):
         resource = AddressableUserQuerySetResource(mock_orm.QuerySet(
             User(pk=1, name='Alice', age=31),
             User(pk=2, name='Bob', age=20)
@@ -404,10 +405,9 @@ class QuerySetResourceTest(unittest.TestCase):
             'resourceUri': 'uri://users',
             'count': 2
         })
-
         self.assertEqual(map(self.remove_hash, data['objects']), [
-            {'resourceUri': 'uri://users/2', 'name': 'Bob', 'age': 20},
-            {'resourceUri': 'uri://users/1', 'name': 'Alice', 'age': 31}
+            {'resourceUri': 'uri://users/1', 'name': 'Alice', 'age': 31},
+            {'resourceUri': 'uri://users/2', 'name': 'Bob', 'age': 20}
         ])
 
     def test_get_distinct(self):
