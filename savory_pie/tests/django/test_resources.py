@@ -192,7 +192,7 @@ class ModelResourceTest(unittest.TestCase):
     def test_dirty_save(self):
         age_field = Mock()
         age_field.name = 'age'
-        age_field.value_to_string.side_effect = [30, 33]
+        age_field.value_to_string.return_value = 30
 
         name_field = Mock()
         name_field.name = 'name'
@@ -213,11 +213,12 @@ class ModelResourceTest(unittest.TestCase):
 
         dirty_user = DirtyUser()
         dirty_user.save = Mock()
+        dirty_user.is_dirty = lambda: True
         resource = DirtyUserResource(dirty_user)
 
         resource.put(mock_context(), {
             'name': 'Bob',
-            'age': 33,
+            'age': 30,
             'resourceUri': 'uri://users/1'
         })
         self.assertTrue(dirty_user.save.called)
@@ -233,10 +234,12 @@ class ModelResourceTest(unittest.TestCase):
             'resourceUri': 'uri://users',
             'count': 2
         })
-        self.assertEqual(data['objects'][1]['name'], 'Bob')
-        self.assertEqual(data['objects'][0]['name'], 'Alice')
-        self.assertEqual(data['objects'][1]['$hash'], 'aa29a35c3d5f0a3de7fae2f1f2b30c0e1b35084f')
-        self.assertEqual(data['objects'][0]['$hash'], 'bbb39a0ea490e5afe9cd547dc7b96572f5ab7fd7')
+
+        self.assertEqual(len(data['objects']), 2)
+        self.assertEqual(data['objects'][0]['name'], 'Bob')
+        self.assertEqual(data['objects'][1]['name'], 'Alice')
+        self.assertEqual(data['objects'][0]['$hash'], 'aa29a35c3d5f0a3de7fae2f1f2b30c0e1b35084f')
+        self.assertEqual(data['objects'][1]['$hash'], 'bbb39a0ea490e5afe9cd547dc7b96572f5ab7fd7')
 
     def test_put_with_good_sha(self):
         user = User()
@@ -405,7 +408,12 @@ class QuerySetResourceTest(unittest.TestCase):
             'resourceUri': 'uri://users',
             'count': 2
         })
-        self.assertEqual(map(self.remove_hash, data['objects']), [
+
+        self.assertEqual(len(data['objects']), 2)
+
+        data = sorted(data['objects'], key=lambda k: k['name'])
+
+        self.assertEqual(map(self.remove_hash, data), [
             {'resourceUri': 'uri://users/1', 'name': 'Alice', 'age': 31},
             {'resourceUri': 'uri://users/2', 'name': 'Bob', 'age': 20}
         ])
