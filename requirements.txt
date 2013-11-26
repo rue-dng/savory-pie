@@ -12,6 +12,7 @@ Whoosh
 
 # Docs
 sphinx
+rst2pdf
 
 # Dates
 pytz
