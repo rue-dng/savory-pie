@@ -51,7 +51,6 @@ class QuerySet(Mock):
             q = args[0]
         else:
             q = Q(*args, **kwargs)
-        print '==', q
         queryset = QuerySet(*self._filter_q(q))
         queryset._selected = set(queryset._selected)
         queryset._prefetched = set(queryset._prefetched)
@@ -131,13 +130,10 @@ class QuerySet(Mock):
 
         results = None
         for child in q.children:
-            print '--->', child
             if isinstance(child, Q):
                 r = self._filter_q(child)
-                print r
             else:
                 r = self._filter_elements(**dict([child]))
-                print r
 
             if results is None:
                 results = r
