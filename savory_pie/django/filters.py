@@ -94,9 +94,15 @@ class StandardFilter(object):
             return False
 
     def build_queryset(self, criteria, queryset):
-        q = Q()
-        for key, value in criteria.items():
-            q.add((key, value), 'OR')
+        if not criteria:
+            return queryset
+
+        items = criteria.items()
+        q = Q(**{items[0][0]: items[0][1]})
+
+        for key, value in items[1:]:
+            q |= Q(**{key: value})
+
         queryset = queryset.filter(q)
         return queryset
 
@@ -213,10 +219,15 @@ class ParameterizedFilter(StandardFilter):
         return [apply_value_function(v) for v in values]
 
     def build_queryset(self, criteria, queryset):
-        q = Q()
-        for key, values in criteria.items():
+        if not criteria:
+            return queryset
+
+        items = criteria.items()
+        q = Q(**{items[0][0]: items[0][1].pop()})
+
+        for key, values in items:
             for value in values:
-                q.add((key, value), 'OR')
+                q |= Q(**{key: value})
 
         queryset = queryset.filter(q)
         return queryset

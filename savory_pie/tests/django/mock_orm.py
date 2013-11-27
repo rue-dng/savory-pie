@@ -47,7 +47,11 @@ class QuerySet(Mock):
         return len(self._elements)
 
     def filter(self, *args, **kwargs):
-        q = Q(*args, **kwargs)
+        if len(args) == 1 and isinstance(args[0], Q):
+            q = args[0]
+        else:
+            q = Q(*args, **kwargs)
+        print '==', q
         queryset = QuerySet(*self._filter_q(q))
         queryset._selected = set(queryset._selected)
         queryset._prefetched = set(queryset._prefetched)
@@ -118,7 +122,7 @@ class QuerySet(Mock):
 
     def _filter_q(self, q):
         if not q.children:
-            return self._elements
+            return set(self._elements)
 
         if q.connector == 'AND':
             opp = operator.and_
@@ -127,16 +131,20 @@ class QuerySet(Mock):
 
         results = None
         for child in q.children:
+            print '--->', child
             if isinstance(child, Q):
                 r = self._filter_q(child)
+                print r
             else:
                 r = self._filter_elements(**dict([child]))
+                print r
+
             if results is None:
                 results = r
             else:
                 results = opp(results, r)
 
-        return results
+        return set(results)
 
     def _filter_elements(self, **kwargs):
         filtered_elements = self._elements
