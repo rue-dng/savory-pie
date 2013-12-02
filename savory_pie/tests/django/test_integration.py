@@ -1,3 +1,4 @@
+import json
 import unittest
 
 from mock import Mock
@@ -42,6 +43,8 @@ class IntegrationTest(unittest.TestCase):
         response = savory_dispatch(api_resource, method='GET', resource_path='users/1')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            response.content,
-            '{"resourceUri": "http://localhost/api/users/1", "age": 31, "name": "Alice"}'
+            json.loads(response.content),
+            {'resourceUri': 'http://localhost/api/users/1',
+             '$hash': '34565dbabb32e241abfbca5b2cfb55e87989b8c8',
+             'age': 31, 'name': 'Alice'}
         )
