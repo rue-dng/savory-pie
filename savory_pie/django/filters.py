@@ -224,11 +224,12 @@ class ParameterizedFilter(StandardFilter):
             return queryset
 
         q = None
-        for key, value in criteria.items():
-            if q is None:
-                q = Q(**{key: value})
-            else:
-                q |= Q(**{key: value})
+        for key, values in criteria.items():
+            for value in values:
+                if q is None:
+                    q = Q(**{key: value})
+                else:
+                    q |= Q(**{key: value})
 
         queryset = queryset.filter(q)
         return queryset
