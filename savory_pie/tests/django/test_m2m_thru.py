@@ -160,5 +160,7 @@ class ManyToManyThroughTest(unittest.TestCase):
         self.assertEqual('Boy Scouts', _groups[0].name)
         self.assertEqual(3, len(_memberships))
         resource = GroupResource(_groups[0])
-        self.assertEqual({'resourceUri': 'uri://groups/1', 'name': 'Boy Scouts'},
+        self.assertEqual({'resourceUri': 'uri://groups/1',
+                          'name': 'Boy Scouts',
+                          '$hash': 'a35a8e769bb1583a840525d1e8fd6b3d02658b04'},
                          resource.get(ctx, {'resourceUri': 'http://localhost:8000/api/group/1'}))

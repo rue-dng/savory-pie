@@ -112,7 +112,7 @@ class ModelResourceTest(unittest.TestCase):
         NewClazzResource(NewClazz())
         dirty_bits.register.assert_called_with(NewClazz)
 
-    def test_get(self):
+    def test_resource_get_returns_hash(self):
         user = User(pk=1, name='Bob', age=20)
 
         resource = AddressableUserResource(user)
@@ -120,6 +120,7 @@ class ModelResourceTest(unittest.TestCase):
 
         self.assertEqual(dct, {
             'name': 'Bob',
+            '$hash': '09aacbcd6e62845c0df86116715627f20a11dee4',
             'age': 20,
             'resourceUri': 'uri://users/1'
         })
