@@ -556,18 +556,6 @@ class DjangoUserResource(resources.ModelResource):
     model_class = DjangoUser
     fields = [
         fields.AttributeField('date_joined', type=datetime),
-        fields.AttributeField('email', type=str),
-        fields.AttributeField('first_name', type=str),
-        fields.RelatedManagerField('groups', None),
-        fields.AttributeField('pk', type=int),
-        fields.AttributeField('is_active', type=bool),
-        fields.AttributeField('is_staff', type=bool),
-        fields.AttributeField('is_superuser', type=bool),
-        fields.AttributeField('last_login', type=datetime),
-        fields.AttributeField('last_name', type=str),
-        fields.AttributeField('password', type=str),
-        fields.RelatedManagerField('user_permissions', None),
-        fields.AttributeField('username', type=str)
     ]
     #TODO add filtering and sort order
 
@@ -630,39 +618,3 @@ class SchemaResourceTest(unittest.TestCase):
 
     def test_field_date_joined(self):
         self.do_assert_date_equal('dateJoined')
-
-    def test_field_email(self):
-        self.do_assert_field_equal('email')
-
-    def test_field_first_name(self):
-        self.do_assert_field_equal('firstName')
-
-    def test_field_groups(self):
-        self.do_assert_field_equal('groups')
-
-    def test_field_is_active(self):
-        self.do_assert_field_equal('isActive')
-
-    def test_field_is_staff(self):
-        self.do_assert_field_equal('isStaff')
-
-    def test_field_is_superuser(self):
-        self.do_assert_field_equal('isSuperuser')
-
-    def test_field_last_login(self):
-        self.do_assert_date_equal('lastLogin')
-
-    def test_field_last_name(self):
-        self.do_assert_field_equal('lastName')
-
-    def test_field_password(self):
-        self.do_assert_field_equal('password')
-
-    def test_field_pk(self):
-        self.do_assert_field_equal('pk')
-
-    def test_field_username(self):
-        self.do_assert_field_equal('username')
-
-    def test_field_user_permissions(self):
-        self.do_assert_field_equal('userPermissions')
