@@ -97,11 +97,12 @@ class StandardFilter(object):
         if not criteria:
             return queryset
 
-        items = criteria.items()
-        q = Q(**{items[0][0]: items[0][1]})
-
-        for key, value in items[1:]:
-            q |= Q(**{key: value})
+        q = None
+        for key, value in criteria.items():
+            if q is None:
+                q = Q(**{key: value})
+            else:
+                q |= Q(**{key: value})
 
         queryset = queryset.filter(q)
         return queryset
@@ -222,11 +223,11 @@ class ParameterizedFilter(StandardFilter):
         if not criteria:
             return queryset
 
-        items = criteria.items()
-        q = Q(**{items[0][0]: items[0][1].pop()})
-
-        for key, values in items:
-            for value in values:
+        q = None
+        for key, value in criteria.items():
+            if q is None:
+                q = Q(**{key: value})
+            else:
                 q |= Q(**{key: value})
 
         queryset = queryset.filter(q)
