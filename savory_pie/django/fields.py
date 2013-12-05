@@ -203,6 +203,7 @@ class AttributeFieldWithModel(AttributeField):
             target_field_name, attrs = attrs[0], attrs[1:]
             target_type = getattr(type(root_obj), target_field_name).field.rel.to
             obj = get_or_create(target_type, attrs)
+            setattr(root_obj, target_field_name, obj)
             if obj:
                 return obj
             else:
