@@ -1,21 +1,18 @@
 import logging
 import pprint
+import sys
 import traceback
 
 from django.db import connection
 
 
-def getLogger(name=None, singletonContainer={}):
+def getLogger(name=None):
     if name is None:
         name = __name__
 
-    logger = singletonContainer.get(name)
-    if logger:
-        return logger
-
     logger = logging.getLogger(name)
     formatter = logging.Formatter("[%(funcName)s: %(filename)s:%(lineno)d] %(message)s")
-    handler = logging.StreamHandler()
+    handler = logging.StreamHandler(stream=sys.stderr)
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
@@ -71,8 +68,6 @@ def getLogger(name=None, singletonContainer={}):
 
     logger.before_queries = logger_before_queries
     logger.after_queries = logger_after_queries
-
-    singletonContainer[name] = logger
     return logger
 
 logger = getLogger()
