@@ -1,5 +1,7 @@
 from collections import OrderedDict
 import hashlib
+import hashlib
+import logging
 import functools
 try:
     import cStringIO as StringIO
@@ -119,7 +121,9 @@ def _get_sha1(ctx, dct):
 
 def _process_get(ctx, resource, request):
     if 'GET' in resource.allowed_methods:
+        # don't do _get_sha1 in resource.py's get method, do it here!
         content_dict = resource.get(ctx, _ParamsImpl(request.GET))
+        content_dict['$hash'] = _get_sha1(ctx, content_dict)
         return _content_success(ctx, resource, request, content_dict)
     else:
         return _not_allowed_method(ctx, resource, request)

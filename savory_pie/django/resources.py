@@ -107,7 +107,7 @@ class QuerySetResource(Resource):
         objects = []
         for model in final_queryset:
             model_json = self.to_resource(model).get(ctx, EmptyParams())
-            model_json['$hash'] = _get_sha1(ctx, model_json)
+            model_json['$hash'] = _get_sha1(ctx, model_json)   # TODO remove????
             objects.append(model_json)
 
         meta = dict()
