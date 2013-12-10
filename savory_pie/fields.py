@@ -661,8 +661,14 @@ class IterableField(Field):
         if hasattr(attribute, 'remove'):
             attribute.remove(*models_to_remove)
         else:
-            for model in models_to_remove:
-                model.delete()
+            for obj in models_to_remove:
+                through_params = {
+                    attribute.source_field_name: target_obj,
+                    attribute.target_field_name: obj
+                }
+                # only delete intermediary model instance if it already exists
+                for instance in attribute.through.objects.filter(**through_params):
+                    instance.delete()
 
         # Delay all the new creates untill after the deletes for unique
         # constraints again
@@ -676,11 +682,13 @@ class IterableField(Field):
             attribute.add(*new_models)
         else:
             for obj in new_models:
-                through_parameters = {
+                through_params = {
                     attribute.source_field_name: target_obj,
                     attribute.target_field_name: obj
                 }
-                attribute.through.objects.create(**through_parameters)
+                # only create intermediary model instance if it doesn't already exist
+                if not attribute.through.objects.filter(**through_params).count():
+                    attribute.through.objects.create(**through_params)
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
         attrs = self._attribute.split('.')
