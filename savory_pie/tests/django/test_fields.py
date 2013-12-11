@@ -964,28 +964,46 @@ class RelatedManagerFieldTest(unittest.TestCase):
         related_manager.remove.assert_called_with(related_model)
 
     def test_incoming_delete_non_null(self):
+        """
+        Attempting to simulate:
+
+        Segment:
+            pass
+
+        BoutiqueContext:
+            visible_segments: Segment, through=BoutiqueVisibilities
+
+        BoutiqueVisibilities:
+            segment: Segment
+            boutique_context: BoutiqueContext
+        """
         del mock_orm.Model._models[:]
 
         class MockResource(ModelResource):
             model_class = mock_orm.Model
             fields = [
-                AttributeField(attribute='bar', type=int),
+                AttributeField(attribute='some_attribute', type=int),
             ]
 
-        field = RelatedManagerField(attribute='foo', resource_class=MockResource)
+        field = RelatedManagerField(attribute='bars', resource_class=MockResource)
 
-        target_obj = mock_orm.Mock()
-        related_manager = mock_orm.Manager()
-        related_manager.mock_add_spec(['add'])
-        related_manager.all = Mock(return_value=mock_orm.QuerySet(
-            mock_orm.Model(pk=4, bar=14)
-        ))
-        target_obj.foo = related_manager
+        bar = mock_orm.Model(pk=1)
+        foo = mock_orm.Model(pk=2)
+        foobar = mock_orm.Model(pk=3, foo=foo, bar=bar)
+
+        foobars = mock_orm.Manager()
+        foobars.all = Mock(return_value=mock_orm.QuerySet(foobar))
+        foobars.filter = foobars.all
+
+        foo.bars = mock_orm.Manager()
+        foo.bars.all = Mock(return_value=mock_orm.QuerySet(bar))
+        foo.bars.through = foobar
+
         source_dict = {
-            'foo': [],
+            'bars': [],
         }
 
-        field.handle_incoming(mock_context(), source_dict, target_obj)
+        field.handle_incoming(mock_context(), source_dict, foo)
 
         model = mock_orm.Model._models[0]
         model.delete.assert_called_with()

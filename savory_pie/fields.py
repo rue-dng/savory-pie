@@ -687,7 +687,7 @@ class IterableField(Field):
                     attribute.target_field_name: obj
                 }
                 # only create intermediary model instance if it doesn't already exist
-                if not attribute.through.objects.filter(**through_params).count():
+                if not attribute.through.objects.filter(**through_params).exists():
                     attribute.through.objects.create(**through_params)
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
