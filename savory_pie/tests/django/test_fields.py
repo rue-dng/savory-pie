@@ -965,18 +965,29 @@ class RelatedManagerFieldTest(unittest.TestCase):
 
     def test_incoming_delete_non_null(self):
         """
-        Attempting to simulate:
+        Attempting to simulate the following:
 
-        Segment:
+        Bar(Model):
             pass
 
-        BoutiqueContext:
-            visible_segments: Segment, through=BoutiqueVisibilities
+        Foo(Model):
+            bars = ManyToManyField(Bar, through='FooBar')
 
-        BoutiqueVisibilities:
-            segment: Segment
-            boutique_context: BoutiqueContext
+        FooBar(Model):
+            bar: ForeignKey(Bar)
+            foo: ForeignKey(Foo)
+
+        BarResource(ModelResource):
+            model_class = Bar
+
+        FooResource(ModelResource):
+            model_class = Foo
+
+            fields = [
+                RelatedManagerField('bars', Bar),
+            ]
         """
+
         del mock_orm.Model._models[:]
 
         class MockResource(ModelResource):
@@ -994,10 +1005,14 @@ class RelatedManagerFieldTest(unittest.TestCase):
         foobars = mock_orm.Manager()
         foobars.all = Mock(return_value=mock_orm.QuerySet(foobar))
         foobars.filter = foobars.all
+        foobar.objects = foobars
 
         foo.bars = mock_orm.Manager()
+        foo.bars.source_field_name = 'foo'
+        foo.bars.target_field_name = 'bar'
         foo.bars.all = Mock(return_value=mock_orm.QuerySet(bar))
         foo.bars.through = foobar
+        delattr(foo.bars, 'remove')
 
         source_dict = {
             'bars': [],
@@ -1005,8 +1020,7 @@ class RelatedManagerFieldTest(unittest.TestCase):
 
         field.handle_incoming(mock_context(), source_dict, foo)
 
-        model = mock_orm.Model._models[0]
-        model.delete.assert_called_with()
+        foobar.delete.assert_called_with()
 
     def test_incoming_edit(self):
         del mock_orm.Model._models[:]
