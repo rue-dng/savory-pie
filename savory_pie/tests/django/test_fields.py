@@ -984,12 +984,9 @@ class RelatedManagerFieldTest(unittest.TestCase):
             model_class = Foo
 
             fields = [
-                RelatedManagerField('bars', Bar),
+                RelatedManagerField('bars', BarResource),
             ]
         """
-
-        del mock_orm.Model._models[:]
-
         class MockResource(ModelResource):
             model_class = mock_orm.Model
             fields = [
