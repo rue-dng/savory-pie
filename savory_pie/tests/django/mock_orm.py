@@ -46,6 +46,9 @@ class QuerySet(Mock):
     def count(self):
         return len(self._elements)
 
+    def exists(self):
+        return len(self._elements)
+
     def filter(self, *args, **kwargs):
         if len(args) == 1 and isinstance(args[0], Q):
             q = args[0]

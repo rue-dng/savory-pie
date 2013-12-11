@@ -963,7 +963,69 @@ class RelatedManagerFieldTest(unittest.TestCase):
 
         related_manager.remove.assert_called_with(related_model)
 
-    def test_incoming_delete_non_null(self):
+    def test_incoming_m2m_add(self):
+        """
+        Attempting to simulate the following:
+
+        Bar(Model):
+            pass
+
+        Foo(Model):
+            bars = ManyToManyField(Bar, through='FooBar')
+
+        FooBar(Model):
+            bar: ForeignKey(Bar)
+            foo: ForeignKey(Foo)
+
+        BarResource(ModelResource):
+            model_class = Bar
+
+        FooResource(ModelResource):
+            model_class = Foo
+
+            fields = [
+                RelatedManagerField('bars', BarResource),
+            ]
+        """
+        class BarResource(ModelResource):
+            model_class = mock_orm.Model
+            fields = [
+                AttributeField(attribute='some_attribute', type=int),
+            ]
+
+        field = RelatedManagerField(attribute='bars', resource_class=BarResource)
+
+        bar = mock_orm.Model(pk=1, someAttribute=1, resourceUri='bar/1')
+        foo = mock_orm.Model(pk=2)
+
+        BarResource.key = 'bar'
+        BarResource.model = bar
+
+        foobars = mock_orm.QuerySet()
+        foobars.create = Mock(return_value=mock_orm.Model(pk=3, foo=foo, bar=bar))
+
+        foobar = mock_orm.Model()
+        foobar.objects = foobars
+
+        foo.bars = mock_orm.Manager()
+        foo.bars.source_field_name = 'foo'
+        foo.bars.target_field_name = 'bar'
+        foo.bars.all = Mock(return_value=mock_orm.QuerySet())
+        foo.bars.through = foobar
+        delattr(foo.bars, 'add')
+
+        source_dict = {
+            'bars': [bar.__dict__],
+        }
+
+        ctx = mock_context()
+        ctx.resolve_resource_uri = Mock(return_value=BarResource)
+
+        field.handle_incoming(ctx, source_dict, foo)
+
+        foobars.create.assert_called_with(foo=foo, bar=bar)
+
+    def test_incoming_m2m_delete(self):
         """
         Attempting to simulate the following:
 
