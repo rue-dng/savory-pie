@@ -662,13 +662,18 @@ class IterableField(Field):
             attribute.remove(*models_to_remove)
         else:
             for obj in models_to_remove:
-                through_params = {
-                    attribute.source_field_name: target_obj,
-                    attribute.target_field_name: obj
-                }
-                # only delete intermediary model instance if it already exists
-                for instance in attribute.through.objects.filter(**through_params):
-                    instance.delete()
+                # ManyRelatedManager
+                if hasattr(attribute, 'through'):
+                    through_params = {
+                        attribute.source_field_name: target_obj,
+                        attribute.target_field_name: obj
+                    }
+                    # only delete intermediary model instance if it already exists
+                    for instance in attribute.through.objects.filter(**through_params):
+                        instance.delete()
+                # RelatedManager
+                else:
+                    obj.delete()
 
         # Delay all the new creates untill after the deletes for unique
         # constraints again
