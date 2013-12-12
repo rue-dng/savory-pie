@@ -236,11 +236,14 @@ class ModelResourceTest(unittest.TestCase):
             'count': 2
         })
 
-        self.assertEqual(len(data['objects']), 2)
-        self.assertEqual(data['objects'][0]['name'], 'Bob')
-        self.assertEqual(data['objects'][1]['name'], 'Alice')
-        self.assertEqual(data['objects'][0]['$hash'], 'aa29a35c3d5f0a3de7fae2f1f2b30c0e1b35084f')
-        self.assertEqual(data['objects'][1]['$hash'], 'bbb39a0ea490e5afe9cd547dc7b96572f5ab7fd7')
+        result = sorted(data['objects'])
+        expected = sorted([{'name': 'Alice', 'age': 31, 'resourceUri': 'uri://users/1',
+                            '$hash': 'bbb39a0ea490e5afe9cd547dc7b96572f5ab7fd7'},
+                           {'name': 'Bob', 'age': 20, 'resourceUri': 'uri://users/2',
+                            '$hash': 'aa29a35c3d5f0a3de7fae2f1f2b30c0e1b35084f'}])
+
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result, expected)
 
     def test_put_with_good_sha(self):
         user = User()
