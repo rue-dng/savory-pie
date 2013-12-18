@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import hashlib
 import functools
 try:
@@ -99,11 +100,21 @@ def _database_transaction(func):
 
 def _get_sha1(ctx, dct):
     # exclude keys like '$hash' from the hash
-    dct = dict((k, v) for k, v in dct.items() if not k.startswith('$'))
-    sha = hashlib.sha1()
+    hash_dict = OrderedDict()
+    for key in sorted(dct.keys()):
+        value = dct[key]
+
+        if hasattr(value, 'startswith') and (value.startswith('http://') or value.startswith('https://')):
+            # If the url starts with http:// it is a link such as URI resource the hostname is problematic for hashing
+            # haystack indexing will use a placeholder for the host name to be replaced externally,
+            # thus it should not, hash the value.
+            hash_dict[key] = value.split('/', 3)[-1]
+        elif not key.startswith('$'):
+            hash_dict[key] = value
+
     buf = StringIO.StringIO()
-    ctx.formatter.write_to(dct, buf)
-    sha.update(buf.getvalue())
+    ctx.formatter.write_to(hash_dict, buf)
+    sha = hashlib.sha1(buf.getvalue())
     return sha.hexdigest()
 
 
