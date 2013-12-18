@@ -291,6 +291,7 @@ class HashTestCase(unittest.TestCase):
         ctx.formatter = JSONFormatter()
 
         _get_sha1(ctx, dct)
+        # Make sure that the dct that we pass in is the same dict that gets returned
         self.assertEqual(dct, {'a': 'http://one/two/three/four'})
 
     def test_has_dictionary(self):
