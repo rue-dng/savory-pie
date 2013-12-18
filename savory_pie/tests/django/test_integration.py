@@ -45,6 +45,6 @@ class IntegrationTest(unittest.TestCase):
         self.assertEqual(
             json.loads(response.content),
             {'resourceUri': 'http://localhost/api/users/1',
-             '$hash': '34565dbabb32e241abfbca5b2cfb55e87989b8c8',
+             '$hash': '788ee81d69c5fd20eb53e298df7674412d4caa7b',
              'age': 31, 'name': 'Alice'}
         )

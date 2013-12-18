@@ -851,9 +851,13 @@ class RelatedManagerFieldTest(unittest.TestCase):
         target_dict = {}
 
         field.handle_outgoing(mock_context(), source_object, target_dict)
-        self.assertEqual([{'resourceUri': 'uri://bar',
-                           '$hash': 'cc00f2117bbc6fe6ad0eead253248445fbe014eb',
-                           'bar': 14}], target_dict['foo'])
+        target = target_dict['foo']
+        # Not testing the hash of the dictionary that is tested else were
+        target[0].pop('$hash')
+        self.assertEqual(
+            [{'resourceUri': 'uri://bar','bar': 14}],
+            target
+        )
 
     def test_prepare(self):
 

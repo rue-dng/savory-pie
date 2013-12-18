@@ -1,12 +1,16 @@
+from collections import OrderedDict
 import unittest
 import json
 import mock
 
-from mock import Mock
+from mock import Mock, patch
 from savory_pie.errors import AuthorizationError
+from savory_pie.formatters import JSONFormatter
+from savory_pie.django.views import _ParamsImpl, _get_sha1
+from savory_pie.django import validators
 from savory_pie.tests.django.mock_request import savory_dispatch
-from savory_pie.django.views import _ParamsImpl
-import savory_pie.django.validators
+from savory_pie.tests.mock_context import mock_context
+
 
 
 def mock_resource(name=None, resource_path=None, child_resource=None):
@@ -231,7 +235,7 @@ class ViewTest(unittest.TestCase):
     def test_validation_handling(self):
         root_resource = mock_resource(name='root')
         root_resource.allowed_methods.add('PUT')
-        root_resource.put.side_effect = savory_pie.django.validators.ValidationError(
+        root_resource.put.side_effect = validators.ValidationError(
             Mock(),
             {
                 'class.field': 'broken',
@@ -261,6 +265,57 @@ class ViewTest(unittest.TestCase):
 
         self.assertEqual(response['foo1'], 'bar1')
         self.assertEqual(response.content, '{"foo2": "bar2"}')
+
+
+class HashTestCase(unittest.TestCase):
+
+    def test_order_of_parameters(self):
+        hash_dict1 = OrderedDict()
+        hash_dict1['b'] = 'c'
+        hash_dict1['a'] = 'd'
+
+        hash_dict2 = OrderedDict()
+        hash_dict2['a'] = 'd'
+        hash_dict2['b'] = 'c'
+
+        ctx = mock_context()
+        ctx.formatter = JSONFormatter()
+
+        hash_1 = _get_sha1(ctx, hash_dict1)
+        hash_2 = _get_sha1(ctx, hash_dict2)
+        self.assertEqual(hash_1, hash_2)
+
+    def test_mutable_parameters(self):
+        dct = {'a': 'http://one/two/three/four'}
+        ctx = mock_context()
+        ctx.formatter = JSONFormatter()
+
+        _get_sha1(ctx, dct)
+        self.assertEqual(dct, {'a': 'http://one/two/three/four'})
+
+    def test_has_dictionary(self):
+        dct = {'a': 'b', 'c': 'd'}
+        ctx = mock_context()
+        ctx.formatter = JSONFormatter()
+        self.assertEqual(_get_sha1(ctx, dct), '855e751b12bf88bce273d5e1d93a31af9e4945d6')
+
+    @patch('savory_pie.django.views.hashlib.sha1')
+    def test_patch_out_http_values(self, sha1_patch):
+        sha1_patch.hexdigest.return_value = 3
+        dct = {'a': 'http://one/two/three/four'}
+        ctx = mock_context()
+        ctx.formatter = JSONFormatter()
+        _get_sha1(ctx, dct)
+        sha1_patch.assert_called_with('{"a": "two/three/four"}')
+
+    @patch('savory_pie.django.views.hashlib.sha1')
+    def test_patch_out_https_values(self, sha1_patch):
+        sha1_patch.hexdigest.return_value = 3
+        dct = {'a': 'https://one/two/three/four'}
+        ctx = mock_context()
+        ctx.formatter = JSONFormatter()
+        _get_sha1(ctx, dct)
+        sha1_patch.assert_called_with('{"a": "two/three/four"}')
 
 
 class DjangoPramsTest(unittest.TestCase):

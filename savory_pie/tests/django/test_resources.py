@@ -120,7 +120,7 @@ class ModelResourceTest(unittest.TestCase):
 
         self.assertEqual(dct, {
             'name': 'Bob',
-            '$hash': '09aacbcd6e62845c0df86116715627f20a11dee4',
+            '$hash': 'd13533df8393284fd705481a1c697769599ccb81',
             'age': 20,
             'resourceUri': 'uri://users/1'
         })
@@ -238,9 +238,9 @@ class ModelResourceTest(unittest.TestCase):
 
         result = sorted(data['objects'])
         expected = sorted([{'name': 'Alice', 'age': 31, 'resourceUri': 'uri://users/1',
-                            '$hash': 'bbb39a0ea490e5afe9cd547dc7b96572f5ab7fd7'},
+                            '$hash': '3219bc70b0ecb6dd584f7737d5938568c74c639b'},
                            {'name': 'Bob', 'age': 20, 'resourceUri': 'uri://users/2',
-                            '$hash': 'aa29a35c3d5f0a3de7fae2f1f2b30c0e1b35084f'}])
+                            '$hash': '54c9db1c1f709b796c4d2a0188d82c94bb1ae56e'}])
 
         self.assertEqual(len(result), 2)
         self.assertEqual(result, expected)
