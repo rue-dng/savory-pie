@@ -32,7 +32,6 @@ class HaystackSearchResource(Resource):
             for i, result in enumerate(qs):
                 # TODO document this ugliness
                 apistring = result.get_stored_fields()['api']
-                print apistring
                 yield apistring.replace('SAVORY_PIE_HOSTNAME', ctx.base_uri)
                 if i != last:
                     yield ','
