@@ -240,26 +240,35 @@ class ModelResourceTest(unittest.TestCase):
             'count': 2
         })
 
-        result = sorted(data['objects'])
+        result = data['objects']
+        self.assertEqual(len(result), 2)
+        first_result = OrderedDict()
+        second_result = OrderedDict()
+
+        for key in sorted(result[0].keys()):
+            first_result[key] = result[0][key]
+
+        for key in sorted(result[1].keys()):
+            second_result[key] = result[1][key]
+
         alice = OrderedDict({
-            'resourceUri': 'uri://users/1',
+            '$hash': '01a1b638ddf5318259419587f95ca091a179eeb5',
             'age': 31,
             'name': 'Alice',
-            '$hash': '01a1b638ddf5318259419587f95ca091a179eeb5'})
+            'resourceUri': 'uri://users/1',})
         bob = OrderedDict({
-            'resourceUri': 'uri://users/2',
+            '$hash': 'df8c8b5694bcd438ea86a87414cf3f59ca42a051',
             'age': 20,
             'name': 'Bob',
-            '$hash': '3219bc70b0ecb6dd584f7737d5938568c74c639b'})
+            'resourceUri': 'uri://users/2',})
 
-        self.assertEqual(len(result), 2)
 
-        if result[0]['name'] == 'Alice':
-            self._dict_compare(result[0], alice)
-            self._dict_compare(result[1], bob)
+        if first_result['name'] == 'Alice':
+            self._dict_compare(first_result, alice)
+            self._dict_compare(second_result, bob)
         else:
-            self._dict_compare(result[1], alice)
-            self._dict_compare(result[0], bob)
+            self._dict_compare(second_result, alice)
+            self._dict_compare(first_result, bob)
 
     def test_put_with_good_sha(self):
         user = User()

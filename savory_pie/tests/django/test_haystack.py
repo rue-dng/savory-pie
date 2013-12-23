@@ -139,7 +139,9 @@ class HaystackSearchResourceTest(unittest.TestCase):
 
         self.assertEqual(
             ''.join(result),
-            '{"meta":{"count":2},"objects":[{"json":1},{"json":2}]}'
+            '{"meta":{"count":2},"objects":['
+            '{"json":1,"$hash":"b2e143f9c2c0e55ecce9dc560ec964514d3ded04"},'
+            '{"json":2,"$hash":"fa53ae97766130976e9b94fb74ae6cfadd8b18f7"}]}'
         )
 
         self.assertTrue(ctx.streaming_response)
