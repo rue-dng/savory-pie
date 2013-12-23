@@ -93,7 +93,7 @@ class HaystackFieldTest(unittest.TestCase):
         api = HaystackField(
             formatter=JSONFormatter(),
             resource=FooResource)
-        self.assertEqual(api.prepare(None), '{"a": "b", "$stale": true}')
+        self.assertEqual(api.prepare(None), '{"a": "b"}')
 
 
 class HaystackSearchResourceTest(unittest.TestCase):

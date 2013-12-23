@@ -598,7 +598,10 @@ class IterableField(Field):
             resource = ctx.resolve_resource_uri(model_dict['resourceUri'])
         elif '_id' in model_dict:  # TODO what if you give an id that is not in the db?
             # TODO get key without the extra db lookup
-            model = self._resource_class.get_from_queryset(self.get_iterable(attribute), model_dict['_id'])
+            model = self._resource_class.get_from_queryset(
+                attribute.all(),
+                model_dict['_id']
+            )
             resource = self._resource_class(model)
         return resource
 

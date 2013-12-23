@@ -424,7 +424,7 @@ class RelatedManagerField(base_fields.IterableField, DjangoField):
         super(RelatedManagerField, self).__init__(*args, **kwargs)
 
     def get_iterable(self, value):
-        return value.all()
+        return sorted(value.all(), key=lambda x: x.pk)
 
     def prepare(self, ctx, related):
         attrs = self._attribute.replace('.', '__')

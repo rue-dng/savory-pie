@@ -120,7 +120,6 @@ class ModelResourceTest(unittest.TestCase):
 
         self.assertEqual(dct, {
             'name': 'Bob',
-            '$hash': 'd13533df8393284fd705481a1c697769599ccb81',
             'age': 20,
             'resourceUri': 'uri://users/1'
         })

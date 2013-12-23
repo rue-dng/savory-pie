@@ -88,12 +88,14 @@ class ViewTest(unittest.TestCase):
     def test_put_success(self):
         root_resource = mock_resource(name='root')
         root_resource.allowed_methods.add('PUT')
+        root_resource.get.return_value = {}
 
         response = savory_dispatch(root_resource, method='PUT', body='{"foo": "bar"}')
 
         self.assertTrue(call_args_sans_context(root_resource.put), [{
             'foo': 'bar'
         }])
+
         self.assertEqual(response.status_code, 204)
         self.assertIsNotNone(root_resource.put.call_args_list[0].request)
 
@@ -269,22 +271,6 @@ class ViewTest(unittest.TestCase):
 
 class HashTestCase(unittest.TestCase):
 
-    def test_order_of_parameters(self):
-        hash_dict1 = OrderedDict()
-        hash_dict1['b'] = 'c'
-        hash_dict1['a'] = 'd'
-
-        hash_dict2 = OrderedDict()
-        hash_dict2['a'] = 'd'
-        hash_dict2['b'] = 'c'
-
-        ctx = mock_context()
-        ctx.formatter = JSONFormatter()
-
-        hash_1 = _get_sha1(ctx, hash_dict1)
-        hash_2 = _get_sha1(ctx, hash_dict2)
-        self.assertEqual(hash_1, hash_2)
-
     def test_mutable_parameters(self):
         dct = {'a': 'http://one/two/three/four'}
         ctx = mock_context()
@@ -299,24 +285,6 @@ class HashTestCase(unittest.TestCase):
         ctx = mock_context()
         ctx.formatter = JSONFormatter()
         self.assertEqual(_get_sha1(ctx, dct), '855e751b12bf88bce273d5e1d93a31af9e4945d6')
-
-    @patch('savory_pie.django.views.hashlib.sha1')
-    def test_patch_out_http_values(self, sha1_patch):
-        sha1_patch.hexdigest.return_value = 3
-        dct = {'a': 'http://one/two/three/four'}
-        ctx = mock_context()
-        ctx.formatter = JSONFormatter()
-        _get_sha1(ctx, dct)
-        sha1_patch.assert_called_with('{"a": "two/three/four"}')
-
-    @patch('savory_pie.django.views.hashlib.sha1')
-    def test_patch_out_https_values(self, sha1_patch):
-        sha1_patch.hexdigest.return_value = 3
-        dct = {'a': 'https://one/two/three/four'}
-        ctx = mock_context()
-        ctx.formatter = JSONFormatter()
-        _get_sha1(ctx, dct)
-        sha1_patch.assert_called_with('{"a": "two/three/four"}')
 
 
 class DjangoPramsTest(unittest.TestCase):

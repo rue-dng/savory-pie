@@ -98,24 +98,24 @@ def _database_transaction(func):
     return outer
 
 
-def _get_sha1(ctx, dct):
+def _hash_string(value):
+    sha = hashlib.sha1(value)
+    return sha.hexdigest()
+
+
+def _get_sha1(ctx, dct, **kwargs):
     # exclude keys like '$hash' from the hash
     hash_dict = OrderedDict()
-    for key in sorted(dct.keys()):
-        value = dct[key]
-
-        if hasattr(value, 'startswith') and (value.startswith('http://') or value.startswith('https://')):
-            # If the url starts with http:// it is a link such as URI resource the hostname is problematic for hashing
-            # haystack indexing will use a placeholder for the host name to be replaced externally,
-            # thus it should not, hash the value.
-            hash_dict[key] = value.split('/', 3)[-1]
-        elif not key.startswith('$'):
-            hash_dict[key] = value
+    print dct
+    for key in dct.keys():
+        if not key.startswith('$'):
+            # Do not hash the magic variables
+            hash_dict[key] = dct[key]
 
     buf = StringIO.StringIO()
     ctx.formatter.write_to(hash_dict, buf)
-    sha = hashlib.sha1(buf.getvalue())
-    return sha.hexdigest()
+
+    return _hash_string(buf.getvalue())
 
 
 def _process_get(ctx, resource, request):
@@ -146,7 +146,9 @@ def _process_put(ctx, resource, request):
             resource.put(ctx, ctx.formatter.read_from(request))
             # validation errors take precedence over hash mismatch
             expected_hash = request.META.get('HTTP_IF_MATCH')
-            if expected_hash and expected_hash != _get_sha1(ctx, previous_content_dict):
+            value = _get_sha1(ctx, previous_content_dict)
+            print value
+            if expected_hash and expected_hash != _get_sha1(ctx, previous_content_dict, top=True):
                 return _precondition_failed(ctx, resource, request)
             else:
                 return _no_content_success(ctx, request, request)

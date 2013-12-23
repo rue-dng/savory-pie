@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import urllib
 import logging
 
@@ -106,7 +107,7 @@ class QuerySetResource(Resource):
         objects = []
         for model in final_queryset:
             model_json = self.to_resource(model).get(ctx, EmptyParams())
-            model_json['$hash'] = _get_sha1(ctx, model_json)
+            model_json['$hash'] = _get_sha1(ctx, model_json, top=True)
             objects.append(model_json)
 
         meta = dict()
@@ -296,14 +297,13 @@ class ModelResource(Resource):
         self._resource_path = resource_path
 
     def get(self, ctx, params):
-        target_dict = dict()
+        target_dict = OrderedDict()
 
         for field in self.fields:
             field.handle_outgoing(ctx, self.model, target_dict)
 
         if self.resource_path is not None:
             target_dict['resourceUri'] = ctx.build_resource_uri(self)
-            target_dict['$hash'] = _get_sha1(ctx, target_dict)
 
         return target_dict
 
