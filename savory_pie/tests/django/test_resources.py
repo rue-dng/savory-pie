@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import json
 import unittest
 from mock import Mock, MagicMock, call, patch
@@ -223,6 +224,10 @@ class ModelResourceTest(unittest.TestCase):
         })
         self.assertTrue(dirty_user.save.called)
 
+    def _dict_compare(self, actual, expected):
+        for item1, item2 in zip(expected.items(), actual.items()):
+            self.assertEqual(item1, item2, 'Actual not equal to expected {0} {1}'.format(actual, expected))
+
     def test_qsr_returns_hashes(self):
         resource = AddressableUserQuerySetResource(mock_orm.QuerySet(
             User(pk=1, name='Alice', age=31),
@@ -236,13 +241,25 @@ class ModelResourceTest(unittest.TestCase):
         })
 
         result = sorted(data['objects'])
-        expected = sorted([{'name': 'Alice', 'age': 31, 'resourceUri': 'uri://users/1',
-                            '$hash': '3219bc70b0ecb6dd584f7737d5938568c74c639b'},
-                           {'name': 'Bob', 'age': 20, 'resourceUri': 'uri://users/2',
-                            '$hash': '54c9db1c1f709b796c4d2a0188d82c94bb1ae56e'}])
+        alice = OrderedDict({
+            'resourceUri': 'uri://users/1',
+            'age': 31,
+            'name': 'Alice',
+            '$hash': '01a1b638ddf5318259419587f95ca091a179eeb5'})
+        bob = OrderedDict({
+            'resourceUri': 'uri://users/2',
+            'age': 20,
+            'name': 'Bob',
+            '$hash': '3219bc70b0ecb6dd584f7737d5938568c74c639b'})
 
         self.assertEqual(len(result), 2)
-        self.assertEqual(result, expected)
+
+        if result[0]['name'] == 'Alice':
+            self._dict_compare(result[0], alice)
+            self._dict_compare(result[1], bob)
+        else:
+            self._dict_compare(result[1], alice)
+            self._dict_compare(result[0], bob)
 
     def test_put_with_good_sha(self):
         user = User()
