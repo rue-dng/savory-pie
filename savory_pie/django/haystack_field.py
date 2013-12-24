@@ -65,13 +65,6 @@ class HaystackField(haystack_fields.CharField):
             import StringIO
         api_data = self._resource(obj).get(self._ctx, {})
 
-        if isinstance(obj, Product) and obj.pk == 37:
-            with open("/Users/mmilkin/code/rue_buildout/file_out_twoz.txt", "a") as f:
-                import pprint
-                pp = pprint.PrettyPrinter(depth=7)
-                f.write('\n\nAPI_DATA\n')
-                f.write(pp.pformat(api_data))
-
         if self._formatter is None:
             return json.dumps(api_data)
         else:

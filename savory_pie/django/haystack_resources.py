@@ -41,9 +41,6 @@ class HaystackSearchResource(Resource):
                         apistring[:-1],
                         _hash_string(apistring)
                     )
-
-                with open("/Users/mmilkin/code/rue_buildout/file_z_out.txt", "a") as f:
-                    f.write(apistring)
                 yield apistring
                 if i != last:
                     yield ','

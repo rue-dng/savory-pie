@@ -103,10 +103,9 @@ def _hash_string(value):
     return sha.hexdigest()
 
 
-def _get_sha1(ctx, dct, **kwargs):
+def _get_sha1(ctx, dct):
     # exclude keys like '$hash' from the hash
     hash_dict = OrderedDict()
-    print dct
     for key in dct.keys():
         if not key.startswith('$'):
             # Do not hash the magic variables
@@ -147,8 +146,7 @@ def _process_put(ctx, resource, request):
             # validation errors take precedence over hash mismatch
             expected_hash = request.META.get('HTTP_IF_MATCH')
             value = _get_sha1(ctx, previous_content_dict)
-            print value
-            if expected_hash and expected_hash != _get_sha1(ctx, previous_content_dict, top=True):
+            if expected_hash and expected_hash != _get_sha1(ctx, previous_content_dict):
                 return _precondition_failed(ctx, resource, request)
             else:
                 return _no_content_success(ctx, request, request)
