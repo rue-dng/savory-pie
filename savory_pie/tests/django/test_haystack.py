@@ -93,7 +93,7 @@ class HaystackFieldTest(unittest.TestCase):
         api = HaystackField(
             formatter=JSONFormatter(),
             resource=FooResource)
-        self.assertEqual(api.prepare(None), '{"a": "b", "$stale": true}')
+        self.assertEqual(api.prepare(None), '{"a": "b"}')
 
 
 class HaystackSearchResourceTest(unittest.TestCase):
@@ -118,9 +118,12 @@ class HaystackSearchResourceTest(unittest.TestCase):
         haystack_qs.models.assert_called_with(TestModel)
         haystack_qs.count.assert_called_with()
 
+    @mock.patch('savory_pie.django.haystack_resources._hash_string')
     @mock.patch('savory_pie.django.haystack_resources.SearchQuerySet')
-    def test_all_results(self, SearchQuerySet):
+    def test_all_results(self, SearchQuerySet, _hash_string):
         ctx = mock.Mock(base_uri='foo')
+
+        _hash_string.side_effect = ['First', 'Second']
 
         result1 = mock.Mock()
         result1.get_stored_fields.return_value = {'api': '{"json":1}'}
@@ -139,8 +142,13 @@ class HaystackSearchResourceTest(unittest.TestCase):
 
         self.assertEqual(
             ''.join(result),
-            '{"meta":{"count":2},"objects":[{"json":1},{"json":2}]}'
+            '{"meta":{"count":2},"objects":['
+            '{"json":1,"$hash":"First"},'
+            '{"json":2,"$hash":"Second"}]}'
         )
+        
+        _hash_string.assert_any_call('{"json":1}')
+        _hash_string.assert_any_call('{"json":2}')
 
         self.assertTrue(ctx.streaming_response)
         qs.assert_has_call(

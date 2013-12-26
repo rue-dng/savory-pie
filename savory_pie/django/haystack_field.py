@@ -6,6 +6,7 @@ from haystack import fields as haystack_fields
 
 from savory_pie.context import APIContext
 from savory_pie.django.utils import Related
+from rue.products.models import Product
 
 
 logger = logging.getLogger(__name__)
@@ -63,7 +64,7 @@ class HaystackField(haystack_fields.CharField):
         except ImportError:
             import StringIO
         api_data = self._resource(obj).get(self._ctx, {})
-        api_data['$stale'] = True
+
         if self._formatter is None:
             return json.dumps(api_data)
         else:

@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import json
 import unittest
 from mock import Mock, MagicMock, call, patch
@@ -120,7 +121,6 @@ class ModelResourceTest(unittest.TestCase):
 
         self.assertEqual(dct, {
             'name': 'Bob',
-            '$hash': 'd13533df8393284fd705481a1c697769599ccb81',
             'age': 20,
             'resourceUri': 'uri://users/1'
         })
@@ -224,6 +224,10 @@ class ModelResourceTest(unittest.TestCase):
         })
         self.assertTrue(dirty_user.save.called)
 
+    def _dict_compare(self, actual, expected):
+        for item1, item2 in zip(expected.items(), actual.items()):
+            self.assertEqual(item1, item2, 'Actual not equal to expected {0} {1}'.format(actual, expected))
+
     def test_qsr_returns_hashes(self):
         resource = AddressableUserQuerySetResource(mock_orm.QuerySet(
             User(pk=1, name='Alice', age=31),
@@ -236,14 +240,35 @@ class ModelResourceTest(unittest.TestCase):
             'count': 2
         })
 
-        result = sorted(data['objects'])
-        expected = sorted([{'name': 'Alice', 'age': 31, 'resourceUri': 'uri://users/1',
-                            '$hash': '3219bc70b0ecb6dd584f7737d5938568c74c639b'},
-                           {'name': 'Bob', 'age': 20, 'resourceUri': 'uri://users/2',
-                            '$hash': '54c9db1c1f709b796c4d2a0188d82c94bb1ae56e'}])
-
+        result = data['objects']
         self.assertEqual(len(result), 2)
-        self.assertEqual(result, expected)
+        first_result = OrderedDict()
+        second_result = OrderedDict()
+
+        for key in sorted(result[0].keys()):
+            first_result[key] = result[0][key]
+
+        for key in sorted(result[1].keys()):
+            second_result[key] = result[1][key]
+
+        alice = OrderedDict({
+            '$hash': '01a1b638ddf5318259419587f95ca091a179eeb5',
+            'age': 31,
+            'name': 'Alice',
+            'resourceUri': 'uri://users/1',})
+        bob = OrderedDict({
+            '$hash': 'df8c8b5694bcd438ea86a87414cf3f59ca42a051',
+            'age': 20,
+            'name': 'Bob',
+            'resourceUri': 'uri://users/2',})
+
+
+        if first_result['name'] == 'Alice':
+            self._dict_compare(first_result, alice)
+            self._dict_compare(second_result, bob)
+        else:
+            self._dict_compare(second_result, alice)
+            self._dict_compare(first_result, bob)
 
     def test_put_with_good_sha(self):
         user = User()

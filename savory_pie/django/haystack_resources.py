@@ -1,7 +1,9 @@
 import haystack.inputs
+
 from haystack.query import SearchQuerySet
 
 from savory_pie.resources import Resource
+from savory_pie.django.views import _hash_string
 
 
 class HaystackSearchResource(Resource):
@@ -32,7 +34,14 @@ class HaystackSearchResource(Resource):
             for i, result in enumerate(qs):
                 # TODO document this ugliness
                 apistring = result.get_stored_fields()['api']
-                yield apistring.replace('SAVORY_PIE_HOSTNAME', ctx.base_uri)
+                apistring = apistring.replace('SAVORY_PIE_HOSTNAME', ctx.base_uri)
+
+                if apistring.endswith('}'):
+                    apistring = '{},"$hash":"{}"}}'.format(
+                        apistring[:-1],
+                        _hash_string(apistring)
+                    )
+                yield apistring
                 if i != last:
                     yield ','
             yield ']}'
