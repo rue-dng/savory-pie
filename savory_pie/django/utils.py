@@ -6,13 +6,13 @@ import traceback
 from django.db import connection
 
 
-def getLogger(name=None):
+def getLogger(name=None, stream=None):
     if name is None:
         name = __name__
 
     logger = logging.getLogger(name)
     formatter = logging.Formatter("[%(funcName)s: %(filename)s:%(lineno)d] %(message)s")
-    handler = logging.StreamHandler(stream=sys.stderr)
+    handler = logging.StreamHandler(stream=stream or sys.stderr)
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
