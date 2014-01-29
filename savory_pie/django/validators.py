@@ -249,6 +249,8 @@ class DatetimeFieldSequenceValidator(ResourceValidator):
     Test an AttributeField of type 'int' to make sure it falls within a given
     range (inclusive at both ends).
 
+    If any of the fields are missing, they must ALL be missing in order to validate.
+
     Parameters:
 
         ``*date_fields``
@@ -272,9 +274,19 @@ class DatetimeFieldSequenceValidator(ResourceValidator):
     def find_errors(self, error_dict, ctx, key, resource, source_dict):
         """
         Verify that specified datetime fields exist, and are in chronological sequence
-        as expected.
+        as expected. Or if any don't exist, they all don't exist.
         """
         values = []
+        # if any don't exist, they must all not exist
+        all_absent = True
+        for attr in self._date_fields:
+            public_attr = ctx.formatter.convert_to_public_property(attr)
+            if public_attr in source_dict:
+                all_absent = False
+                break
+        if all_absent:
+            return
+        # they must all exist and must be in chronological order
         for attr in self._date_fields:
             public_attr = ctx.formatter.convert_to_public_property(attr)
             if self.null and source_dict.get(public_attr) is None:
