@@ -175,15 +175,9 @@ class AttributeFieldTestCase(unittest.TestCase):
         class TargetObject:
             foo = 0
         target_object = TargetObject()
-
         field = AttributeField('foo', type=int)
-        exception_thrown = False
-        try:
-            field.handle_incoming(ctx, source_dict, target_object)
-        except ValidationError:
-            exception_thrown = True
 
-        self.assertEqual(exception_thrown, False)
+        field.handle_incoming(ctx, source_dict, target_object)
         self.assertEqual(target_object.foo, 20)
 
     def test_incoming_required_and_missing(self):
@@ -195,15 +189,10 @@ class AttributeFieldTestCase(unittest.TestCase):
         class TargetObject:
             foo = 0
         target_object = TargetObject()
-
         field = AttributeField('bar', type=int)
-        exception_thrown = False
-        try:
-            field.handle_incoming(ctx, source_dict, target_object)
-        except ValidationError:
-            exception_thrown = True
 
-        self.assertEqual(exception_thrown, True)
+        with self.assertRaises(ValidationError):
+            field.handle_incoming(ctx, source_dict, target_object)
         self.assertEqual(target_object.foo, 0)
 
     def test_incoming_optional_and_present(self):
@@ -215,15 +204,9 @@ class AttributeFieldTestCase(unittest.TestCase):
         class TargetObject:
             foo = 0
         target_object = TargetObject()
-
         field = AttributeField('foo', type=int, optional=True)
-        exception_thrown = False
-        try:
-            field.handle_incoming(ctx, source_dict, target_object)
-        except ValidationError:
-            exception_thrown = True
 
-        self.assertEqual(exception_thrown, False)
+        field.handle_incoming(ctx, source_dict, target_object)
         self.assertEqual(target_object.foo, 20)
 
     def test_incoming_optional_and_missing(self):
@@ -235,13 +218,7 @@ class AttributeFieldTestCase(unittest.TestCase):
         class TargetObject:
             foo = 0
         target_object = TargetObject()
-
         field = AttributeField('bar', type=int, optional=True)
-        exception_thrown = False
-        try:
-            field.handle_incoming(ctx, source_dict, target_object)
-        except ValidationError:
-            exception_thrown = True
 
-        self.assertEqual(exception_thrown, False)
+        field.handle_incoming(ctx, source_dict, target_object)
         self.assertEqual(target_object.foo, 0)
