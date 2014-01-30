@@ -77,6 +77,9 @@ class AttributeField(Field):
             ``read_only``
                 optional -- this api will never try and set this value
 
+            ``optional``
+                optional -- if missing, will not throw a ValidationError
+
         .. code-block:: python
 
             AttributeField('name', type=str)
@@ -100,11 +103,13 @@ class AttributeField(Field):
                  use_prefetch=False,
                  read_only=False,
                  validator=None,
+                 optional=False,
                  permission=None):
         self._full_attribute = attribute
         self._type = type
         self._published_property = published_property
         self._read_only = read_only
+        self._optional = optional
         self.validator = validator or []
         self.permission = permission
 
@@ -147,6 +152,8 @@ class AttributeField(Field):
     def handle_incoming(self, ctx, source_dict, target_obj):
         attr = self._compute_property(ctx)
         if attr not in source_dict:
+            if self._optional:
+                return
             raise ValidationError(self, {'missingField': attr,
                                          'target': type(target_obj).__name__})
         with ctx.target(target_obj):

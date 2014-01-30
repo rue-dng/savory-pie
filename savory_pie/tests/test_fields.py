@@ -3,6 +3,7 @@ import unittest
 import mock
 from mock import MagicMock, Mock
 
+from savory_pie.django.validators import ValidationError
 from savory_pie.django.resources import ModelResource
 from savory_pie.fields import AttributeField, IterableField, SubObjectResourceField, CompleteURIResourceField
 from savory_pie.tests.mock_context import mock_context
@@ -162,3 +163,62 @@ class CompleteURIResourceFieldTestCase(unittest.TestCase):
         field.handle_outgoing(ctx, source_object, target_dict)
 
         self.assertEqual(target_dict['completeResourceUri'], 'uri://resources/1')
+
+
+class AttributeFieldTestCase(unittest.TestCase):
+    def test_incoming_required_and_present(self):
+        ctx = mock_context()
+        source_dict = {
+            'foo': 20
+        }
+
+        class TargetObject:
+            foo = 0
+        target_object = TargetObject()
+        field = AttributeField('foo', type=int)
+
+        field.handle_incoming(ctx, source_dict, target_object)
+        self.assertEqual(target_object.foo, 20)
+
+    def test_incoming_required_and_missing(self):
+        ctx = mock_context()
+        source_dict = {
+            'foo': 20
+        }
+
+        class TargetObject:
+            foo = 0
+        target_object = TargetObject()
+        field = AttributeField('bar', type=int)
+
+        with self.assertRaises(ValidationError):
+            field.handle_incoming(ctx, source_dict, target_object)
+        self.assertEqual(target_object.foo, 0)
+
+    def test_incoming_optional_and_present(self):
+        ctx = mock_context()
+        source_dict = {
+            'foo': 20
+        }
+
+        class TargetObject:
+            foo = 0
+        target_object = TargetObject()
+        field = AttributeField('foo', type=int, optional=True)
+
+        field.handle_incoming(ctx, source_dict, target_object)
+        self.assertEqual(target_object.foo, 20)
+
+    def test_incoming_optional_and_missing(self):
+        ctx = mock_context()
+        source_dict = {
+            'foo': 20
+        }
+
+        class TargetObject:
+            foo = 0
+        target_object = TargetObject()
+        field = AttributeField('bar', type=int, optional=True)
+
+        field.handle_incoming(ctx, source_dict, target_object)
+        self.assertEqual(target_object.foo, 0)
