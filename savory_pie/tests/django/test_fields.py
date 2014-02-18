@@ -854,7 +854,7 @@ class RelatedManagerFieldTest(unittest.TestCase):
         target = target_dict['foo']
         # Not testing the hash of the dictionary that is tested else were
         self.assertEqual(
-            [{'resourceUri': 'uri://bar','bar': 14}],
+            [{'resourceUri': 'uri://bar', 'bar': 14}],
             target
         )
 
