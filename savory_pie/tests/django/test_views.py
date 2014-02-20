@@ -1,16 +1,14 @@
-from collections import OrderedDict
 import unittest
 import json
 import mock
 
-from mock import Mock, patch
+from mock import Mock
 from savory_pie.errors import AuthorizationError
 from savory_pie.formatters import JSONFormatter
 from savory_pie.django.views import _ParamsImpl, _get_sha1
 from savory_pie.django import validators
 from savory_pie.tests.django.mock_request import savory_dispatch
 from savory_pie.tests.mock_context import mock_context
-
 
 
 def mock_resource(name=None, resource_path=None, child_resource=None):

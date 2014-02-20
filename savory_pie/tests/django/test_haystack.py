@@ -146,7 +146,7 @@ class HaystackSearchResourceTest(unittest.TestCase):
             '{"json":1,"$hash":"First"},'
             '{"json":2,"$hash":"Second"}]}'
         )
-        
+
         _hash_string.assert_any_call('{"json":1}')
         _hash_string.assert_any_call('{"json":2}')
 

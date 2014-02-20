@@ -255,13 +255,12 @@ class ModelResourceTest(unittest.TestCase):
             '$hash': '01a1b638ddf5318259419587f95ca091a179eeb5',
             'age': 31,
             'name': 'Alice',
-            'resourceUri': 'uri://users/1',})
+            'resourceUri': 'uri://users/1', })
         bob = OrderedDict({
             '$hash': 'df8c8b5694bcd438ea86a87414cf3f59ca42a051',
             'age': 20,
             'name': 'Bob',
-            'resourceUri': 'uri://users/2',})
-
+            'resourceUri': 'uri://users/2', })
 
         if first_result['name'] == 'Alice':
             self._dict_compare(first_result, alice)

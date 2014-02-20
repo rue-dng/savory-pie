@@ -145,7 +145,6 @@ def _process_put(ctx, resource, request):
             resource.put(ctx, ctx.formatter.read_from(request))
             # validation errors take precedence over hash mismatch
             expected_hash = request.META.get('HTTP_IF_MATCH')
-            value = _get_sha1(ctx, previous_content_dict)
             if expected_hash and expected_hash != _get_sha1(ctx, previous_content_dict):
                 return _precondition_failed(ctx, resource, request)
             else:

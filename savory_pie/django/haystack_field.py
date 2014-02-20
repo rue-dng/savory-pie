@@ -6,7 +6,6 @@ from haystack import fields as haystack_fields
 
 from savory_pie.context import APIContext
 from savory_pie.django.utils import Related
-from rue.products.models import Product
 
 
 logger = logging.getLogger(__name__)
