@@ -71,7 +71,7 @@ def api_view(root_resource):
             return _access_denied(ctx, field_name=e.name)
         except Exception:
             import traceback
-            logger.exception()
+            logger.exception('Caught Exception in API')
             return _internal_error(ctx, request, traceback.format_exc())
 
     return view
