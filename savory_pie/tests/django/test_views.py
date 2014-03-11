@@ -2,13 +2,14 @@ import unittest
 import json
 import mock
 
-from mock import Mock
+from mock import Mock, patch
 from savory_pie.errors import AuthorizationError
 from savory_pie.formatters import JSONFormatter
 from savory_pie.django.views import _ParamsImpl, _get_sha1
 from savory_pie.django import validators
 from savory_pie.tests.django.mock_request import savory_dispatch
 from savory_pie.tests.mock_context import mock_context
+
 
 
 def mock_resource(name=None, resource_path=None, child_resource=None):
@@ -151,7 +152,8 @@ class ViewTest(unittest.TestCase):
         self.assertEqual(response.status_code, 409)
         self.assertEqual(response.content, '{"resource": "http://localhost/api/"}')
 
-    def test_post_with_exception(self):
+    @mock.patch('savory_pie.django.views.logger')
+    def test_post_with_exception(self, logger):
         root_resource = mock_resource(name='root')
         root_resource.allowed_methods.add('POST')
 
@@ -165,6 +167,7 @@ class ViewTest(unittest.TestCase):
         self.assertTrue('error' in content)
         self.assertTrue(content['error'].startswith('Traceback (most recent call last):'))
         self.assertTrue('Some kind of server error' in content['error'])
+        self.assertTrue(logger.exception.called)
 
     def test_post_not_supported(self):
         root_resource = mock_resource(name='root')

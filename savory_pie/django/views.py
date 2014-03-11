@@ -1,6 +1,8 @@
 from collections import OrderedDict
 import hashlib
 import functools
+import logging
+
 try:
     import cStringIO as StringIO
 except ImportError:
@@ -15,6 +17,9 @@ from savory_pie.errors import AuthorizationError
 from savory_pie.formatters import JSONFormatter
 from savory_pie.newrelic import set_transaction_name
 from savory_pie.resources import EmptyParams
+
+
+logger = logging.getLogger(__name__)
 
 
 def api_view(root_resource):
@@ -66,6 +71,7 @@ def api_view(root_resource):
             return _access_denied(ctx, field_name=e.name)
         except Exception:
             import traceback
+            logger.exception()
             return _internal_error(ctx, request, traceback.format_exc())
 
     return view
