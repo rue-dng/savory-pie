@@ -454,12 +454,8 @@ class QuerySetResourceTest(unittest.TestCase):
         ))
         resource.allow_unfiltered_query = False
         data = None
-        try:
+        with self.assertRaises(SavoryPieError):
             data = resource.get(mock_context(), EmptyParams())
-            self.assertTrue(False, "You should not get here.")
-        except SavoryPieError:
-            pass # we pass since this is what is supposed to happen
-
         self.assertEqual(data, None)  # we should not ever have any data as this is not allowed
 
     def test_get_distinct(self):
