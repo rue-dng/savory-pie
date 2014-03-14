@@ -452,11 +452,15 @@ class QuerySetResourceTest(unittest.TestCase):
             User(pk=1, name='Alice', age=31),
             User(pk=2, name='Bob', age=20)
         ))
-        resource.allow_unfiltered_query=False
+        resource.allow_unfiltered_query = False
+        data = None
         try:
             data = resource.get(mock_context(), EmptyParams())
-        except SavoryPieError, e:
-            self.assertEqual(e.message, 'Request must be filtered, will not return all.  Acceptable filters are: []')
+            self.assertTrue(False, "You should not get here.")
+        except SavoryPieError:
+            pass # we pass since this is what is supposed to happen
+
+        self.assertEqual(data, None)  # we should not ever have any data as this is not allowed
 
     def test_get_distinct(self):
         resource = AddressableUserQuerySetResource(mock_orm.QuerySet(
