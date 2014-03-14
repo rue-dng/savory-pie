@@ -18,6 +18,9 @@ class EmptyParams(object):
     def get_list_of(self, key, type):
         return []
 
+    def keys(self):
+        return []
+
 
 class Resource(object):
     """

@@ -101,7 +101,7 @@ class QuerySetResource(Resource):
         return related.prepare(queryset)
 
     def get(self, ctx, params):
-        if not self.allow_unfiltered_query and (params or params.keys()):
+        if not self.allow_unfiltered_query and not params.keys():
             raise SavoryPieError(
                 'Request must be filtered, will not return all.  Acceptable filters are: {0}'.format([filter.name for filter in self.filters])
             )
