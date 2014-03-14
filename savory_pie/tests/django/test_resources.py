@@ -7,6 +7,7 @@ from savory_pie.django import resources, fields, views
 from savory_pie.tests.django import user_resource_schema, mock_orm, date_str
 from savory_pie.tests.mock_context import mock_context
 from savory_pie.resources import EmptyParams
+from savory_pie.errors import SavoryPieError
 from savory_pie import formatters
 
 from datetime import datetime
@@ -445,6 +446,17 @@ class QuerySetResourceTest(unittest.TestCase):
             {'resourceUri': 'uri://users/1', 'name': 'Alice', 'age': 31},
             {'resourceUri': 'uri://users/2', 'name': 'Bob', 'age': 20}
         ])
+
+    def test_query_set_get_disallow_unfiltered_query(self):
+        resource = AddressableUserQuerySetResource(mock_orm.QuerySet(
+            User(pk=1, name='Alice', age=31),
+            User(pk=2, name='Bob', age=20)
+        ))
+        resource.allow_unfiltered_query = False
+        data = None
+        with self.assertRaises(SavoryPieError):
+            data = resource.get(mock_context(), EmptyParams())
+        self.assertEqual(data, None)  # we should not ever have any data as this is not allowed
 
     def test_get_distinct(self):
         resource = AddressableUserQuerySetResource(mock_orm.QuerySet(

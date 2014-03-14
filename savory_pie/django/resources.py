@@ -10,6 +10,7 @@ from savory_pie.django.utils import Related
 from savory_pie.django.fields import ReverseField
 from savory_pie.django.validators import ValidationError, validate
 from savory_pie.django.views import _get_sha1
+from savory_pie.errors import SavoryPieError
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,10 @@ class QuerySetResource(Resource):
     #: - defaults to None (no paging)
     page_size = None
     filters = []
+
+    #Setup so that by default we will allow Unfiltered Queries
+    #TODO: We need to swap this to False eventually and whitelist. However to limit halo, a blacklist will be used.
+    allow_unfiltered_query = True
 
     def __init__(self, queryset=None):
         if queryset is not None:
@@ -96,6 +101,11 @@ class QuerySetResource(Resource):
         return related.prepare(queryset)
 
     def get(self, ctx, params):
+        if not self.allow_unfiltered_query and (params or params.keys()):
+            raise SavoryPieError(
+                'Request must be filtered, will not return all.  Acceptable filters are: {0}'.format([filter.name for filter in self.filters])
+            )
+
         complete_queryset = self.queryset.all().distinct()
 
         filtered_queryset = self.filter_queryset(ctx, params, complete_queryset)
