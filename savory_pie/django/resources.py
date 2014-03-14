@@ -41,8 +41,8 @@ class QuerySetResource(Resource):
     filters = []
 
     #Setup so that by default we will allow Unfiltered Queries
-    #TODO: We need to swap this to True eventually and whitelist but to limit halo, I am going with a blacklist
-    AllowUnfilteredQuery = True
+    #TODO: We need to swap this to False eventually and whitelist. However to limit halo, a blacklist will be used.
+    allow_unfiltered_query = True
 
     def __init__(self, queryset=None):
         if queryset is not None:
@@ -101,12 +101,9 @@ class QuerySetResource(Resource):
         return related.prepare(queryset)
 
     def get(self, ctx, params):
-        if not self.AllowUnfilteredQuery and len(params.keys())==0:
-            allowedFilters = []
-            for filter in self.filters:
-                allowedFilters.append(filter.name)
+        if not self.allow_unfiltered_query and (params or params.keys()):
             raise SavoryPieError(
-                'Request must be filtered, will not return all.  Acceptable filters are:' + str(allowedFilters)
+                'Request must be filtered, will not return all.  Acceptable filters are: {0}'.format([filter.name for filter in self.filters])
             )
 
         complete_queryset = self.queryset.all().distinct()
