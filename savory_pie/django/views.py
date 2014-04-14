@@ -148,13 +148,15 @@ def _process_put(ctx, resource, request):
     if 'PUT' in resource.allowed_methods:
         try:
             previous_content_dict = resource.get(ctx, EmptyParams())
-            resource.put(ctx, ctx.formatter.read_from(request))
+            content_dict = resource.put(ctx, ctx.formatter.read_from(request))
             # validation errors take precedence over hash mismatch
             expected_hash = request.META.get('HTTP_IF_MATCH')
             if expected_hash and expected_hash != _get_sha1(ctx, previous_content_dict):
                 return _precondition_failed(ctx, resource, request)
             else:
-                return _no_content_success(ctx, request, request)
+                if content_dict:
+                    return _content_success(ctx, resource, request, content_dict)
+                return _no_content_success(ctx, resource, request)
         except validators.ValidationError, ve:
             return _validation_errors(ctx, resource, request, ve.errors)
         except KeyError, ke:
