@@ -155,7 +155,7 @@ def _process_put(ctx, resource, request):
                 return _precondition_failed(ctx, resource, request)
             else:
                 if content_dict:
-                    return _content_success(ctx, resource, request, content_dict)
+                    return _content_success(ctx, resource, request, content_dict, etag=False)
                 return _no_content_success(ctx, resource, request)
         except validators.ValidationError, ve:
             return _validation_errors(ctx, resource, request, ve.errors)
@@ -208,7 +208,7 @@ def _created(ctx, resource, request, new_resource):
     return response
 
 
-def _content_success(ctx, resource, request, content_dict):
+def _content_success(ctx, resource, request, content_dict, etag=True):
     if ctx.streaming_response:
         response = StreamingHttpResponse(
             content_dict,
@@ -220,7 +220,8 @@ def _content_success(ctx, resource, request, content_dict):
             status=200,
             content_type=ctx.formatter.content_type
         )
-        response['ETag'] = _get_sha1(ctx, content_dict)
+        if etag:
+            response['ETag'] = _get_sha1(ctx, content_dict)
         ctx.formatter.write_to(content_dict, response)
     if ctx.headers_dict:
         for header, value in ctx.headers_dict.items():

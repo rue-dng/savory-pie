@@ -84,10 +84,11 @@ class ViewTest(unittest.TestCase):
         response = savory_dispatch(root_resource, method='GET')
         self.assertEqual(response.status_code, 405)
 
-    def test_put_success(self):
+    def test_put_no_content_success(self):
         root_resource = mock_resource(name='root')
         root_resource.allowed_methods.add('PUT')
         root_resource.get.return_value = {}
+        root_resource.put.return_value = None
 
         response = savory_dispatch(root_resource, method='PUT', body='{"foo": "bar"}')
 
@@ -96,6 +97,23 @@ class ViewTest(unittest.TestCase):
         }])
 
         self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.content, '')
+        self.assertIsNotNone(root_resource.put.call_args_list[0].request)
+
+    def test_put_content_success(self):
+        root_resource = mock_resource(name='root')
+        root_resource.allowed_methods.add('PUT')
+        root_resource.get.return_value = {}
+        root_resource.put.return_value = {'key': 'value'}
+
+        response = savory_dispatch(root_resource, method='PUT', body='{"foo": "bar"}')
+
+        self.assertTrue(call_args_sans_context(root_resource.put), [{
+            'foo': 'bar'
+        }])
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, '{"key": "value"}')
         self.assertIsNotNone(root_resource.put.call_args_list[0].request)
 
     def test_put_not_supported(self):
