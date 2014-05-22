@@ -1,15 +1,14 @@
 import unittest
 import json
-import mock
 
-from mock import Mock, patch
+import mock
+from mock import Mock
 from savory_pie.errors import AuthorizationError
 from savory_pie.formatters import JSONFormatter
 from savory_pie.django.views import _ParamsImpl, _get_sha1
 from savory_pie.django import validators
 from savory_pie.tests.django.mock_request import savory_dispatch
 from savory_pie.tests.mock_context import mock_context
-
 
 
 def mock_resource(name=None, resource_path=None, child_resource=None):
@@ -32,7 +31,6 @@ def call_args_sans_context(mock):
 
 
 class ViewTest(unittest.TestCase):
-
     def test_unauthorized(self):
         root_resource = mock_resource(name='root')
         root_resource.allowed_methods.add('PUT')
@@ -92,9 +90,14 @@ class ViewTest(unittest.TestCase):
 
         response = savory_dispatch(root_resource, method='PUT', body='{"foo": "bar"}')
 
-        self.assertTrue(call_args_sans_context(root_resource.put), [{
-            'foo': 'bar'
-        }])
+        self.assertTrue(
+            call_args_sans_context(root_resource.put),
+            [
+                {
+                    'foo': 'bar'
+                }
+            ]
+        )
 
         self.assertEqual(response.status_code, 204)
         self.assertEqual(response.content, '')
@@ -108,9 +111,14 @@ class ViewTest(unittest.TestCase):
 
         response = savory_dispatch(root_resource, method='PUT', body='{"foo": "bar"}')
 
-        self.assertTrue(call_args_sans_context(root_resource.put), [{
-            'foo': 'bar'
-        }])
+        self.assertTrue(
+            call_args_sans_context(root_resource.put),
+            [
+                {
+                    'foo': 'bar'
+                }
+            ]
+        )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content, '{"key": "value"}')
@@ -131,9 +139,14 @@ class ViewTest(unittest.TestCase):
 
         response = savory_dispatch(root_resource, method='POST', body='{}')
 
-        self.assertTrue(call_args_sans_context(root_resource.post), [{
-            'foo': 'bar'
-        }])
+        self.assertTrue(
+            call_args_sans_context(root_resource.post),
+            [
+                {
+                    'foo': 'bar'
+                }
+            ]
+        )
         self.assertEqual(response['Location'], 'http://localhost/api/foo')
         self.assertIsNotNone(root_resource.post.call_args_list[0].request)
 
@@ -145,7 +158,9 @@ class ViewTest(unittest.TestCase):
             # This could occur if a slightly earlier POST or PUT still had
             # the database locked during a DB transaction.
             from django.db.transaction import TransactionManagementError
+
             raise TransactionManagementError()
+
         root_resource.post = Mock(side_effect=side_effect)
 
         response = savory_dispatch(root_resource, method='POST', body='{}')
@@ -158,7 +173,9 @@ class ViewTest(unittest.TestCase):
             # This could occur if a slightly earlier POST or PUT still had
             # the database locked during a DB transaction.
             from django.db.transaction import TransactionManagementError
+
             raise TransactionManagementError()
+
         enter.side_effect = side_effect
 
         root_resource = mock_resource(name='root')
@@ -177,6 +194,7 @@ class ViewTest(unittest.TestCase):
 
         def side_effect(*args):
             raise Exception('Some kind of server error')
+
         root_resource.post = Mock(side_effect=side_effect)
 
         response = savory_dispatch(root_resource, method='POST', body='{}')
@@ -274,6 +292,7 @@ class ViewTest(unittest.TestCase):
         """
         Tests the set_header method in the APIContext class
         """
+
         def get(ctx, params):
             ctx.set_header('foo1', 'bar1')
             return {'foo2': 'bar2'}
@@ -289,7 +308,6 @@ class ViewTest(unittest.TestCase):
 
 
 class HashTestCase(unittest.TestCase):
-
     def test_mutable_parameters(self):
         dct = {'a': 'http://one/two/three/four'}
         ctx = mock_context()
@@ -307,7 +325,6 @@ class HashTestCase(unittest.TestCase):
 
 
 class DjangoPramsTest(unittest.TestCase):
-
     def test_get_list(self):
         get = Mock(name='mock')
         get.getlist.return_value = ['bar', 'baz']
