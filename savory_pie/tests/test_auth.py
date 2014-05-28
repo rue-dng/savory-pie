@@ -1,18 +1,19 @@
+from decimal import Decimal
 import unittest
 from mock import Mock
 from savory_pie.auth import authorization, authorization_adapter
 from savory_pie.errors import AuthorizationError
+from savory_pie.fields import AttributeField
 
 
 class AuthorizationAdapterTestCase(unittest.TestCase):
 
     def test_adapter(self):
-        field = Mock(spec=['to_python_value', '_get', '_compute_property', 'to_api_value'], name='field')
+        field = Mock(spec=['to_python_value', '_get', '_compute_property'], name='field')
         field._compute_property.return_value = 'source_key'
-        field.to_python_value.return_value = 'source'
+        field.to_python_value.side_effect = ['source', 'target']
         source_dict = {'source_key': 'value-source'}
         field._get.return_value = 'target'
-        field.to_api_value.return_value = 'target'
 
         args_name, args_source, args_target = authorization_adapter(field, 'ctx', source_dict, 'target_obj')
 
