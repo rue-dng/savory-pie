@@ -7,7 +7,7 @@ def authorization_adapter(field, ctx, source_dict, target_obj):
     """
     name = field._compute_property(ctx)
     source = field.to_python_value(ctx, source_dict[name])
-    target = field.to_api_value(ctx, field._get(target_obj))
+    target = field.to_python_value(ctx, field._get(target_obj))
     return name, source, target
 
 
