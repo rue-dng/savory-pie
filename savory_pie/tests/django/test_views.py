@@ -5,7 +5,8 @@ import mock
 from mock import Mock
 from savory_pie.errors import AuthorizationError
 from savory_pie.formatters import JSONFormatter
-from savory_pie.django.views import _ParamsImpl, _get_sha1
+from savory_pie.resources import _ParamsImpl
+from savory_pie.helpers import get_sha1
 from savory_pie.django import validators
 from savory_pie.tests.django.mock_request import savory_dispatch
 from savory_pie.tests.mock_context import mock_context
@@ -313,7 +314,7 @@ class HashTestCase(unittest.TestCase):
         ctx = mock_context()
         ctx.formatter = JSONFormatter()
 
-        _get_sha1(ctx, dct)
+        get_sha1(ctx, dct)
         # Make sure that the dct that we pass in is the same dict that gets returned
         self.assertEqual(dct, {'a': 'http://one/two/three/four'})
 
@@ -321,7 +322,7 @@ class HashTestCase(unittest.TestCase):
         dct = {'a': 'b', 'c': 'd'}
         ctx = mock_context()
         ctx.formatter = JSONFormatter()
-        self.assertEqual(_get_sha1(ctx, dct), '855e751b12bf88bce273d5e1d93a31af9e4945d6')
+        self.assertEqual(get_sha1(ctx, dct), '855e751b12bf88bce273d5e1d93a31af9e4945d6')
 
 
 class DjangoPramsTest(unittest.TestCase):

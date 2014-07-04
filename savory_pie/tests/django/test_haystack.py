@@ -118,7 +118,7 @@ class HaystackSearchResourceTest(unittest.TestCase):
         haystack_qs.models.assert_called_with(TestModel)
         haystack_qs.count.assert_called_with()
 
-    @mock.patch('savory_pie.django.haystack_resources._hash_string')
+    @mock.patch('savory_pie.django.haystack_resources.hash_string')
     @mock.patch('savory_pie.django.haystack_resources.SearchQuerySet')
     def test_all_results(self, SearchQuerySet, _hash_string):
         ctx = mock.Mock(base_uri='foo')

@@ -9,7 +9,7 @@ from savory_pie.resources import EmptyParams, Resource
 from savory_pie.django.utils import Related
 from savory_pie.django.fields import ReverseField
 from savory_pie.django.validators import ValidationError, validate
-from savory_pie.django.views import _get_sha1
+from savory_pie.helpers import get_sha1
 from savory_pie.errors import SavoryPieError
 
 logger = logging.getLogger(__name__)
@@ -117,7 +117,7 @@ class QuerySetResource(Resource):
         objects = []
         for model in final_queryset:
             model_json = self.to_resource(model).get(ctx, EmptyParams())
-            model_json['$hash'] = _get_sha1(ctx, model_json)
+            model_json['$hash'] = get_sha1(ctx, model_json)
             objects.append(model_json)
 
         meta = dict()
@@ -192,6 +192,51 @@ class DirtyInitializerMetaClass(type):
                     dirty_bits.register(model_class)
                     break
         return type.__new__(cls, name, bases, dct)
+
+
+class BatchResource(Resource):
+    """
+    BatchResource
+    """
+
+    _resource_path = None
+
+    @property
+    def resource_path(self):
+        if self._resource_path is not None:
+            return self._resource_path
+        elif self.parent_resource_path is not None:
+            return self.parent_resource_path
+        else:
+            return None
+
+    @resource_path.setter
+    def resource_path(self, resource_path):
+        # TODO: Sanity checks that path is bound properly
+        self._resource_path = resource_path
+
+    def get(self, ctx, params):
+        target_list = []
+        target_dict = OrderedDict()
+
+        for resource in self.resources:
+            target_list.append(resource.get(ctx, params))
+
+        if self.resource_path is not None:
+            target_dict['resourceUri'] = ctx.build_resource_uri(self)
+
+        target_dict['data'] = target_list
+
+        return target_dict
+
+    def post(self):
+        pass
+
+    def put(self):
+        pass
+
+    def delete(self):
+        pass
 
 
 class ModelResource(Resource):

@@ -3,7 +3,7 @@ import haystack.inputs
 from haystack.query import SearchQuerySet
 
 from savory_pie.resources import Resource
-from savory_pie.django.views import _hash_string
+from savory_pie.helpers import _hash_string
 
 
 class HaystackSearchResource(Resource):

@@ -1,25 +1,133 @@
-from collections import OrderedDict
-import hashlib
 import functools
 import logging
+import re
 
-try:
-    import cStringIO as StringIO
-except ImportError:
-    import StringIO
-
-from django.http import HttpResponse, StreamingHttpResponse
+from django.http import HttpResponse, StreamingHttpResponse, HttpRequest
 from django.db import transaction
 
 from savory_pie.context import APIContext
 from savory_pie.django import validators
-from savory_pie.errors import AuthorizationError
+from savory_pie.django.request import DjangoSavoryRequestProxy
+from savory_pie.errors import AuthorizationError, PreConditionError, ResourceNotFoundError, MethodNotAllowedError
 from savory_pie.formatters import JSONFormatter
 from savory_pie.newrelic import set_transaction_name
 from savory_pie.resources import EmptyParams
-
+from savory_pie.helpers import get_sha1, process_get_request, process_post_request, process_put_request, process_delete_request
 
 logger = logging.getLogger(__name__)
+
+
+def batch_api_view(root_resource, base_regex):
+    """
+    View function factory that provides accessing to the resource tree
+    rooted at root_resource.
+
+    The produced function needs to be bound into URLs as r'^some/base/path/(.*)$'
+    """
+    # Hide this import from sphinx
+    from django.views.decorators.csrf import csrf_exempt
+
+    if root_resource.resource_path is None:
+        root_resource.resource_path = ''
+
+    # TODO: Make this a setter
+    root_resource.set_base_regex(base_regex)
+
+    def create_request(method, uri, user):
+        request = HttpRequest()
+        request.path = uri
+        request.method = method.upper()
+        request.user = user
+
+        return request
+
+    def compute_resource_path(uri, host):
+        url_path = host.join(uri.split(host)[1:])
+        if url_path and url_path[0] == '/':
+            url_path = url_path[1:]
+        pattern = re.compile(root_resource.base_regex)
+        match = pattern.search(url_path)
+        if match:
+            base_url = match.group('base_resource')
+            if base_url:
+                return base_url
+        return ''
+
+    def resource_dispatch(request, uri, data, host):
+        resource_path = compute_resource_path(uri, host)
+
+        ctx = compute_context(resource_path, request, root_resource)
+
+        resource = ctx.resolve_resource_path(resource_path)
+        if resource is None:
+            raise ResourceNotFoundError()
+
+        if request.method == 'GET':
+            return process_get_request(ctx, resource, data)
+        elif request.method == 'POST':
+            return process_post_request(ctx, resource, data)
+        elif request.method == 'PUT':
+            return process_put_request(ctx, resource, data)
+        elif request.method == 'DELETE':
+            return process_delete_request(ctx, resource)
+        else:
+            raise MethodNotAllowedError(method=request.method)
+
+
+    @csrf_exempt
+    @set_transaction_name
+    def view(request, resource_path):
+
+        ctx = compute_context(resource_path, request, root_resource)
+
+        try:
+            if resource_path or request.method != 'POST':
+                return _not_found(ctx, request)
+
+            data = ctx.formatter.read_from(request)
+            result = []
+            for resource_request in data.get('data', []):
+                method = resource_request['method']
+                uri = resource_request['uri']
+                body = resource_request.get('body', None)
+
+                resource_request = create_request(method, uri, request.user)
+
+                result.append(
+                    resource_dispatch(
+                        resource_request,
+                        uri,
+                        body,
+                        request.get_host()
+                    )
+                )
+
+            return _content_success(ctx, None, request, {'data': result})
+
+        except Exception as e:
+            print e
+            import traceback
+            logger.exception('Caught Exception in API')
+            return _internal_error(ctx, request, traceback.format_exc())
+
+    return view
+
+
+def compute_context(resource_path, request, root_resource):
+    full_path = _strip_query_string(request.get_full_path())
+    if len(resource_path) == 0:
+        base_path = full_path
+    else:
+        base_path = full_path[:-len(resource_path)]
+
+    ctx = APIContext(
+        base_uri=request.build_absolute_uri(base_path),
+        root_resource=root_resource,
+        formatter=JSONFormatter(),
+        request=request
+    )
+
+    return ctx
 
 
 def api_view(root_resource):
@@ -38,18 +146,8 @@ def api_view(root_resource):
     @csrf_exempt
     @set_transaction_name
     def view(request, resource_path):
-        full_path = _strip_query_string(request.get_full_path())
-        if len(resource_path) == 0:
-            base_path = full_path
-        else:
-            base_path = full_path[:-len(resource_path)]
 
-        ctx = APIContext(
-            base_uri=request.build_absolute_uri(base_path),
-            root_resource=root_resource,
-            formatter=JSONFormatter(),
-            request=request
-        )
+        ctx = compute_context(resource_path, request, root_resource)
 
         try:
             resource = ctx.resolve_resource_path(resource_path)
@@ -104,72 +202,61 @@ def _database_transaction(func):
     return outer
 
 
-def _hash_string(value):
-    sha = hashlib.sha1(value)
-    return sha.hexdigest()
-
-
-def _get_sha1(ctx, dct):
-    # exclude keys like '$hash' from the hash
-    hash_dict = OrderedDict()
-    for key in dct.keys():
-        if not key.startswith('$'):
-            # Do not hash the magic variables
-            hash_dict[key] = dct[key]
-
-    buf = StringIO.StringIO()
-    ctx.formatter.write_to(hash_dict, buf)
-
-    return _hash_string(buf.getvalue())
-
-
 def _process_get(ctx, resource, request):
-    if 'GET' in resource.allowed_methods:
-        content_dict = resource.get(ctx, _ParamsImpl(request.GET))
+    try:
+        content_dict = process_get_request(
+            ctx,
+            resource,
+            request.GET
+        )
         return _content_success(ctx, resource, request, content_dict)
-    else:
+    except MethodNotAllowedError:
         return _not_allowed_method(ctx, resource, request)
-
 
 @_database_transaction
 def _process_post(ctx, resource, request):
-    if 'POST' in resource.allowed_methods:
-        try:
-            new_resource = resource.post(ctx, ctx.formatter.read_from(request))
-            return _created(ctx, request, request, new_resource)
-        except validators.ValidationError, ve:
-            return _validation_errors(ctx, ve.resource, request, ve.errors)
-    else:
+    try:
+        data = ctx.formatter.read_from(request)
+        new_resource = process_post_request(
+            ctx,
+            resource,
+            data
+        )
+        return _created(ctx, request, request, new_resource)
+    except validators.ValidationError, ve:
+        return _validation_errors(ctx, ve.resource, request, ve.errors)
+    except MethodNotAllowedError:
         return _not_allowed_method(ctx, resource, request)
 
 
 @_database_transaction
 def _process_put(ctx, resource, request):
-    if 'PUT' in resource.allowed_methods:
-        try:
-            previous_content_dict = resource.get(ctx, EmptyParams())
-            content_dict = resource.put(ctx, ctx.formatter.read_from(request))
-            # validation errors take precedence over hash mismatch
-            expected_hash = request.META.get('HTTP_IF_MATCH')
-            if expected_hash and expected_hash != _get_sha1(ctx, previous_content_dict):
-                return _precondition_failed(ctx, resource, request)
-            else:
-                if content_dict:
-                    return _content_success(ctx, resource, request, content_dict)
-                return _no_content_success(ctx, resource, request)
-        except validators.ValidationError, ve:
-            return _validation_errors(ctx, resource, request, ve.errors)
-        except KeyError, ke:
-            return _validation_errors(ctx, resource, request, {'missingData': ke.message})
-    else:
+    try:
+        data = ctx.formatter.read_from(request)
+        content_dict = process_put_request(
+            ctx,
+            resource,
+            data,
+            expected_hash=request.META.get('HTTP_IF_MATCH')
+        )
+        if content_dict:
+            return _content_success(ctx, resource, request, content_dict)
+        return _no_content_success(ctx, resource, request)
+    except PreConditionError:
+        return _precondition_failed(ctx, resource, request)
+    except MethodNotAllowedError:
         return _not_allowed_method(ctx, resource, request)
+    except validators.ValidationError, ve:
+        return _validation_errors(ctx, resource, request, ve.errors)
+    except KeyError, ke:
+        return _validation_errors(ctx, resource, request, {'missingData': ke.message})
 
 
 def _process_delete(ctx, resource, request):
-    if 'DELETE' in resource.allowed_methods:
-        resource.delete(ctx)
+    try:
+        process_delete_request(ctx, resource)
         return _success(ctx, request, request)
-    else:
+    except MethodNotAllowedError:
         return _not_allowed_method(ctx, resource, request)
 
 
@@ -220,7 +307,7 @@ def _content_success(ctx, resource, request, content_dict):
             status=200,
             content_type=ctx.formatter.content_type
         )
-        response['ETag'] = _get_sha1(ctx, content_dict)
+        response['ETag'] = get_sha1(ctx, content_dict)
         ctx.formatter.write_to(content_dict, response)
     if ctx.headers_dict:
         for header, value in ctx.headers_dict.items():
@@ -251,32 +338,4 @@ def _transaction_conflict(ctx, resource, request):
     return response
 
 
-class _ParamsImpl(object):
-    def __init__(self, GET):
-        self._GET = GET
 
-    def keys(self):
-        return self._GET.keys()
-
-    def __contains__(self, key):
-        return key in self._GET
-
-    def __getitem__(self, key):
-        return self._GET.get(key, None)
-
-    def get(self, key, default=None):
-        return self._GET.get(key, default)
-
-    def get_as(self, key, type, default=None):
-        value = self._GET.get(key, None)
-        return default if value is None else type(value)
-
-    def get_list(self, key):
-        return self._GET.getlist(key)
-
-    def get_list_of(self, key, type):
-        list = self._GET.get(key, None)
-        if list is None:
-            return []
-        else:
-            return [type(x) for x in list]
