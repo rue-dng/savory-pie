@@ -23,6 +23,7 @@ def get_sha1(ctx, dct):
 
     return _hash_string(buf.getvalue())
 
+
 def process_get_request(ctx, resource, get_params):
     if 'GET' in resource.allowed_methods:
         return resource.get(ctx, _ParamsImpl(get_params))

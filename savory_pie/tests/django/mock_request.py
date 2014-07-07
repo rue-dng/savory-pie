@@ -17,6 +17,28 @@ def savory_dispatch(root_resource, method, resource_path='', body=None, GET=None
     return view(request=request, resource_path=resource_path)
 
 
+def savory_dispatch_batch(
+        root_resource, method,
+        resource_path='',
+        full_host='',
+        body=None,
+        GET=None,
+        POST=None,
+        base_regex=None
+):
+    view = views.batch_api_view(root_resource, base_regex)
+    request = Request(
+        method=method,
+        host=full_host,
+        resource_path=resource_path,
+        body=body,
+        GET=GET,
+        POST=POST
+    )
+
+    return view(request=request, resource_path=resource_path)
+
+
 class User(object):
     email = 'savory-pie-tester@localhost'
 
@@ -39,6 +61,9 @@ class Request(object):
         self.POST = POST or {}
         self.META = {}
         self.REQUEST = dict(self.GET, **self.POST)
+
+    def get_host(self):
+        return self.host
 
     def get_full_path(self):
         return 'api/' + self.resource_path

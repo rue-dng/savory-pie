@@ -194,51 +194,6 @@ class DirtyInitializerMetaClass(type):
         return type.__new__(cls, name, bases, dct)
 
 
-class BatchResource(Resource):
-    """
-    BatchResource
-    """
-
-    _resource_path = None
-
-    @property
-    def resource_path(self):
-        if self._resource_path is not None:
-            return self._resource_path
-        elif self.parent_resource_path is not None:
-            return self.parent_resource_path
-        else:
-            return None
-
-    @resource_path.setter
-    def resource_path(self, resource_path):
-        # TODO: Sanity checks that path is bound properly
-        self._resource_path = resource_path
-
-    def get(self, ctx, params):
-        target_list = []
-        target_dict = OrderedDict()
-
-        for resource in self.resources:
-            target_list.append(resource.get(ctx, params))
-
-        if self.resource_path is not None:
-            target_dict['resourceUri'] = ctx.build_resource_uri(self)
-
-        target_dict['data'] = target_list
-
-        return target_dict
-
-    def post(self):
-        pass
-
-    def put(self):
-        pass
-
-    def delete(self):
-        pass
-
-
 class ModelResource(Resource):
     """
     Resource abstract around ModelResource.
