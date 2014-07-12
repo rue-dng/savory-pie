@@ -9,7 +9,6 @@ setup(
     name='savory-pie',
     version=version,
     url='https://github.com/RueLaLa/savory_pie',
-    version=version,
     description='A RESTful api libary with support for django',
     license='MIT',
     packages=find_packages(),
