@@ -4,6 +4,7 @@
 #   def get_list(key)
 #   def get_list_of(key, type)
 
+
 class EmptyParams(object):
     def get(self, key, default=None):
         return default

@@ -60,7 +60,7 @@ def batch_api_view(root_resource, base_regex):
 
         resource = ctx.resolve_resource_path(resource_path)
 
-        resource_result = {'url': uri}
+        resource_result = {'uri': uri}
 
         if resource is None:
             resource_result['status'] = 404
@@ -72,7 +72,6 @@ def batch_api_view(root_resource, base_regex):
                     _get_request_for_batch(ctx, resource, data)
                 )
             elif request.method == 'POST':
-                print 'post'
                 resource_result.update(
                     _post_request_for_batch(ctx, resource, data)
                 )
@@ -125,8 +124,10 @@ def batch_api_view(root_resource, base_regex):
 
     @_database_transaction_batch
     def _put_request_for_batch(ctx, resource, data):
+
         resource_result = {}
         try:
+
             content_dict = process_put_request(ctx, resource, data)
         except PreConditionError:
             resource_result['status'] = 412
@@ -149,7 +150,7 @@ def batch_api_view(root_resource, base_regex):
         ctx = compute_context(resource_path, request, root_resource)
         try:
             if resource_path or request.method != 'POST':
-                return _not_found(ctx, request)
+                return _not_allowed_resource_method(ctx, root_resource, request, ['POST'])
 
             data = ctx.formatter.read_from(request)
             result = []
@@ -250,9 +251,7 @@ def _database_transaction_batch(func):
     @transaction.commit_manually
     def inner(ctx, resource, request, func=func):
         try:
-            print 'trying'
             response = func(ctx, resource, request)
-            print response
             if 200 <= response.get('status', 500) < 300:
                 transaction.commit()
             else:
@@ -266,9 +265,7 @@ def _database_transaction_batch(func):
         try:
             return inner(ctx, resource, request)
         except transaction.TransactionManagementError:
-            result = _transaction_conflict(ctx, resource)
-            result['status'] = 412
-            return result
+            return {'status': 409}
     return outer
 
 
@@ -385,6 +382,10 @@ def _precondition_failed(ctx, resource, request):
 
 
 def _not_allowed_method(ctx, resource, request):
+    return _not_allowed_resource_method(ctx, resource, request, resource.allowed_methods)
+
+
+def _not_allowed_resource_method(ctx, resource, request, methods):
     response = HttpResponse(status=405)
     response['Allowed'] = ','.join(resource.allowed_methods)
     return response

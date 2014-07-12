@@ -34,7 +34,12 @@ def call_args_sans_context(mock):
 
 class BatchViewTest(unittest.TestCase):
 
-    def create_root_resource_with_children(self, base_regex, methods=frozenset(), result={}):
+    def _generate_batch_partial(self, method, uri, body):
+        return {
+            "method": method, "uri": uri, "body": body
+        }
+
+    def create_root_resource_with_children(self, base_regex, methods=frozenset(), result=frozenset()):
         grand_child_resource = mock_resource(name='grandchild')
         child_resource = mock_resource(name='child', child_resource=grand_child_resource)
 
@@ -70,7 +75,7 @@ class BatchViewTest(unittest.TestCase):
             body=json.dumps(request_data)
         )
 
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 405)
 
     def test_put_nocontent_batch(self):
         root_resource = self.create_root_resource_with_children(
@@ -100,7 +105,7 @@ class BatchViewTest(unittest.TestCase):
 
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]['status'], 204)
-        self.assertEqual(data[0]['url'], 'http://localhost:8081/api/v2/child/grandchild')
+        self.assertEqual(data[0]['uri'], 'http://localhost:8081/api/v2/child/grandchild')
         self.assertTrue('data' not in data[0])
 
     def test_put_batch(self):
@@ -131,7 +136,7 @@ class BatchViewTest(unittest.TestCase):
 
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]['status'], 200)
-        self.assertEqual(data[0]['url'], 'http://localhost:8081/api/v2/child/grandchild')
+        self.assertEqual(data[0]['uri'], 'http://localhost:8081/api/v2/child/grandchild')
         self.assertEqual(data[0]['data'], {u'name': u'value'})
 
     def test_put_precondition_batch(self):
@@ -225,7 +230,7 @@ class BatchViewTest(unittest.TestCase):
 
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]['status'], 200)
-        self.assertEqual(data[0]['url'], 'http://localhost:8081/api/v2/child/grandchild')
+        self.assertEqual(data[0]['uri'], 'http://localhost:8081/api/v2/child/grandchild')
         self.assertEqual(data[0]['data'], {u'name': u'value'})
 
         ctx = mock_context()
@@ -261,7 +266,7 @@ class BatchViewTest(unittest.TestCase):
 
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]['status'], 201)
-        self.assertEqual(data[0]['url'], 'http://localhost:8081/api/v2/child/grandchild')
+        self.assertEqual(data[0]['uri'], 'http://localhost:8081/api/v2/child/grandchild')
         self.assertEqual(data[0]['location'], 'http://localhost:8081/api/v2/grand_child_path')
 
     @patch('traceback.format_exc')
@@ -393,29 +398,30 @@ class BatchViewTest(unittest.TestCase):
         self.assertEqual(data[0]['status'], 400)
         self.assertEqual(data[0]['validation_errors'], {'class.field': 'broken'})
 
-    @patch('savory_pie.django.views.transaction')
-    def test_transaction_batch(self, transaction):
+
+    @mock.patch('django.db.transaction.enter_transaction_management')
+    def test_post_with_collision_two_batch(self, enter):
+        def side_effect(*args, **kwargs):
+            # This could occur if a slightly earlier POST or PUT still had
+            # the database locked during a DB transaction.
+            from django.db.transaction import TransactionManagementError
+
+            raise TransactionManagementError()
+
+        enter.side_effect = side_effect
+
+        child_resource = mock_resource(name='child')
         root_resource = mock_resource(
             name='root',
+            child_resource=child_resource,
             base_regex=r'^api/v2/(?P<base_resource>.*)$'
         )
-
-        root_resource.allowed_methods.add('POST')
-
-        root_resource.post.side_effect = validators.ValidationError(
-            Mock(),
-            {
-                'class.field': 'broken',
-            }
-        )
+        child_resource.allowed_methods.add('POST')
+        child_resource.get.side_effect = AuthorizationError('foo')
 
         request_data = {
             "data": [
-                self._generate_batch_partial(
-                    'post',
-                    'http://localhost:8081/api/v2/',
-                    {'business_id': 12345}
-                )
+                self._generate_batch_partial('post', 'http://localhost:8081/api/v2/child', {'id ': 12345})
             ]
         }
 
@@ -425,15 +431,12 @@ class BatchViewTest(unittest.TestCase):
             method='POST',
             body=json.dumps(request_data)
         )
-        self.assertEqual(response.status_code, 200)
 
-        self.assertTrue(transaction.rollback.called)
+        data = json.loads(response.content)['data']
+        self.assertEqual(len(data), 1)
 
-
-    def _generate_batch_partial(self, method, uri, body):
-        return {
-            "method": method, "uri": uri, "body": body
-        }
+        self.assertEqual(data[0]['status'], 409)
+        self.assertEqual(data[0]['uri'], 'http://localhost:8081/api/v2/child')
 
     @patch('savory_pie.django.views.APIContext.build_resource_uri')
     def test_post_get_put(self, build_resource_uri):
@@ -474,11 +477,11 @@ class BatchViewTest(unittest.TestCase):
         data = response_json['data']
         self.assertEqual(len(data), 3)
         self.assertEqual(data[0]['status'], 200)
-        self.assertEqual(data[0]['url'], 'http://localhost:8081/api/v2/child/grandchild')
+        self.assertEqual(data[0]['uri'], 'http://localhost:8081/api/v2/child/grandchild')
         self.assertEqual(data[0]['data'], {u'name': u'value'})
 
         self.assertEqual(data[1]['status'], 200)
-        self.assertEqual(data[1]['url'], 'http://localhost:8081/api/v2/child')
+        self.assertEqual(data[1]['uri'], 'http://localhost:8081/api/v2/child')
         self.assertEqual(data[1]['data'], {u'name': u'value'})
         ctx = mock_context()
         ctx.formatter = JSONFormatter()
@@ -486,7 +489,7 @@ class BatchViewTest(unittest.TestCase):
         self.assertEqual(data[1]['etag'], get_sha1(ctx, {u'name': u'value'}))
 
         self.assertEqual(data[2]['status'], 201)
-        self.assertEqual(data[2]['url'], 'http://localhost:8081/api/v2/child/grandchild')
+        self.assertEqual(data[2]['uri'], 'http://localhost:8081/api/v2/child/grandchild')
         self.assertEqual(data[2]['location'], 'some new location')
 
     def test_one_fails_one_passes(self):
