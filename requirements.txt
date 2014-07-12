@@ -3,8 +3,8 @@ Django
 django_dirty_bits
 
 # Unit testing tools
-nose
 mock
+nose
 
 # Haystack, Whoosh
 django-haystack
@@ -12,7 +12,3 @@ Whoosh
 
 # Docs
 sphinx
-
-# Dates
-pytz
-python-dateutil

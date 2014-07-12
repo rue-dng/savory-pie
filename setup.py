@@ -12,7 +12,10 @@ setup(
     description='A RESTful api libary with support for django',
     license='MIT',
     packages=find_packages(),
-    install_requires=[],
+    install_requires=[
+        'pytz',
+        'python-dateutil',
+    ],
     zip_safe=False,
     classifiers=[
         'Development Status :: 3 - Alpha',
