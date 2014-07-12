@@ -2,8 +2,9 @@ import functools
 import logging
 import re
 
-from django.http import HttpResponse, StreamingHttpResponse, HttpRequest
 from django.db import transaction
+from django.http import HttpResponse, StreamingHttpResponse, HttpRequest
+from django.utils.datastructures import MultiValueDict
 
 from savory_pie.context import APIContext
 from savory_pie.django import validators
@@ -11,7 +12,6 @@ from savory_pie.errors import AuthorizationError, PreConditionError, MethodNotAl
 from savory_pie.formatters import JSONFormatter
 from savory_pie.newrelic import set_transaction_name
 from savory_pie.helpers import get_sha1, process_get_request, process_post_request, process_put_request, process_delete_request
-from django.utils.datastructures import MultiValueDict
 
 logger = logging.getLogger(__name__)
 
