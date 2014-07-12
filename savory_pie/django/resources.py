@@ -9,7 +9,7 @@ from savory_pie.resources import EmptyParams, Resource
 from savory_pie.django.utils import Related
 from savory_pie.django.fields import ReverseField
 from savory_pie.django.validators import ValidationError, validate
-from savory_pie.django.views import _get_sha1
+from savory_pie.helpers import get_sha1
 from savory_pie.errors import SavoryPieError
 
 logger = logging.getLogger(__name__)
@@ -117,7 +117,7 @@ class QuerySetResource(Resource):
         objects = []
         for model in final_queryset:
             model_json = self.to_resource(model).get(ctx, EmptyParams())
-            model_json['$hash'] = _get_sha1(ctx, model_json)
+            model_json['$hash'] = get_sha1(ctx, model_json)
             objects.append(model_json)
 
         meta = dict()

@@ -96,6 +96,14 @@ class APIResource(Resource):
     def __init__(self, resource_path=''):
         self.resource_path = resource_path
         self._child_resources = dict()
+        self._base_regex = ''
+
+    def set_base_regex(self, base_path):
+        self._base_regex = base_path
+
+    @property
+    def base_regex(self):
+        return self._base_regex
 
     def register(self, resource):
         """
@@ -118,3 +126,34 @@ class APIResource(Resource):
 
     def get_child_resource(self, ctx, path_fragment):
         return self._child_resources.get(path_fragment, None)
+
+
+class _ParamsImpl(object):
+    def __init__(self, GET):
+        self._GET = GET
+
+    def keys(self):
+        return self._GET.keys()
+
+    def __contains__(self, key):
+        return key in self._GET
+
+    def __getitem__(self, key):
+        return self._GET.get(key, None)
+
+    def get(self, key, default=None):
+        return self._GET.get(key, default)
+
+    def get_as(self, key, type, default=None):
+        value = self._GET.get(key, None)
+        return default if value is None else type(value)
+
+    def get_list(self, key):
+        return self._GET.getlist(key)
+
+    def get_list_of(self, key, type):
+        list = self._GET.get(key, None)
+        if list is None:
+            return []
+        else:
+            return [type(x) for x in list]
