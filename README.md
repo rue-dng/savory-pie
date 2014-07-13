@@ -7,6 +7,8 @@ Django are a single view and Resources and Fields that understand Django's ORM.
 
 Documentation
 -----
+http://savory-pie.readthedocs.org/en/latest/
+
 
 Environment
 -----
