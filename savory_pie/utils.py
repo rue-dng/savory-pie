@@ -3,10 +3,10 @@ from datetime import datetime
 
 def to_datetime(milliseconds):
     """
-    Converts milliseconds (e.g., from JS `new Date().getTime()` into Python datetime
+    Converts milliseconds in UTC (e.g., from JS `new Date().getTime()` into Python datetime
     """
     try:
-        value = datetime.fromtimestamp(int(milliseconds) / 1000)
+        value = datetime.utcfromtimestamp(int(milliseconds) / 1000)
         if isinstance(value, datetime):
             return value
     except:
