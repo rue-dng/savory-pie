@@ -2,6 +2,7 @@
 [run]
 branch = True
 omit = *tests*
+       *newrelic*
 include = savory_pie/*
 
 [report]
