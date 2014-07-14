@@ -12,14 +12,16 @@ http://savory-pie.readthedocs.org/en/latest/
 
 Installing
 ----
-pip install savory-pie
-
+```
+    pip install savory-pie
+```
 
 Installing for Django
 -----
-pip install django_dirty_bits >= 0.1.3.2
-pip install Django > 1.4
-
+```
+    pip install django_dirty_bits >= 0.1.3.2
+    pip install Django > 1.4
+```
 
 Local Development Environment
 -----
