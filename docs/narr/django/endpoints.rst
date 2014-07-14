@@ -3,6 +3,14 @@
 
 .. .. _narr_django_endpoints:
 
+Django Installation
+=======================================
+Savory Pie does not require django, or django_dirty_bits, however when using the django aspects of savory pie, you must install the following modules
+
+.. highlight:: bash
+    pip install django_dirty_bits >= 0.1.3.2
+    pip install Django > 1.4
+
 Django Endpoint
 =======================================
 Once you defined a number of Resources and their relative paths,
