@@ -10,7 +10,18 @@ Documentation
 http://savory-pie.readthedocs.org/en/latest/
 
 
-Environment
+Installing
+----
+pip install savory-pie
+
+
+Installing for Django
+-----
+pip install django_dirty_bits >= 0.1.3.2
+pip install Django > 1.4
+
+
+Local Development Environment
 -----
 It is highly recommended to use a virtualenv
 ```
