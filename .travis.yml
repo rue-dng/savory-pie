@@ -5,4 +5,4 @@ python:
 install:
     - "pip install -e ."
     - "pip install -r requirements.txt"
-script: "./run_tests.py --with-coverage --cover-min-percentage=83"
+script: "./run_tests.py --with-coverage --cover-min-percentage=82"
