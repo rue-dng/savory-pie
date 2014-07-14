@@ -5,8 +5,7 @@
 
 Django Installation
 =======================================
-Savory Pie does not require django, or django_dirty_bits, however when using the django aspects of savory pie, you must
-install the following modules
+Savory Pie does not require django, or django_dirty_bits, however when using the django aspects of savory pie, you must install the following modules
 
 .. highlight:: bash
     pip install django_dirty_bits >= 0.1.3.2
