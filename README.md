@@ -44,3 +44,23 @@ Running Tests Coverage
     coverage report -m  # To check the %
     coverage html
 ```
+
+
+```
+its a pie, mate
+
+		---                       ---
+	-.UU   UU.-     _____     -.UU    UU.-
+   -UU       UU.------------.UU         UU-
+   -U   ``                       ``     U-
+    ~Uu  ```                   ```   uU~
+     ~u                              u~
+      '       ()            ()       '
+       '           / "" \             '
+      ~            |    |            ~
+       ~           \    /           ~
+       ~             ''             ~
+        ~          /-----\         ~
+          ~~~                 ~~~~
+              ~~~~~~~~~~~~~~~
+```
