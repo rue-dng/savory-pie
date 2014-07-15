@@ -20,3 +20,4 @@ class DjangoUserPermissionValidatorTestCase(unittest.TestCase):
         # Should not call has_perm
         ctx.request.user.has_perm.side_effect = Exception
         self.assertTrue(validator.is_write_authorized(ctx, None, 'a', 'a'))
+

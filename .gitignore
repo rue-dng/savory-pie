@@ -18,6 +18,9 @@ develop-eggs
 lib
 lib64
 
+# Coverage
+coverage_html_report/*
+
 # Installer logs
 pip-log.txt
 

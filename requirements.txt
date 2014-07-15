@@ -5,6 +5,7 @@ django_dirty_bits
 # Unit testing tools
 mock
 nose
+coverage
 
 # Haystack, Whoosh
 django-haystack

@@ -10,6 +10,8 @@ Here's an example. We want to be able to filter the results from a query on a Qu
 Each QSR defines a set of available filters for that resource. For a model `Foo` with a datetime field *when*,
 we might define filters like these::
 
+.. code-block:: python
+
     class Foo(models.Model):
         when = models.DateTimeField('when')
 

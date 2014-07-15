@@ -1,9 +1,7 @@
-from decimal import Decimal
 import unittest
 from mock import Mock
-from savory_pie.auth import authorization, authorization_adapter
+from savory_pie.auth import authorization, authorization_adapter, datetime_auth_adapter, subobject_auth_adapter
 from savory_pie.errors import AuthorizationError
-from savory_pie.fields import AttributeField
 
 
 class AuthorizationAdapterTestCase(unittest.TestCase):
@@ -22,6 +20,40 @@ class AuthorizationAdapterTestCase(unittest.TestCase):
         self.assertEqual('source', args_source)
         self.assertEqual('target', args_target)
         self.assertEqual('source_key', args_name)
+
+    def test_authorization_adapter(self):
+        field = Mock(spec=['to_python_value', '_get', '_compute_property'], name='field')
+        field._compute_property.return_value = 'source_key'
+        field.to_python_value.return_value = 'source'
+        field._get.return_value = 'target'
+
+        source_dict = {'source_key': 'value-source'}
+
+        name, source, target = datetime_auth_adapter(field, 'ctx', source_dict, 'targetObj')
+
+        field._get.assert_called_with('targetObj')
+        field.to_python_value.assert_called_with('ctx', 'value-source')
+        self.assertEqual(name, 'source_key')
+        self.assertEqual(source, 'source')
+        self.assertEqual(target, 'target')
+
+    def test_subobject_auth_adapter_subobject(self):
+        field = Mock(spec=['_resource_class', '_compute_property', 'name'], name='fieldName')
+        field.name = 'fieldName'
+        field._resource_class.return_value = 'FieldResource'
+        field._compute_property.return_value = 'source_name'
+        source_dict = {'source_name': {'resourceUri': 'uri'}}
+        ctx = Mock(spec=['build_resource_uri'])
+        ctx.build_resource_uri.return_value = 'target'
+        target_obj = Mock(spec=['fieldName'], fieldName='subObject')
+
+        name, source, target = subobject_auth_adapter(field, ctx, source_dict, target_obj)
+
+        ctx.build_resource_uri.assert_called_with('FieldResource')
+        field._resource_class.assert_called_with('subObject')
+        self.assertEqual(name, 'source_name')
+        self.assertEqual(source, 'uri')
+        self.assertEqual(target, 'target')
 
 
 class AuthorizationDecoratorTestCase(unittest.TestCase):

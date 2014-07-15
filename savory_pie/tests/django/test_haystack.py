@@ -7,7 +7,7 @@ from django.db import models
 from savory_pie.formatters import JSONFormatter
 from savory_pie.django.haystack_filter import HaystackFilter
 from savory_pie.django.haystack_resources import HaystackSearchResource
-from savory_pie.django.haystack_field import HaystackField
+from savory_pie.django.haystack_field import HaystackField, ResourceIndex
 from savory_pie.tests.mock_context import mock_context
 from test_filters import Params
 
@@ -18,6 +18,29 @@ class TestModel(models.Model):
 
 class TestSearchResource(HaystackSearchResource):
     model_class = TestModel
+
+
+class FakeResourceIndex(ResourceIndex):
+    def __init__(self):
+        pass
+
+
+class ResourcetIndextTestCase(unittest.TestCase):
+
+    def test_get_model(self):
+        fake_resource = FakeResourceIndex()
+        fake_resource.resource_class = mock.Mock(spec=['model_class'])
+        fake_resource.resource_class.model_class = 'SomeClass'
+        self.assertEqual(fake_resource.get_model(), 'SomeClass')
+
+    @mock.patch('savory_pie.django.haystack_field.Related.prepare')
+    def test_prefetch_related(self, prepare):
+        resource = FakeResourceIndex()
+        resource.resource_class = mock.Mock(spec=['prepare'])
+        resource.prefetch_related = mock.Mock()
+        resource._prefetch_related('qs')
+        self.assertTrue(resource.prefetch_related.called)
+        prepare.assert_called_with('qs')
 
 
 class HaystackFilterTest(unittest.TestCase):
