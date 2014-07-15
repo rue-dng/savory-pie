@@ -5,8 +5,8 @@ python:
 install:
     - "pip install -e ."
     - "pip install -r requirements.txt"
+    - "pip install coveralls"
 script:
-    - "coverage run ./run_tests.py"
+    - "coverage run ./run_tests.py --with-coverage"
 after_success:
-  - "pip install coveralls"
   - "coveralls"
