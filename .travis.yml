@@ -6,7 +6,10 @@ install:
     - "pip install -e ."
     - "pip install -r requirements.txt"
     - "pip install coveralls"
+    - "pip install flake8"
+before_script:
+    - "flake8 savory_pie"
 script:
-    - "coverage run ./run_tests.py --with-coverage"
+    - "./run_tests.py --with-coverage"
 after_success:
-  - "coveralls"
+    - "coveralls"
