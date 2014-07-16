@@ -597,7 +597,7 @@ class DjangoUserResource(resources.ModelResource):
     fields = [
         fields.AttributeField('date_joined', type=datetime),
     ]
-    #TODO add filtering and sort order
+    # TODO add filtering and sort order
 
 
 class SchemaResourceTest(unittest.TestCase):

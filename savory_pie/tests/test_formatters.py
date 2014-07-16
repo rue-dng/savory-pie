@@ -146,8 +146,8 @@ class JSONToPython(unittest.TestCase):
         self.assertEqual(None, result)
 
     def test_crazy_datetimes(self):
-        for craziness in ('', False, {}, [], 3.14159, 3+4j,
-                          'Rumplestiltskin', self, (3+4j).conjugate):
+        for craziness in ('', False, {}, [], 3.14159, 3 + 4j,
+                          'Rumplestiltskin', self, (3 + 4j).conjugate):
             try:
                 self.json_formatter.to_python_value(datetime.datetime, craziness)
                 self.fail(repr(craziness) + ' should not be parsable as a datetime')

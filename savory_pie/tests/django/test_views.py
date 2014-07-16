@@ -398,7 +398,6 @@ class BatchViewTest(unittest.TestCase):
         self.assertEqual(data[0]['status'], 400)
         self.assertEqual(data[0]['validation_errors'], {'class.field': 'broken'})
 
-
     @mock.patch('django.db.transaction.enter_transaction_management')
     def test_post_with_collision_two_batch(self, enter):
         def side_effect(*args, **kwargs):

@@ -70,7 +70,7 @@ class ParamsDictTestCase(unittest.TestCase):
         with self.assertRaises(KeyError):
             params['key2']
 
-    def test_get_error(self):
+    def test_get_error2(self):
         params = ParamsDict({'key1': 'value1'})
         self.assertEqual(params['key1'], 'value1')
 
@@ -85,4 +85,3 @@ class ParamsDictTestCase(unittest.TestCase):
     def test_get_list_of_not_found(self):
         params = ParamsDict({'key1': [1]})
         self.assertEqual(params.get_list_of('key2', str), [])
-

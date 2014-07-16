@@ -131,7 +131,13 @@ class ManyToManyThroughTest(unittest.TestCase):
         # When the add method is missing, we know it's a "through" M2M relationship.
         self.assertFalse(hasattr(related, 'add'))
 
-    @unittest.skipIf(True, 'This test is broken, but somewhat replaced by RelatedManagerFieldTest.test_incoming_m2m_add and RelatedManagerFieldTest.test_incoming_m2m_delete')
+    @unittest.skipIf(
+        True,
+        """
+        This test is broken, but somewhat replaced by RelatedManagerFieldTest.test_incoming_m2m_add
+        and RelatedManagerFieldTest.test_incoming_m2m_delete'
+        """
+    )
     def test_m2m_through(self):
         ctx = mock_context()
 

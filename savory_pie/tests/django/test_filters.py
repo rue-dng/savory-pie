@@ -18,9 +18,9 @@ now = datetime.datetime.now(tz=pytz.UTC).replace(microsecond=0)
 hour = datetime.timedelta(hours=1)
 
 _users = mock_orm.QuerySet(
-    MockUser(pk=1, name='alice', age=31, when=now-hour),
+    MockUser(pk=1, name='alice', age=31, when=now - hour),
     MockUser(pk=2, name='charlie', age=26, when=now),
-    MockUser(pk=3, name='bob', age=20, when=now+hour)
+    MockUser(pk=3, name='bob', age=20, when=now + hour)
 )
 
 MockUser.objects.all = Mock(return_value=_users)

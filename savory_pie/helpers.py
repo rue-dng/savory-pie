@@ -61,4 +61,3 @@ def process_delete_request(ctx, resource):
 def _hash_string(value):
     sha = hashlib.sha1(value)
     return sha.hexdigest()
-

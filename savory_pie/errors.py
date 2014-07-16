@@ -22,6 +22,7 @@ class PreConditionError(Exception):
 class ResourceNotFoundError(Exception):
     pass
 
+
 class SavoryPieError(Exception):
     """
     General Savory Pie Error

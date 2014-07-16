@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 def average(query_list):
     # this will give you integer division
-    return sum(query_list)/len(query_list)
+    return sum(query_list) / len(query_list)
 
 
 AGGREGATE_MAPPER = {
