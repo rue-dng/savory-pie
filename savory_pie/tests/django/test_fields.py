@@ -1151,7 +1151,7 @@ class URIListResourceFieldTestCase(unittest.TestCase):
             model_class = mock_orm.Model
             fields = [
                 AttributeField(attribute='bar', type=int),
-                ]
+            ]
 
         field = URIListResourceField(attribute='foos', resource_class=MockResource)
 
@@ -1185,7 +1185,7 @@ class URIListResourceFieldTestCase(unittest.TestCase):
             model_class = mock_orm.Model
             fields = [
                 AttributeField(attribute='bar', type=int),
-                ]
+            ]
 
         field = URIListResourceField(attribute='foos', resource_class=MockResource)
 
@@ -1228,7 +1228,7 @@ class URIListResourceFieldTestCase(unittest.TestCase):
             model_class = mock_orm.Model
             fields = [
                 AttributeField(attribute='bar', type=int),
-                ]
+            ]
 
         field = URIListResourceField(attribute='foos', resource_class=MockResource)
 
@@ -1269,7 +1269,7 @@ class URIListResourceFieldTestCase(unittest.TestCase):
             model_class = mock_orm.Model
             fields = [
                 AttributeField(attribute='bar', type=int),
-                ]
+            ]
 
         field = URIListResourceField(attribute='foos', resource_class=MockResource)
 

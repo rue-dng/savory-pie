@@ -31,7 +31,7 @@ class ResourceClassUser(type):
                 rclass = self._arg_resource_class
                 n = rclass.rindex('.')
                 module = importlib.import_module(rclass[:n])
-                self._real_resource_class = getattr(module, rclass[n+1:])
+                self._real_resource_class = getattr(module, rclass[n + 1:])
             return self._real_resource_class
 
         def setter(self, value):
@@ -374,7 +374,7 @@ class URIListResourceField(Field):
             if resource:
                 request_keys.add(resource.key)
 
-                if not resource.key in db_keys:
+                if resource.key not in db_keys:
                     new_models.append(resource.model)
             else:
                 raise SavoryPieError(u'Unable to resolve resource uri {0}'.format(resource_uri))

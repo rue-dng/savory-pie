@@ -4,6 +4,7 @@ import mock
 from savory_pie.django.utils import Related, getLogger
 from savory_pie.tests.django import mock_orm
 
+
 class LoggerTestCase(unittest.TestCase):
 
     def test_logger_callable(self):
@@ -45,7 +46,6 @@ class LoggerTestCase(unittest.TestCase):
         lg = getLogger()
         lg.callable(func, logger=logger)
         logger._log.assert_called_with(logging.DEBUG, 'file name:23 name', [], {})
-
 
     def test_logger_alert(self):
         logger = mock.MagicMock()
@@ -91,7 +91,7 @@ class LoggerTestCase(unittest.TestCase):
 
     @mock.patch('savory_pie.django.utils.connection')
     def test_logger_before_queries(self, connection):
-        connection.queries = [1,2]
+        connection.queries = [1, 2]
         logger = mock.MagicMock()
         logger.isEnabledFor.return_value = True
         lg = getLogger()
@@ -119,7 +119,6 @@ class LoggerTestCase(unittest.TestCase):
         lg.after_queries(logger=logger)
         self.assertFalse(logger._log.called)
         self.assertEqual(logger._num_queries, 0)
-
 
     @mock.patch('savory_pie.django.utils.connection')
     def test_logger_after_queries_enabled(self, connection):

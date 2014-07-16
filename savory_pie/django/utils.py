@@ -150,7 +150,7 @@ class Related(object):
             force_prefetch=True
         )
 
-    def annotate(self, aggregate, *args,  **kwargs):
+    def annotate(self, aggregate, *args, **kwargs):
         """
         Adds an annotation to the current query set. Annotations are always
         added to the end of the query set so all filters will be applied.
