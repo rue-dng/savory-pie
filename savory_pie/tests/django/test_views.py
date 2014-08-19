@@ -826,8 +826,6 @@ class ViewTest(unittest.TestCase):
         self.assertEqual(response.content, '{"foo2": "bar2"}')
 
 
-
-
 class HashTestCase(unittest.TestCase):
     def test_mutable_parameters(self):
         dct = {'a': 'http://one/two/three/four'}
