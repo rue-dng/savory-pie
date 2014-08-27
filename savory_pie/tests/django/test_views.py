@@ -807,11 +807,10 @@ class ViewTest(unittest.TestCase):
         self.assertEqual(response.content, '{"foo2": "bar2"}')
 
     def test_set_expires(self):
-
-        expires = datetime(2005, 7, 14, 12, 30).isoformat('T')
+        expires = datetime(2005, 7, 14, 12, 30)
 
         def get(ctx, params):
-            ctx.set_expires_header(datetime.utcnow().isoformat('T'))
+            ctx.set_expires_header(datetime.utcnow())
             ctx.set_expires_header(expires)
             ctx.set_expires_header(datetime.utcnow())
             return {'foo2': 'bar2'}
@@ -822,7 +821,7 @@ class ViewTest(unittest.TestCase):
 
         response = savory_dispatch(root_resource, method='GET')
 
-        self.assertEqual(response['Expires'], expires)
+        self.assertEqual(response['Expires'], expires.isoformat('T'))
         self.assertEqual(response.content, '{"foo2": "bar2"}')
 
 

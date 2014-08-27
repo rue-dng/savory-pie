@@ -417,8 +417,9 @@ def _content_success(ctx, resource, request, content_dict):
         )
         response['ETag'] = get_sha1(ctx, content_dict)
         ctx.formatter.write_to(content_dict, response)
-    if ctx.headers_dict:
-        for header, value in ctx.headers_dict.items():
+    headers = ctx.headers
+    if headers:
+        for header, value in headers.items():
             response[header] = value
 
     return response
