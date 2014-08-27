@@ -81,6 +81,12 @@ class JSONToAPITest(unittest.TestCase):
         self.json_formatter.write_to({'price': price}, output)
         self.assertEqual(json.loads(output.getvalue()), {'price': str(price)})
 
+    def test_write_bad_data(self):
+        import StringIO
+        output = StringIO.StringIO()
+        with self.assertRaises(TypeError):
+            self.json_formatter.write_to({'price': datetime.datetime.now()}, output)
+
 
 class JSONToPython(unittest.TestCase):
 
