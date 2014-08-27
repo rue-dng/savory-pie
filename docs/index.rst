@@ -66,6 +66,7 @@ Narrative documentation
    narr/filters
    narr/validation
    narr/extending
+   narr/context
    narr/django
 
 API Documentation

@@ -21,7 +21,8 @@ class APIContext(object):
         self.root_resource = root_resource
         self.formatter = formatter
         self.request = request
-        self.headers_dict = {}
+        self.expiration = None
+        self._headers_dict = {}
         self.object_stack = []
         self.streaming_response = False
 
@@ -72,8 +73,20 @@ class APIContext(object):
         Updates self.header_dict property for processing in the view where the Response headers should be set from
         header_dict
         """
-        self.headers_dict[header] = value
-        return self.headers_dict
+        self._headers_dict[header] = value
+        return self._headers_dict
+
+    @property
+    def headers(self):
+        if self.expiration:
+            self.set_header('Expires', self.expiration.isoformat('T'))
+        return self._headers_dict
+
+    def set_expires_header(self, new_expiration):
+        """
+        Keeps a min expiration in memory and sets it on header request
+        """
+        self.expiration = new_expiration if not self.expiration else min(self.expiration, new_expiration)
 
     @contextlib.contextmanager
     def target(self, target):

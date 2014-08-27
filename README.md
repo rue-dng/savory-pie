@@ -35,6 +35,7 @@ Local Development Environment
 It is highly recommended to use a virtualenv
 ```
     pip install -r requirements.txt
+    pip install -e .
 ```
 
 
