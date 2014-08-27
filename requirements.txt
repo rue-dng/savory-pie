@@ -7,9 +7,6 @@ mock
 nose
 coverage
 
-# dates and time
-pytz
-
 # Haystack, Whoosh
 django-haystack
 Whoosh
