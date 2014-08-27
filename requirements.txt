@@ -9,7 +9,6 @@ coverage
 
 # dates and time
 pytz
-python-dateutil
 
 # Haystack, Whoosh
 django-haystack
