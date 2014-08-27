@@ -1,3 +1,4 @@
+import json
 import unittest
 import decimal
 import datetime
@@ -72,6 +73,13 @@ class JSONToAPITest(unittest.TestCase):
     def test_empty_date(self):
         result = self.json_formatter.to_api_value(datetime.date, None)
         self.assertEqual(None, result)
+
+    def test_write(self):
+        import StringIO
+        output = StringIO.StringIO()
+        price = decimal.Decimal('1.2')
+        self.json_formatter.write_to({'price': price}, output)
+        self.assertEqual(json.loads(output.getvalue()), {'price': str(price)})
 
 
 class JSONToPython(unittest.TestCase):

@@ -2,6 +2,7 @@ import exceptions
 import json
 import pytz
 import datetime
+import decimal
 import re
 
 from dateutil import parser
@@ -16,6 +17,16 @@ class JSONFormatter(object):
     content_type = 'application/json'
 
     dateRegex = re.compile('(\d{4})-(\d{2})-(\d{2})(.*)')
+
+    def convert_decimal(self, o):
+        """
+        Converts a Decimal object for JSON serialization or raises TypeError if the argument is not a Decimal. This
+        function is intended to be used as the ``default`` argument when calling ``json.dumps()``.
+        """
+        if isinstance(o, decimal.Decimal):
+            return str(o)
+        else:
+            raise TypeError('object is not a Decimal: ' + repr(o))
 
     def parse_datetime(self, s):
         if s is None:
@@ -42,7 +53,7 @@ class JSONFormatter(object):
         return json.load(request)
 
     def write_to(self, body_dict, response):
-        json.dump(body_dict, response)
+        json.dump(body_dict, response, default=self.convert_decimal)
 
     # Not 100% happy with this API review pre 1.0
     def to_python_value(self, type_, api_value):
