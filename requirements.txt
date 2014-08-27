@@ -7,9 +7,8 @@ mock
 nose
 coverage
 
-#pytz
+# dates and time
 pytz
-
 python-dateutil
 
 # Haystack, Whoosh
