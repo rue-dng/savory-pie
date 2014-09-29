@@ -1,16 +1,16 @@
 from collections import OrderedDict
-import urllib
 import logging
+import urllib
 
-import django.core.exceptions
 import dirty_bits
+import django.core.exceptions
 
-from savory_pie.resources import EmptyParams, Resource
-from savory_pie.django.utils import Related
 from savory_pie.django.fields import ReverseField
+from savory_pie.django.utils import Related
 from savory_pie.django.validators import ValidationError, validate
-from savory_pie.helpers import get_sha1
 from savory_pie.errors import SavoryPieError
+from savory_pie.helpers import get_sha1
+from savory_pie.resources import EmptyParams, Resource
 
 logger = logging.getLogger(__name__)
 
@@ -100,11 +100,37 @@ class QuerySetResource(Resource):
         self.prepare(ctx, related)
         return related.prepare(queryset)
 
+    def has_valid_keys(self, ctx, params):
+        '''
+        Checks whether the param keys provided are in the acceptable list of filter param keys the resource accepts.
+        If an invalid filter is provided, it is possible that we will query and attempt to return all records for this
+        resource, which could result in consumption of a server's entire available memory if the number of rows is
+        excessive.
+        '''
+        is_valid = True
+        valid_filters = []
+
+        if self.filters:
+            for filter in self.filters:
+                if hasattr(filter, 'paramkey') and filter.paramkey:
+                    valid_filters.append(ctx.formatter.convert_to_public_property(filter.paramkey))
+
+        if valid_filters and hasattr(params, '_GET'):
+            for paramkey in params._GET.keys():
+                if paramkey not in valid_filters:
+                    is_valid = False
+                    break
+
+        return is_valid
+
     def get(self, ctx, params):
         if not self.allow_unfiltered_query and not params.keys():
             raise SavoryPieError(
                 'Request must be filtered, will not return all.  Acceptable filters are: {0}'.format([filter.name for filter in self.filters])
             )
+
+        if not self.has_valid_keys(ctx, params):
+            raise SavoryPieError('An invalid parameter was provided')
 
         complete_queryset = self.queryset.all().distinct()
 
