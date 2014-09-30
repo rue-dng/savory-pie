@@ -1,19 +1,19 @@
 from collections import OrderedDict
+from datetime import datetime
+from mock import Mock, MagicMock, call, patch
 import json
 import unittest
-from mock import Mock, MagicMock, call, patch
 
+from django.contrib.auth.models import User as DjangoUser
+from django.http import QueryDict
 from savory_pie.django import resources, fields, views
+from savory_pie.django.filters import ParameterizedFilter
 from savory_pie.tests.django import user_resource_schema, mock_orm, date_str
 from savory_pie.tests.mock_context import mock_context
-from savory_pie.resources import EmptyParams
+from savory_pie.resources import EmptyParams, _ParamsImpl
 from savory_pie.errors import SavoryPieError
 from savory_pie import formatters
-
-from datetime import datetime
-
 import django.core.exceptions
-from django.contrib.auth.models import User as DjangoUser
 
 
 class ResourceTest(unittest.TestCase):
@@ -457,6 +457,28 @@ class QuerySetResourceTest(unittest.TestCase):
         with self.assertRaises(SavoryPieError):
             data = resource.get(mock_context(), EmptyParams())
         self.assertEqual(data, None)  # we should not ever have any data as this is not allowed
+
+    def test_query_set_get_with_valid_filter_param(self):
+        resource = AddressableUserQuerySetResource(mock_orm.QuerySet(
+            User(pk=1, name='Alice', age=31),
+            User(pk=2, name='Bob', age=20)
+        ))
+        resource.allow_unfiltered_query = False
+        resource.filters = [ParameterizedFilter('name', 'name')]
+        data = resource.get(mock_context(), _ParamsImpl(QueryDict('name=Alice')))
+        self.assertEqual(data['objects'][0]['name'], 'Alice')
+
+    def test_query_set_get_with_invalid_filter_param(self):
+        resource = AddressableUserQuerySetResource(mock_orm.QuerySet(
+            User(pk=1, name='Alice', age=31),
+            User(pk=2, name='Bob', age=20)
+        ))
+        resource.allow_unfiltered_query = False
+        resource.filters = [ParameterizedFilter('name', 'name')]
+        data = None
+        with self.assertRaises(SavoryPieError):
+            data = resource.get(mock_context(), _ParamsImpl(QueryDict('[object Object]=12345')))
+        self.assertEqual(data, None)
 
     def test_get_distinct(self):
         resource = AddressableUserQuerySetResource(mock_orm.QuerySet(
