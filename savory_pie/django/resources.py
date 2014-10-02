@@ -1,16 +1,16 @@
 from collections import OrderedDict
-import urllib
 import logging
+import urllib
 
-import django.core.exceptions
 import dirty_bits
+import django.core.exceptions
 
-from savory_pie.resources import EmptyParams, Resource
-from savory_pie.django.utils import Related
 from savory_pie.django.fields import ReverseField
+from savory_pie.django.utils import Related
 from savory_pie.django.validators import ValidationError, validate
-from savory_pie.helpers import get_sha1
 from savory_pie.errors import SavoryPieError
+from savory_pie.helpers import get_sha1
+from savory_pie.resources import EmptyParams, Resource
 
 logger = logging.getLogger(__name__)
 
@@ -100,8 +100,22 @@ class QuerySetResource(Resource):
         self.prepare(ctx, related)
         return related.prepare(queryset)
 
+    def has_valid_key(self, ctx, params):
+        get_query_dict = getattr(params, '_GET', None)
+        if get_query_dict:
+            param_keys = set(get_query_dict.keys())
+            filter_query_args = {ctx.formatter.convert_to_public_property(filter.paramkey)
+                                 for filter in self.filters if hasattr(filter, 'paramkey') and filter.paramkey}
+            if not filter_query_args:
+                return True
+            for paramkey in param_keys:
+                if paramkey in filter_query_args:
+                    # At least one param key provided is in the resources list of filters, therefore valid
+                    return True
+        return False
+
     def get(self, ctx, params):
-        if not self.allow_unfiltered_query and not params.keys():
+        if not self.allow_unfiltered_query and not self.has_valid_key(ctx, params):
             raise SavoryPieError(
                 'Request must be filtered, will not return all.  Acceptable filters are: {0}'.format([filter.name for filter in self.filters])
             )
