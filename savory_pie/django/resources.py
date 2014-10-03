@@ -1,6 +1,7 @@
 from collections import OrderedDict
 import logging
 import urllib
+import time
 
 import dirty_bits
 import django.core.exceptions
@@ -14,6 +15,8 @@ from savory_pie.resources import EmptyParams, Resource
 
 logger = logging.getLogger(__name__)
 
+def report_time( name, start_time ):
+    print( '{:<50}'.format( "[" + name + "]" ) + ( "%s ms" % ( ( time.time() - start_time ) * 1000 ) ) )
 
 class QuerySetResource(Resource):
     """
@@ -320,13 +323,21 @@ class ModelResource(Resource):
         self._resource_path = resource_path
 
     def get(self, ctx, params):
+        timer = time.time()
+
         target_dict = OrderedDict()
 
         for field in self.fields:
+            # print "field: '%s'" % field.name
+            # timer3 = time.time()
             field.handle_outgoing(ctx, self.model, target_dict)
+            # report_time( "field.handle_outgoing > '%s'" % field.name, timer3 )
 
         if self.resource_path is not None:
             target_dict['resourceUri'] = ctx.build_resource_uri(self)
+            report_time( 'GET ' + self.resource_path, timer )
+        else:
+            report_time( 'GET', timer )
 
         return target_dict
 
