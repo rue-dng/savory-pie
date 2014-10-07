@@ -2,6 +2,9 @@ import pytz
 import unittest
 from datetime import datetime, timedelta
 
+import django
+from django.db import models
+
 from savory_pie import fields as base_fields
 from savory_pie.django import resources, fields
 from savory_pie.tests.mock_context import mock_context
@@ -22,7 +25,6 @@ from savory_pie.django.validators import (
     DatetimeFieldMaxValidator,
 )
 
-from django.db import models
 
 now = datetime.now().replace(tzinfo=pytz.utc)
 long_ago = now - timedelta(hours=10)
@@ -430,8 +432,8 @@ class SubModelValidationTestCase(ValidationTestCase):
 class RelatedManagerFieldValidationTestCase(ValidationTestCase):
 
     def setUp(self):
-        import django
-
+        # Because of the app loading refactoring introduced in Django 1.7, this step is necessary
+        # See https://docs.djangoproject.com/en/dev/releases/1.7/#app-loading-refactor
         try:
             django.setup()
         except AttributeError:
