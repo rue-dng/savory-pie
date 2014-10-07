@@ -430,6 +430,13 @@ class SubModelValidationTestCase(ValidationTestCase):
 class RelatedManagerFieldValidationTestCase(ValidationTestCase):
 
     def setUp(self):
+        import django
+
+        try:
+            django.setup()
+        except AttributeError:
+            pass
+
         global model_save_attempted
         self.ctx = mock_context()
         self.model = Car()
