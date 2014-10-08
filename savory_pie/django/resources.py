@@ -104,8 +104,7 @@ class QuerySetResource(Resource):
         get_query_dict = getattr(params, '_GET', None)
         if get_query_dict:
             param_keys = set(get_query_dict.keys())
-            filter_query_args = {ctx.formatter.convert_to_public_property(filter.paramkey)
-                                 for filter in self.filters if hasattr(filter, 'paramkey') and filter.paramkey}
+            filter_query_args = {ctx.formatter.convert_to_public_property(filter.name) for filter in self.filters}
             if not filter_query_args:
                 return True
             for paramkey in param_keys:
