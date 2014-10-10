@@ -325,6 +325,8 @@ class ModelResource(Resource):
     def get(self, ctx, params):
         timer = time.time()
 
+        # print 'get INTERNAL'
+        # print 'params', params.keys()
         target_dict = OrderedDict()
 
         for field in self.fields:
@@ -335,7 +337,10 @@ class ModelResource(Resource):
 
         if self.resource_path is not None:
             target_dict['resourceUri'] = ctx.build_resource_uri(self)
-            report_time( 'GET ' + self.resource_path, timer )
+            # print 'ctx.base_uri', ctx.base_uri
+            # print 'ctx.root_resource.resource_path', ctx.root_resource.resource_path
+            if ('merchandiseboutiquecontext' in self.resource_path):
+                report_time( 'GET ' + self.resource_path, timer )
         else:
             report_time( 'GET', timer )
 
