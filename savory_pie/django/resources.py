@@ -104,8 +104,7 @@ class QuerySetResource(Resource):
         get_query_dict = getattr(params, '_GET', None)
         if get_query_dict:
             param_keys = set(get_query_dict.keys())
-            filter_query_args = {ctx.formatter.convert_to_public_property(filter.paramkey)
-                                 for filter in self.filters if hasattr(filter, 'paramkey') and filter.paramkey}
+            filter_query_args = {filter.name for filter in self.filters if hasattr(filter, 'paramkey') and filter.paramkey}
             if not filter_query_args:
                 return True
             for paramkey in param_keys:
@@ -117,7 +116,7 @@ class QuerySetResource(Resource):
     def get(self, ctx, params):
         if not self.allow_unfiltered_query and not self.has_valid_key(ctx, params):
             raise SavoryPieError(
-                'Request must be filtered, will not return all.  Acceptable filters are: {0}'.format([filter.name for filter in self.filters])
+                'Request must be filtered, but none of your params ({0}) matched an accepted filter. Acceptable filters are: {1}'.format(', '.join(getattr(params, '_GET', None).keys()), [filter.name for filter in self.filters])
             )
 
         complete_queryset = self.queryset.all().distinct()
