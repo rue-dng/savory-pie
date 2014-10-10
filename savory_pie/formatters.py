@@ -3,11 +3,9 @@ import json
 import pytz
 import datetime
 import re
-import time
+
 from dateutil import parser
 
-def report_time( name, start_time ):
-    print( "[" + name + "] %s ms" % ( ( time.time() - start_time ) * 1000 ) )
 
 class JSONFormatter(object):
     """
@@ -44,10 +42,7 @@ class JSONFormatter(object):
         return json.load(request)
 
     def write_to(self, body_dict, response):
-        timer = time.time()
-        # print( body_dict )
         json.dump(body_dict, response)
-        # report_time( 'json dump', timer )
 
     # Not 100% happy with this API review pre 1.0
     def to_python_value(self, type_, api_value):

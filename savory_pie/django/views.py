@@ -1,7 +1,6 @@
 import functools
 import logging
 import re
-import time
 
 from django.db import transaction
 from django.http import HttpResponse, StreamingHttpResponse, HttpRequest
@@ -15,9 +14,6 @@ from savory_pie.newrelic import set_transaction_name
 from savory_pie.helpers import get_sha1, process_get_request, process_post_request, process_put_request, process_delete_request
 
 logger = logging.getLogger(__name__)
-
-def report_time( name, start_time ):
-    print( "[" + name + "] %s ms" % ( ( time.time() - start_time ) * 1000 ) )
 
 
 def batch_api_view(root_resource, base_regex):
@@ -191,14 +187,12 @@ def compute_context(resource_path, request, root_resource):
     else:
         base_path = full_path[:-len(resource_path)]
 
-    timer = time.time()
     ctx = APIContext(
         base_uri=request.build_absolute_uri(base_path),
         root_resource=root_resource,
         formatter=JSONFormatter(),
         request=request
     )
-    report_time( 'APIContext', timer )
 
     return ctx
 
@@ -219,12 +213,11 @@ def api_view(root_resource):
     @csrf_exempt
     @set_transaction_name
     def view(request, resource_path):
+
         ctx = compute_context(resource_path, request, root_resource)
 
         try:
-            timer = time.time()
             resource = ctx.resolve_resource_path(resource_path)
-            report_time( 'resolve_resource_path', timer )
 
             if resource is None:
                 return _not_found(ctx, request)
@@ -411,7 +404,6 @@ def _created(ctx, resource, request, new_resource):
 
 
 def _content_success(ctx, resource, request, content_dict):
-    timer = time.time()
     if ctx.streaming_response:
         response = StreamingHttpResponse(
             content_dict,
@@ -429,8 +421,6 @@ def _content_success(ctx, resource, request, content_dict):
     if headers:
         for header, value in headers.items():
             response[header] = value
-
-    # report_time( 'content_success', timer )
 
     return response
 
