@@ -339,8 +339,9 @@ class ModelResource(Resource):
             target_dict['resourceUri'] = ctx.build_resource_uri(self)
             # print 'ctx.base_uri', ctx.base_uri
             # print 'ctx.root_resource.resource_path', ctx.root_resource.resource_path
-            if ('merchandiseboutiquecontext' in self.resource_path):
-                report_time( 'GET ' + self.resource_path, timer )
+            # if ('merchandiseboutiquecontext' in self.resource_path):
+                # report_time( 'GET ' + self.resource_path, timer )
+            report_time( 'GET ' + self.resource_path, timer )
         else:
             report_time( 'GET', timer )
 
