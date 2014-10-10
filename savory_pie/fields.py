@@ -249,7 +249,10 @@ class URIResourceField(Field):
             setattr(target_obj, self._attribute, None)
 
     def handle_outgoing(self, ctx, source_obj, target_dict):
-        sub_model = getattr(source_obj, self._attribute)
+        sub_model = getattr(source_obj, self._attribute).only('pk')
+        # print 'source_obj', source_obj
+        # print 'self._attribute', self._attribute
+        print 'getattr(source_obj, self._attribute)', getattr(source_obj, self._attribute)
         if sub_model is not None:
             resource = self._resource_class(sub_model)
             target_dict[self._compute_property(ctx)] = ctx.build_resource_uri(resource)
