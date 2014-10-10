@@ -46,7 +46,7 @@ class ResourceClassUser(type):
 class Field(object):
     @property
     def name(self):
-        name = getattr(self, '_attribute', None) or getattr(self, '_full_attribute', None) or getattr(self, '_published_property', None)
+        name = getattr(self, '_attribute', None) or getattr(self, '_full_attribute', None)
         if not name:
             raise SavoryPieError(u'Unable to determine name for field: {0}'.format(self))
         return name
