@@ -130,11 +130,14 @@ class QuerySetResource(Resource):
         # prepare must be last for optimization to be respected by Django.
         final_queryset = self.prepare_queryset(ctx, sliced_queryset)
 
+        get_objects_timer = time.time();
         objects = []
-        for model in final_queryset:
+        models = [model for model in final_queryset]
+        for model in models:
             model_json = self.to_resource(model).get(ctx, EmptyParams())
             model_json['$hash'] = get_sha1(ctx, model_json)
             objects.append(model_json)
+        report_time( 'GET OBJECTS [' + str(len(models)) + ']', get_objects_timer )
 
         meta = dict()
         if self.supports_paging:
