@@ -1,7 +1,10 @@
 from collections import OrderedDict
 import logging
 import urllib
+
 import time
+import traceback
+from savory_pie.debug import report_time, TimeReporter
 
 import dirty_bits
 import django.core.exceptions
@@ -14,9 +17,6 @@ from savory_pie.helpers import get_sha1
 from savory_pie.resources import EmptyParams, Resource
 
 logger = logging.getLogger(__name__)
-
-def report_time( name, start_time ):
-    print( '{:<50}'.format( "[" + name + "]" ) + ( "%s ms" % ( ( time.time() - start_time ) * 1000 ) ) )
 
 class QuerySetResource(Resource):
     """
@@ -192,7 +192,9 @@ class QuerySetResource(Resource):
         # No need to filter or slice here, does not make sense as part of get_child_resource
         queryset = self.prepare_queryset(ctx, self.queryset)
         try:
+            # get_from_queryset_timer = TimeReporter('get_from_queryset')
             model = self.resource_class.get_from_queryset(queryset, path_fragment)
+            # get_from_queryset_timer.report()
             return self.to_resource(model)
         except queryset.model.DoesNotExist:
             return None
@@ -326,7 +328,7 @@ class ModelResource(Resource):
         self._resource_path = resource_path
 
     def get(self, ctx, params):
-        timer = time.time()
+        timer = TimeReporter('GET' + (' ' + self.resource_path if self.resource_path else ''))
 
         # print 'get INTERNAL'
         # print 'params', params.keys()
@@ -342,11 +344,12 @@ class ModelResource(Resource):
             target_dict['resourceUri'] = ctx.build_resource_uri(self)
             # print 'ctx.base_uri', ctx.base_uri
             # print 'ctx.root_resource.resource_path', ctx.root_resource.resource_path
-            # if ('merchandiseboutiquecontext' in self.resource_path):
-                # report_time( 'GET ' + self.resource_path, timer )
-            report_time( 'GET ' + self.resource_path, timer )
-        else:
-            report_time( 'GET', timer )
+            if False and 'merchandiseboutiquecontext' in self.resource_path:
+                for line in traceback.format_stack():
+                    print line.strip()
+
+        if True and 'merchandiseboutiquecontext' in self.resource_path:
+            timer.report()
 
         return target_dict
 

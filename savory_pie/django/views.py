@@ -2,6 +2,9 @@ import functools
 import logging
 import re
 
+import time
+from savory_pie.debug import report_time, TimeReporter
+
 from django.db import transaction
 from django.http import HttpResponse, StreamingHttpResponse, HttpRequest
 from django.utils.datastructures import MultiValueDict
@@ -213,17 +216,27 @@ def api_view(root_resource):
     @csrf_exempt
     @set_transaction_name
     def view(request, resource_path):
+        view_timer = TimeReporter('view')
 
+        compute_context_timer = TimeReporter('view > compute_context')
         ctx = compute_context(resource_path, request, root_resource)
+        compute_context_timer.report()
 
         try:
+            resolve_resource_path_timer = TimeReporter('view > resolve_resource_path')
             resource = ctx.resolve_resource_path(resource_path)
+            resolve_resource_path_timer.report()
 
             if resource is None:
                 return _not_found(ctx, request)
 
             if request.method == 'GET':
-                return _process_get(ctx, resource, request)
+                process_get_timer = TimeReporter('view > _process_get')
+                proc = _process_get(ctx, resource, request)
+                process_get_timer.report()
+
+                view_timer.report()
+                return proc
             elif request.method == 'POST':
                 return _process_post(ctx, resource, request)
             elif request.method == 'PUT':
@@ -307,12 +320,19 @@ def _inner_transaction(ctx, resource, request, func):
 
 def _process_get(ctx, resource, request):
     try:
+        process_timer = TimeReporter('_process_get > process_get_request')
         content_dict = process_get_request(
             ctx,
             resource,
             request.GET
         )
-        return _content_success(ctx, resource, request, content_dict)
+        process_timer.report()
+
+        content_response_timer = TimeReporter('_process_get > _content_success')
+        content = _content_success(ctx, resource, request, content_dict)
+        content_response_timer.report()
+
+        return content
     except MethodNotAllowedError:
         return _not_allowed_method(ctx, resource, request)
 
