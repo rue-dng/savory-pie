@@ -348,8 +348,8 @@ class ModelResource(Resource):
                 for line in traceback.format_stack():
                     print line.strip()
 
-        if True and 'merchandiseboutiquecontext' in self.resource_path:
-            timer.report()
+            if True and 'merchandiseboutiquecontext' in self.resource_path:
+                timer.report()
 
         return target_dict
 
